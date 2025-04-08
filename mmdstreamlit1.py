@@ -1,142 +1,210 @@
-# tennis_partner_app.py (or mmdstreamlit.py)
-
 import streamlit as st
 import pandas as pd
+import datetime
+import os
+import io
+import json
 from collections import defaultdict
+import plotly.express as px
 
-# Check for required visualization packages
-try:
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    visualization_available = True
-except ImportError:
-    visualization_available = False
-    st.warning("Visualization features disabled - install matplotlib and seaborn with: pip install matplotlib seaborn")
+# --- CONFIG ---
+VALID_SCORES = [f"{i}-{j}" for i, j in [
+    (6, 0), (6, 1), (6, 2), (6, 3), (6, 4), (7, 5), (7, 6),
+    (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 7), (6, 7)
+]]
+DATA_FILE = "match_data.json"
 
-# Load the CSV you uploaded
-@st.cache_data
-def load_data():
-    return pd.read_csv("mmdmatches.csv")
+# --- PAGE SETUP ---
+st.set_page_config(page_title="Tennis Community App", layout="wide")
+st.title("🎾 Tennis Community App")
 
-df = load_data()
+# --- FUNCTIONS ---
+def save_local():
+    with open(DATA_FILE, "w") as f:
+        json.dump(st.session_state.matches, f, default=str)
 
-# Function to get all players
-def get_all_players(df):
-    return (
-        set(df['WINNER 1'].dropna()) | 
-        set(df['WINNER 2'].dropna()) | 
-        set(df['CHALLENGER 1'].dropna()) | 
-        set(df['CHALLENGER 2'].dropna())
-    )
+def load_local():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
 
-all_players = get_all_players(df)
+# --- DATA INIT ---
+if "matches" not in st.session_state:
+    st.session_state.matches = load_local()
 
-# Sidebar for navigation
-st.sidebar.title("🎾 Tennis Partner Analysis")
-analysis_type = st.sidebar.radio(
-    "Select Analysis Type",
-    ["Player Partnership Stats", "Player Frequency", "All Players Overview"]
-)
+# --- FILE UPLOAD ---
+uploaded_file = st.file_uploader("Upload CSV of Player Names", type="csv")
 
-# Player frequency analysis
-def analyze_player_frequency(df):
-    player_counts = defaultdict(int)
-    
-    for col in ['WINNER 1', 'WINNER 2', 'CHALLENGER 1', 'CHALLENGER 2']:
-        for player in df[col].dropna():
-            player_counts[player] += 1
-            
-    return pd.DataFrame({
-        'Player': list(player_counts.keys()),
-        'Matches Played': list(player_counts.values())
-    }).sort_values(by='Matches Played', ascending=False)
+if uploaded_file:
+    players_df = pd.read_csv(uploaded_file)
+    player_names = players_df.iloc[:, 0].dropna().unique().tolist()
 
-# Analyze match data for partnerships
-def analyze_partnerships(df, player_name):
-    stats = defaultdict(lambda: {'matches': 0, 'wins': 0})
+    st.header("➕ Enter a Match Result")
+    match_type = st.radio("Match Type", ["Singles", "Doubles"])
+    match_date = st.date_input("Date of Match", datetime.date.today())
 
-    for _, row in df.iterrows():
-        if player_name in (row['WINNER 1'], row['WINNER 2']):
-            partner = row['WINNER 2'] if row['WINNER 1'] == player_name else row['WINNER 1']
-            stats[partner]['matches'] += 1
-            stats[partner]['wins'] += 1
-        elif player_name in (row['CHALLENGER 1'], row['CHALLENGER 2']):
-            partner = row['CHALLENGER 2'] if row['CHALLENGER 1'] == player_name else row['CHALLENGER 1']
-            stats[partner]['matches'] += 1
-
-    return pd.DataFrame([
-        {'Partner': partner, 'Total Matches': stat['matches'], 'Wins Together': stat['wins']}
-        for partner, stat in stats.items()
-    ]).sort_values(by='Wins Together', ascending=False)
-
-# Main content area
-if analysis_type == "Player Partnership Stats":
-    st.header("📊 Player Partnership Statistics")
-    
-    selected_player = st.selectbox("🎾 Select a Player", sorted(all_players))
-    
-    if selected_player:
-        result_df = analyze_partnerships(df, selected_player)
-
-        st.subheader(f"Partner Stats for {selected_player}")
-        st.dataframe(result_df)
-        
-        if visualization_available and not result_df.empty:
-            # Create charts
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write("### Total Matches Played Together")
-                fig, ax = plt.subplots(figsize=(8, 4))
-                result_df.head(10).plot.barh(y='Total Matches', x='Partner', ax=ax)
-                ax.set_xlabel("Matches Played Together")
-                st.pyplot(fig)
-                
-            with col2:
-                st.write("### Wins Together")
-                fig, ax = plt.subplots(figsize=(8, 4))
-                result_df.head(10).plot.barh(y='Wins Together', x='Partner', ax=ax, color='green')
-                ax.set_xlabel("Wins Together")
-                st.pyplot(fig)
-            
-            # Win percentage
-            result_df['Win Percentage'] = (result_df['Wins Together'] / result_df['Total Matches'] * 100).round(1)
-            st.write("### Win Percentage with Partners")
-            fig, ax = plt.subplots(figsize=(10, 5))
-            result_df[result_df['Total Matches'] >= 3].sort_values('Win Percentage', ascending=False).head(10).plot.barh(
-                y='Win Percentage', 
-                x='Partner',
-                ax=ax
-            )
-            ax.set_xlabel("Win Percentage (%)")
-            ax.set_xlim(0, 100)
-            st.pyplot(fig)
-            
-            top_partner = result_df.iloc[0]
-            st.success(f"🥇 Most effective partner: **{top_partner['Partner']}** with **{top_partner['Wins Together']}** wins")
-        elif not visualization_available:
-            st.info("Install matplotlib and seaborn for visualizations: pip install matplotlib seaborn")
-
-elif analysis_type == "Player Frequency":
-    st.header("📈 Player Frequency Analysis")
-    
-    frequency_df = analyze_player_frequency(df)
-    
-    st.subheader("Most Active Players")
-    st.dataframe(frequency_df)
-    
-    if visualization_available:
-        # Top players chart
-        st.write("### Top 20 Most Active Players")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        frequency_df.head(20).plot.barh(y='Matches Played', x='Player', ax=ax)
-        ax.set_xlabel("Number of Matches Played")
-        st.pyplot(fig)
+    if match_type == "Singles":
+        col1, col2 = st.columns(2)
+        with col1:
+            player1 = st.selectbox("Player 1", player_names, key="s1")
+        with col2:
+            player2 = st.selectbox("Player 2", [p for p in player_names if p != player1], key="s2")
+        team1 = [player1]
+        team2 = [player2]
     else:
-        st.info("Install matplotlib for visualizations: pip install matplotlib")
+        st.markdown("#### Select Doubles Players")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            p1 = st.selectbox("Team 1 - Player 1", player_names, key="d1p1")
+        with col2:
+            p2 = st.selectbox("Team 1 - Player 2", [p for p in player_names if p != p1], key="d1p2")
+        with col3:
+            p3 = st.selectbox("Team 2 - Player 1", [p for p in player_names if p not in [p1, p2]], key="d2p1")
+        with col4:
+            p4 = st.selectbox("Team 2 - Player 2", [p for p in player_names if p not in [p1, p2, p3]], key="d2p2")
+        team1 = [p1, p2]
+        team2 = [p3, p4]
 
-elif analysis_type == "All Players Overview":
-    st.header("👥 All Players Overview")
-    st.subheader("Player List")
-    st.write(f"Total unique players: {len(all_players)}")
-    st.write(sorted(all_players))
+    st.subheader("🎾 Set Scores")
+    set1 = st.selectbox("Set 1", VALID_SCORES, key="set1")
+    set2 = st.selectbox("Set 2", VALID_SCORES, key="set2")
+    set3 = st.selectbox("Set 3 (Optional)", [""] + VALID_SCORES, key="set3")
+    winner = st.radio("Who Won?", ["Team 1", "Team 2"])
+
+    if st.button("Submit Match"):
+        if set1 and set2:
+            match = {
+                "date": match_date,
+                "type": match_type,
+                "team1": team1,
+                "team2": team2,
+                "set1": set1,
+                "set2": set2,
+                "set3": set3,
+                "winner": winner
+            }
+            st.session_state.matches.append(match)
+            save_local()
+            st.success("✅ Match recorded!")
+        else:
+            st.error("Please enter Set 1 and Set 2 scores.")
+
+    st.header("🛠 Edit or Delete a Match")
+    if st.session_state.matches:
+        match_labels = [
+            f"{i+1}. {m['date']} - {', '.join(m['team1'])} vs {', '.join(m['team2'])}"
+            for i, m in enumerate(st.session_state.matches)
+        ]
+        selected_match_idx = st.selectbox("Select Match", range(len(st.session_state.matches)),
+                                          format_func=lambda x: match_labels[x])
+        if st.button("Delete Match"):
+            del st.session_state.matches[selected_match_idx]
+            save_local()
+            st.success("🗑 Match deleted!")
+
+    st.header("📋 Match Records (with Filters)")
+    filter_player = st.selectbox("🔍 Filter by Player (optional)", ["All"] + player_names)
+    filter_date = st.date_input("📅 Filter by Date (optional)", value=None)
+
+    filtered_matches = st.session_state.matches
+    if filter_player != "All":
+        filtered_matches = [m for m in filtered_matches if filter_player in m["team1"] + m["team2"]]
+    if filter_date:
+        filtered_matches = [m for m in filtered_matches if m["date"] == filter_date]
+
+    match_records = []
+    for m in filtered_matches:
+        match_records.append({
+            "Date": m["date"],
+            "Type": m["type"],
+            "Team 1": ", ".join(m["team1"]),
+            "Team 2": ", ".join(m["team2"]),
+            "Set 1": m["set1"],
+            "Set 2": m["set2"],
+            "Set 3": m["set3"],
+            "Winner": m["winner"]
+        })
+
+    if match_records:
+        match_df = pd.DataFrame(match_records)
+        st.dataframe(match_df)
+
+        csv = match_df.to_csv(index=False).encode("utf-8")
+        st.download_button("📤 Download Match Records", csv, "match_records.csv", "text/csv")
+    else:
+        st.info("No matches match your filter criteria.")
+
+    st.header("🏅 Player Points")
+    points = defaultdict(int)
+    for match in st.session_state.matches:
+        winners = match["team1"] if match["winner"] == "Team 1" else match["team2"]
+        losers = match["team2"] if match["winner"] == "Team 1" else match["team1"]
+        for p in winners:
+            points[p] += 3
+        for p in losers:
+            points[p] += 1
+
+    points_df = pd.DataFrame(points.items(), columns=["Player", "Points"]).sort_values(by="Points", ascending=False)
+    st.dataframe(points_df)
+
+    points_csv = points_df.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Points Table", points_csv, "player_points.csv", "text/csv")
+
+    # 📊 Charts
+    st.subheader("📈 Points Distribution")
+    fig = px.bar(points_df, x="Player", y="Points", title="Player Points", text="Points")
+    st.plotly_chart(fig)
+
+    st.header("📊 Player Statistics")
+    selected_player = st.selectbox("Select a Player", player_names)
+    player_matches = [m for m in st.session_state.matches if selected_player in m["team1"] + m["team2"]]
+    st.write(f"Total Matches Played: {len(player_matches)}")
+
+    if player_matches:
+        dates = sorted([m["date"] for m in player_matches])
+        if len(dates) > 1:
+            frequency = (dates[-1] - dates[0]).days / (len(dates) - 1)
+            st.write(f"Average Frequency: {round(frequency, 1)} days")
+        else:
+            st.write("Only one match played.")
+
+        partners = []
+        partner_wins = defaultdict(int)
+        partner_total = defaultdict(int)
+
+        for m in player_matches:
+            is_team1 = selected_player in m["team1"]
+            team = m["team1"] if is_team1 else m["team2"]
+            if m["type"] == "Doubles":
+                partners_in_team = [p for p in team if p != selected_player]
+                partners.extend(partners_in_team)
+                for p in partners_in_team:
+                    partner_total[p] += 1
+                    if m["winner"] == ("Team 1" if is_team1 else "Team 2"):
+                        partner_wins[p] += 1
+
+        if partners:
+            unique_partners = list(set(partners))
+            partner_df = pd.DataFrame({
+                "Partner": unique_partners,
+                "Times Played": [partner_total[p] for p in unique_partners],
+                "Win Rate (%)": [
+                    round(100 * partner_wins[p] / partner_total[p], 1) if partner_total[p] > 0 else 0
+                    for p in unique_partners
+                ]
+            }).sort_values(by="Win Rate (%)", ascending=False)
+            st.subheader("Partner Stats")
+            st.dataframe(partner_df)
+
+            best_partner = partner_df.iloc[0]["Partner"]
+            st.success(f"🏆 Best Partner: {best_partner}")
+        else:
+            st.info("No doubles data available for this player.")
+
+        player_points = points.get(selected_player, 0)
+        st.write(f"Total Points: **{player_points}**")
+    else:
+        st.warning("No matches found for this player.")
+else:
+    st.info("⬆️ Please upload a CSV file with player names (one per row).")
