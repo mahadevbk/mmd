@@ -101,6 +101,45 @@ if st.session_state.matches:
     ]
     selected_match_idx = st.selectbox("Select Match", range(len(st.session_state.matches)),
                                       format_func=lambda x: match_labels[x])
+
+    # --- Edit Match
+    st.subheader("✏️ Edit Match Details")
+    match = st.session_state.matches[selected_match_idx]
+
+    if match["type"] == "Singles":
+        player1 = st.selectbox("Player 1", player_names, index=player_names.index(match["team1"][0]), key="edit_s1")
+        player2 = st.selectbox("Player 2", [p for p in player_names if p != player1], index=player_names.index(match["team2"][0]), key="edit_s2")
+        team1 = [player1]
+        team2 = [player2]
+    else:
+        p1 = st.selectbox("Team 1 - Player 1", player_names, index=player_names.index(match["team1"][0]), key="edit_d1p1")
+        p2 = st.selectbox("Team 1 - Player 2", [p for p in player_names if p != p1], index=player_names.index(match["team1"][1]), key="edit_d1p2")
+        p3 = st.selectbox("Team 2 - Player 1", [p for p in player_names if p not in [p1, p2]], index=player_names.index(match["team2"][0]), key="edit_d2p1")
+        p4 = st.selectbox("Team 2 - Player 2", [p for p in player_names if p not in [p1, p2, p3]], index=player_names.index(match["team2"][1]), key="edit_d2p2")
+        team1 = [p1, p2]
+        team2 = [p3, p4]
+
+    set1 = st.selectbox("Set 1", VALID_SCORES, index=VALID_SCORES.index(match["set1"]), key="edit_set1")
+    set2 = st.selectbox("Set 2", VALID_SCORES, index=VALID_SCORES.index(match["set2"]), key="edit_set2")
+    set3 = st.selectbox("Set 3 (Optional)", [""] + VALID_SCORES, index=VALID_SCORES.index(match["set3"]) if match["set3"] else 0, key="edit_set3")
+    winner = st.radio("Who Won?", ["Team 1", "Team 2"], index=0 if match["winner"] == "Team 1" else 1, key="edit_winner")
+
+    if st.button("Save Changes"):
+        updated_match = {
+            "date": match["date"],
+            "type": match["type"],
+            "team1": team1,
+            "team2": team2,
+            "set1": set1,
+            "set2": set2,
+            "set3": set3,
+            "winner": winner
+        }
+        st.session_state.matches[selected_match_idx] = updated_match
+        save_local()
+        st.success("✅ Match updated!")
+
+    # --- Delete Match
     if st.button("Delete Match"):
         del st.session_state.matches[selected_match_idx]
         save_local()
@@ -161,54 +200,3 @@ st.subheader("📈 Points Distribution")
 fig = px.bar(points_df, x="Player", y="Points", title="Player Points", text="Points")
 st.plotly_chart(fig)
 
-# --- Player Statistics ---
-st.header("📊 Player Statistics")
-selected_player = st.selectbox("Select a Player", player_names)
-player_matches = [m for m in st.session_state.matches if selected_player in m["team1"] + m["team2"]]
-st.write(f"Total Matches Played: {len(player_matches)}")
-
-if player_matches:
-    dates = sorted([m["date"] for m in player_matches])
-    if len(dates) > 1:
-        frequency = (dates[-1] - dates[0]).days / (len(dates) - 1)
-        st.write(f"Average Frequency: {round(frequency, 1)} days")
-    else:
-        st.write("Only one match played.")
-
-    partners = []
-    partner_wins = defaultdict(int)
-    partner_total = defaultdict(int)
-
-    for m in player_matches:
-        is_team1 = selected_player in m["team1"]
-        team = m["team1"] if is_team1 else m["team2"]
-        if m["type"] == "Doubles":
-            partners_in_team = [p for p in team if p != selected_player]
-            partners.extend(partners_in_team)
-            for p in partners_in_team:
-                partner_total[p] += 1
-                if m["winner"] == ("Team 1" if is_team1 else "Team 2"):
-                    partner_wins[p] += 1
-
-    if partners:
-        unique_partners = list(set(partners))
-        partner_df = pd.DataFrame({
-            "Partner": unique_partners,
-            "Times Played": [partner_total[p] for p in unique_partners],
-            "Win Rate (%)": [
-                round(100 * partner_wins[p] / partner_total[p], 1) if partner_total[p] > 0 else 0
-                for p in unique_partners
-            ]
-        }).sort_values(by="Win Rate (%)", ascending=False)
-        st.subheader("Partner Stats")
-        st.dataframe(partner_df)
-
-        best_partner = partner_df.iloc[0]["Partner"]
-        st.success(f"🏆 Best Partner: {best_partner}")
-    else:
-        st.info("No doubles data available for this player.")
-
-    player_points = points.get(selected_player, 0)
-    st.write(f"Total Points: **{player_points}**")
-else:
-    st.warning("No matches found for this player.")
