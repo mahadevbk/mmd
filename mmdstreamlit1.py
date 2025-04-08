@@ -99,51 +99,62 @@ if st.session_state.matches:
         f"{i+1}. {m['date']} - {', '.join(m['team1'])} vs {', '.join(m['team2'])}"
         for i, m in enumerate(st.session_state.matches)
     ]
-    selected_match_idx = st.selectbox("Select Match", range(len(st.session_state.matches)),
-                                      format_func=lambda x: match_labels[x])
+    
+    # For each match, display an edit and delete button
+    for i, match in enumerate(st.session_state.matches):
+        with st.expander(f"Match {i + 1}: {', '.join(match['team1'])} vs {', '.join(match['team2'])}"):
+            st.write(f"Date: {match['date']}")
+            st.write(f"Set 1: {match['set1']}, Set 2: {match['set2']}, Set 3: {match['set3']}")
+            st.write(f"Winner: {match['winner']}")
 
-    # --- Edit Match
-    st.subheader("✏️ Edit Match Details")
-    match = st.session_state.matches[selected_match_idx]
+            # Edit and delete buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(f"Edit Match {i + 1}"):
+                    with st.expander("Edit Match Details"):
+                        # Pre-fill existing match details for editing
+                        match_type = st.radio("Match Type", ["Singles", "Doubles"], index=0 if match['type'] == "Singles" else 1)
+                        match_date = st.date_input("Date of Match", match["date"])
 
-    if match["type"] == "Singles":
-        player1 = st.selectbox("Player 1", player_names, index=player_names.index(match["team1"][0]), key="edit_s1")
-        player2 = st.selectbox("Player 2", [p for p in player_names if p != player1], index=player_names.index(match["team2"][0]), key="edit_s2")
-        team1 = [player1]
-        team2 = [player2]
-    else:
-        p1 = st.selectbox("Team 1 - Player 1", player_names, index=player_names.index(match["team1"][0]), key="edit_d1p1")
-        p2 = st.selectbox("Team 1 - Player 2", [p for p in player_names if p != p1], index=player_names.index(match["team1"][1]), key="edit_d1p2")
-        p3 = st.selectbox("Team 2 - Player 1", [p for p in player_names if p not in [p1, p2]], index=player_names.index(match["team2"][0]), key="edit_d2p1")
-        p4 = st.selectbox("Team 2 - Player 2", [p for p in player_names if p not in [p1, p2, p3]], index=player_names.index(match["team2"][1]), key="edit_d2p2")
-        team1 = [p1, p2]
-        team2 = [p3, p4]
+                        if match_type == "Singles":
+                            player1 = st.selectbox("Player 1", player_names, index=player_names.index(match["team1"][0]), key=f"edit_s1_{i}")
+                            player2 = st.selectbox("Player 2", [p for p in player_names if p != player1], index=player_names.index(match["team2"][0]), key=f"edit_s2_{i}")
+                            team1 = [player1]
+                            team2 = [player2]
+                        else:
+                            p1 = st.selectbox("Team 1 - Player 1", player_names, index=player_names.index(match["team1"][0]), key=f"edit_d1p1_{i}")
+                            p2 = st.selectbox("Team 1 - Player 2", [p for p in player_names if p != p1], index=player_names.index(match["team1"][1]), key=f"edit_d1p2_{i}")
+                            p3 = st.selectbox("Team 2 - Player 1", [p for p in player_names if p not in [p1, p2]], index=player_names.index(match["team2"][0]), key=f"edit_d2p1_{i}")
+                            p4 = st.selectbox("Team 2 - Player 2", [p for p in player_names if p not in [p1, p2, p3]], index=player_names.index(match["team2"][1]), key=f"edit_d2p2_{i}")
+                            team1 = [p1, p2]
+                            team2 = [p3, p4]
 
-    set1 = st.selectbox("Set 1", VALID_SCORES, index=VALID_SCORES.index(match["set1"]), key="edit_set1")
-    set2 = st.selectbox("Set 2", VALID_SCORES, index=VALID_SCORES.index(match["set2"]), key="edit_set2")
-    set3 = st.selectbox("Set 3 (Optional)", [""] + VALID_SCORES, index=VALID_SCORES.index(match["set3"]) if match["set3"] else 0, key="edit_set3")
-    winner = st.radio("Who Won?", ["Team 1", "Team 2"], index=0 if match["winner"] == "Team 1" else 1, key="edit_winner")
+                        set1 = st.selectbox("Set 1", VALID_SCORES, index=VALID_SCORES.index(match["set1"]), key=f"edit_set1_{i}")
+                        set2 = st.selectbox("Set 2", VALID_SCORES, index=VALID_SCORES.index(match["set2"]), key=f"edit_set2_{i}")
+                        set3 = st.selectbox("Set 3 (Optional)", [""] + VALID_SCORES, index=VALID_SCORES.index(match["set3"]) if match["set3"] else 0, key=f"edit_set3_{i}")
+                        winner = st.radio("Who Won?", ["Team 1", "Team 2"], index=0 if match["winner"] == "Team 1" else 1, key=f"edit_winner_{i}")
 
-    if st.button("Save Changes"):
-        updated_match = {
-            "date": match["date"],
-            "type": match["type"],
-            "team1": team1,
-            "team2": team2,
-            "set1": set1,
-            "set2": set2,
-            "set3": set3,
-            "winner": winner
-        }
-        st.session_state.matches[selected_match_idx] = updated_match
-        save_local()
-        st.success("✅ Match updated!")
+                        if st.button(f"Save Changes for Match {i + 1}"):
+                            updated_match = {
+                                "date": match_date,
+                                "type": match_type,
+                                "team1": team1,
+                                "team2": team2,
+                                "set1": set1,
+                                "set2": set2,
+                                "set3": set3,
+                                "winner": winner
+                            }
+                            st.session_state.matches[i] = updated_match
+                            save_local()
+                            st.success("✅ Match updated!")
 
-    # --- Delete Match
-    if st.button("Delete Match"):
-        del st.session_state.matches[selected_match_idx]
-        save_local()
-        st.success("🗑 Match deleted!")
+            with col2:
+                if st.button(f"Delete Match {i + 1}"):
+                    if st.confirm("Are you sure you want to delete this match?"):
+                        del st.session_state.matches[i]
+                        save_local()
+                        st.success("🗑 Match deleted!")
 
 # --- Match Records Table ---
 st.header("📋 Match Records (with Filters)")
@@ -177,26 +188,3 @@ if match_records:
     st.download_button("📤 Download Match Records", csv, "match_records.csv", "text/csv")
 else:
     st.info("No matches match your filter criteria.")
-
-# --- Player Points ---
-st.header("🏅 Player Points")
-points = defaultdict(int)
-for match in st.session_state.matches:
-    winners = match["team1"] if match["winner"] == "Team 1" else match["team2"]
-    losers = match["team2"] if match["winner"] == "Team 1" else match["team1"]
-    for p in winners:
-        points[p] += 3
-    for p in losers:
-        points[p] += 1
-
-points_df = pd.DataFrame(points.items(), columns=["Player", "Points"]).sort_values(by="Points", ascending=False)
-st.dataframe(points_df)
-
-points_csv = points_df.to_csv(index=False).encode("utf-8")
-st.download_button("📥 Download Points Table", points_csv, "player_points.csv", "text/csv")
-
-# 📊 Charts
-st.subheader("📈 Points Distribution")
-fig = px.bar(points_df, x="Player", y="Points", title="Player Points", text="Points")
-st.plotly_chart(fig)
-
