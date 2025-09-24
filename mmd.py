@@ -3675,9 +3675,10 @@ with tabs[2]:
                 current_image = player_data.get("profile_image_url", "")
                 current_birthday = player_data.get("birthday", "")
                 st.markdown(f"**Current Profile for {selected_player_manage}**")
-                if current_image:
+                if current_image and isinstance(current_image, str) and current_image.startswith(('http://', 'https://')):
                     st.image(current_image, width=100)
                 else:
+                    # This will now correctly handle cases with no image or an invalid path
                     st.write("No profile image set.")
                 profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
                 default_day = 1
