@@ -1,0 +1,8 @@
+streamlit
+pandas
+supabase
+python-dateutil
+plotly
+reportlab==4.0.8
+fpdf==1.7.2
+PyGithub
