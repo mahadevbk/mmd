@@ -2561,36 +2561,42 @@ with tabs[0]:
     # --------------------------------------------------------------------
 
     # Helper function to generate a single player card
+    
     def display_ranking_card(player_data, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=""):
         player_name = player_data["Player"]
         player_info = players_df[players_df["name"] == player_name].iloc[0] if player_name in players_df.name.values else None
-
+    
         if player_info is None:
             st.warning(f"Could not find profile information for {player_name}")
             return
-
+    
         # --- Data Calculation & Formatting ---
         profile_image = player_info.get("profile_image_url", "")
         wins, losses = int(player_data["Wins"]), int(player_data["Losses"])
         trend = player_data["Recent Trend"]
         rank_value = player_data['Rank']
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
-
-        # --- NEW: Performance Score Calculation ---
-        doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles) if player_name in rank_df_doubles['Player'].values else 0.0
-        singles_perf_score = _calculate_performance_score(rank_df_singles[rank_df_singles['Player'] == player_name].iloc[0], rank_df_singles) if player_name in rank_df_singles['Player'].values else 0.0
-        # --- END NEW ---
-
+    
+        # --- FIXED: Performance Score Calculation with Empty DF Safety ---
+        # Check if DF is non-empty and has required columns before accessing
+        doubles_perf_score = 0.0
+        if not rank_df_doubles.empty and 'Player' in rank_df_doubles.columns and player_name in rank_df_doubles['Player'].values:
+            doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles)
+        
+        singles_perf_score = 0.0
+        if not rank_df_singles.empty and 'Player' in rank_df_singles.columns and player_name in rank_df_singles['Player'].values:
+            singles_perf_score = _calculate_performance_score(rank_df_singles[rank_df_singles['Player'] == player_name].iloc[0], rank_df_singles)
+        # --- END FIXED ---
+    
         birthday_str = ""
         raw_birthday = player_info.get("birthday")
         if raw_birthday and isinstance(raw_birthday, str) and re.match(r'^\d{2}-\d{2}$', raw_birthday):
             try:
-                #bday_obj = datetime.strptime(raw_birthday, "%d-%m")
                 bday_obj = datetime.strptime(f"{raw_birthday}-2000", "%d-%m-%Y")
                 birthday_str = bday_obj.strftime("%d %b")
             except ValueError:
-                birthday_str = "" # Keep it empty if parsing fails
-
+                birthday_str = ""  # Keep it empty if parsing fails
+    
         # --- Partner Calculation Logic ---
         partners_list_str = "No doubles matches played."
         best_partner_str = "N/A"
@@ -2600,7 +2606,7 @@ with tabs[0]:
                 for p, item in partner_stats[player_name].items() if p != "Visitor"
             ]
             partners_list_str = f"<ul>{''.join(partners_list_items)}</ul>"
-
+    
             sorted_partners = sorted(
                 [(p, item) for p, item in partner_stats[player_name].items() if p != "Visitor"],
                 key=lambda item: (
@@ -2615,10 +2621,10 @@ with tabs[0]:
                 best_stats = sorted_partners[0][1]
                 best_win_percent = (best_stats['wins'] / best_stats['matches'] * 100) if best_stats['matches'] > 0 else 0
                 best_partner_str = f"{best_partner_name} ({best_win_percent:.1f}% Win Rate)"
-
+    
         # --- Card Layout ---
         st.markdown("---")
-
+    
         header_html = f"""
         <div style="margin-bottom: 15px;">
             <h2 style="color: #fff500; margin-bottom: 5px; font-size: 2.0em; font-weight: bold;">{player_name}</h2>
@@ -2629,19 +2635,18 @@ with tabs[0]:
         </div>
         """
         st.markdown(header_html, unsafe_allow_html=True)
-
+    
         col1, col2 = st.columns([1, 2])
-
+    
         with col1:  # Left column for visuals
             if profile_image:
                 st.image(profile_image, width=150)
-                #st.markdown(f'<img src="{profile_image}" class="profile-image" style="width: 100px; height: 100px;">', unsafe_allow_html=True)
-
+    
             st.markdown("##### Win/Loss")
             win_loss_chart = create_win_loss_donut(wins, losses)
             if win_loss_chart:
                 st.plotly_chart(win_loss_chart, width='stretch', key=f"{key_prefix}_win_loss_{player_name}")
-
+    
             st.markdown("##### Trend")
             trend_chart = create_trend_sparkline(trend)
             if trend_chart:
@@ -2649,13 +2654,13 @@ with tabs[0]:
                 st.markdown(f"<div class='trend-col' style='text-align: center; margin-top: -15px;'>{trend}</div>", unsafe_allow_html=True)
             else:
                 st.markdown(f"<div class='trend-col'>{trend}</div>", unsafe_allow_html=True)
-
+    
         with col2:  # Right column for stats
             m_col1, m_col2, m_col3 = st.columns(3)
             m_col1.metric("Points", f"{player_data['Points']:.1f}")
             m_col2.metric("Win Rate", f"{player_data['Win %']:.1f}%")
             m_col3.metric("Matches", f"{int(player_data['Matches'])}")
-
+    
             # --- UPDATED: Detailed Stats Display with Match Counts ---
             st.markdown(f"""
             <div style="line-height: 2;">
@@ -2671,7 +2676,7 @@ with tabs[0]:
                 </span>
             </div>
             """, unsafe_allow_html=True)
-
+    
             # Only show partner stats expander for views that have doubles matches
             if ranking_type != "Singles":
                 with st.expander("View Full Partner Stats", expanded=False, icon="➡️"):
