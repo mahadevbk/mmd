@@ -2568,6 +2568,7 @@ with tabs[0]:
 
     # Helper function to generate a single player card
     
+    
     def display_ranking_card(player_data, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=""):
         player_name = player_data["Player"]
         player_info = players_df[players_df["name"] == player_name].iloc[0] if player_name in players_df.name.values else None
@@ -2584,7 +2585,6 @@ with tabs[0]:
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
     
         # --- FIXED: Performance Score Calculation with Empty DF Safety ---
-        # Check if DF is non-empty and has required columns before accessing
         doubles_perf_score = 0.0
         if not rank_df_doubles.empty and 'Player' in rank_df_doubles.columns and player_name in rank_df_doubles['Player'].values:
             doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles)
@@ -2651,12 +2651,14 @@ with tabs[0]:
             st.markdown("##### Win/Loss")
             win_loss_chart = create_win_loss_donut(wins, losses)
             if win_loss_chart:
-                st.plotly_chart(win_loss_chart, width='stretch', key=f"{key_prefix}_win_loss_{player_name}")
+                # FIXED: Replace width='stretch' with use_container_width=True
+                st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player_name}")
     
             st.markdown("##### Trend")
             trend_chart = create_trend_sparkline(trend)
             if trend_chart:
-                st.plotly_chart(trend_chart, width='stretch', key=f"{key_prefix}_trend_{player_name}")
+                # FIXED: Replace width='stretch' with use_container_width=True
+                st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player_name}")
                 st.markdown(f"<div class='trend-col' style='text-align: center; margin-top: -15px;'>{trend}</div>", unsafe_allow_html=True)
             else:
                 st.markdown(f"<div class='trend-col'>{trend}</div>", unsafe_allow_html=True)
@@ -2667,7 +2669,6 @@ with tabs[0]:
             m_col2.metric("Win Rate", f"{player_data['Win %']:.1f}%")
             m_col3.metric("Matches", f"{int(player_data['Matches'])}")
     
-            # --- UPDATED: Detailed Stats Display with Match Counts ---
             st.markdown(f"""
             <div style="line-height: 2;">
                 <span class="games-won-col" style="display: block;"> {int(player_data['Games Won'])}</span>
