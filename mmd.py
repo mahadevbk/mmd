@@ -1145,8 +1145,15 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         wins, losses = int(player_data["Wins"]), int(player_data["Losses"])
         trend = get_player_trend(player, matches_df)
 
-        doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df) if player in doubles_rank_df['Player'].values else 0.0
-        singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df) if player in singles_rank_df['Player'].values else 0.0
+        # --- FIXED: Performance Score Calculation with Empty DF Safety ---
+        doubles_perf_score = 0.0
+        if not doubles_rank_df.empty and 'Player' in doubles_rank_df.columns and player in doubles_rank_df['Player'].values:
+            doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df)
+        
+        singles_perf_score = 0.0
+        if not singles_rank_df.empty and 'Player' in singles_rank_df.columns and player in singles_rank_df['Player'].values:
+            singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df)
+        # --- END FIXED ---
 
         rank_value = player_data['Rank']
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
@@ -1285,7 +1292,6 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
             with st.expander("View Partner Stats", expanded=False, icon="➡️"):
                 st.markdown(partners_list_str, unsafe_allow_html=True)
-
 
 
 
