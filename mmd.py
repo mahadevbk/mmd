@@ -1030,6 +1030,10 @@ def create_trend_chart(trend):
 
 
 def display_player_insights(selected_players, players_df, matches_df, rank_df, partner_stats, key_prefix=""):
+    # This check is crucial for new projects
+    if rank_df.empty:
+        st.info("No ranking data is available to display player insights.")
+        return  
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
     selected_players = [p for p in selected_players if p != "Visitor"]
