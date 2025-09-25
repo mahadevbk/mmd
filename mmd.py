@@ -519,7 +519,7 @@ def load_matches():
             if col not in df.columns:
                 df[col] = ""
         
-        # NEW: Normalize dates to tz-naive
+        # Normalize dates to tz-naive
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
         
