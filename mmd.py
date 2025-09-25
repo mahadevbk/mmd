@@ -70,7 +70,7 @@ st.markdown("""
   
   /* Ensure the body takes up the full page */
   body {
-    background: linear-gradient(to bottom, #872341, #09122C) !important;
+    background: linear-gradient(to bottom, #1f040c, #09122C) !important;
     height: 100vh;
     margin: 0;
     padding: 0;
@@ -83,7 +83,7 @@ st.markdown("""
 }
 
 [data-testid="stHeader"] {
-  background: linear-gradient(to top, #07314f, #035996) !important;
+  background: linear-gradient(to top, #1f040c, #09122C) !important;
 }
 
 .profile-image {
