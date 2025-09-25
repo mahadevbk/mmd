@@ -56,7 +56,7 @@ st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 st.markdown("""
 <style>
 .stApp {
-  background: linear-gradient(to bottom, #07314f, #031827);
+  background: linear-gradient(to bottom, #09122C, #872341);
   background-attachment: scroll;
 }
 
