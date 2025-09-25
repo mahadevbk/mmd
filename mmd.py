@@ -523,6 +523,9 @@ def load_matches():
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
         
+        # Sort matches by date descending (latest first)
+        df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+        
         st.session_state.matches_df = df
     except Exception as e:
         st.error(f"Error loading matches: {str(e)}")
