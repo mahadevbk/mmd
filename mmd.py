@@ -83,7 +83,7 @@ st.markdown("""
 }
 
 [data-testid="stHeader"] {
-  background: linear-gradient(to top, #1f040c, #09122C) !important;
+  background: linear-gradient(to top, #09122C , #1f040c) !important;
 }
 
 .profile-image {
