@@ -3659,8 +3659,6 @@ with tabs[1]:
 #----------------END OF TAB[1]-----------------------------------------------------------
 
 
-
-
 with tabs[2]:
     st.header("Player Profile")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
@@ -3766,83 +3764,6 @@ with tabs[2]:
                                 st.rerun()
 
     st.markdown("---")
-    st.header("Match History")
-    matches_df = st.session_state.matches_df.copy()  # Create a copy to avoid modifying the original
-    if matches_df.empty:
-        st.info("No matches found.")
-    else:
-        # Ensure 'date' is in datetime format and timezone-naive
-        matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce').dt.tz_localize(None)
-        
-        # Sort matches by date in descending order (latest first)
-        matches_df = matches_df.sort_values(by='date', ascending=False).reset_index(drop=True)
-        
-        for _, row in matches_df.iterrows():
-            # Format date
-            try:
-                date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
-            except (ValueError, TypeError):
-                date_str = "Unknown Date"
-            
-            # Build team strings based on match type
-            if row['match_type'] == 'Doubles':
-                team1 = f"{row['team1_player1']} & {row['team1_player2']}"
-                team2 = f"{row['team2_player1']} & {row['team2_player2']}"
-            else:  # Singles
-                team1 = row['team1_player1']
-                team2 = row['team2_player1']
-            
-            # Format set scores
-            sets = [s for s in [row['set1'], row['set2'], row['set3']] if s and str(s).strip()]
-            set_str = ", ".join(sets) if sets else "No sets recorded"
-            
-            # Calculate Game Difference Average (GDA)
-            try:
-                game_diff_sum = 0
-                set_count = 0
-                for set_score in sets:
-                    if 'Tie Break' in str(set_score):
-                        team1_games, team2_games = map(int, re.findall(r'\d+', str(set_score)))
-                        team1_games = 7 if team1_games > team2_games else 6
-                        team2_games = 6 if team1_games > team2_games else 7
-                    else:
-                        team1_games, team2_games = map(int, str(set_score).split('-'))
-                    game_diff_sum += team1_games - team2_games
-                    set_count += 1
-                gda = game_diff_sum / set_count if set_count > 0 else 0
-            except (ValueError, TypeError):
-                gda = 0.0
-            
-            # Determine result string with descriptive terms
-            if row['winner'] == 'Team 1':
-                result_str = f"{team1} {'trounced' if gda >= 3 else 'squeaked past' if len(sets) >= 3 else 'defeated'} {team2}"
-            elif row['winner'] == 'Team 2':
-                result_str = f"{team2} {'trounced' if abs(gda) >= 3 else 'squeaked past' if len(sets) >= 3 else 'defeated'} {team1}"
-            elif row['winner'] == 'Tie':
-                result_str = f"{team1} tied with {team2}"
-            else:
-                result_str = f"{team1} vs {team2}"
-            
-            # Generate WhatsApp share link
-            share_text = f"*{row['match_id']}*\n{result_str}\n{set_str} | GDA: {gda:.2f}\n{date_str}"
-            encoded_text = urllib.parse.quote(share_text)
-            whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
-            
-            # Render match details
-            st.markdown(f"""
-            <div style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px;'>
-                <strong>{row['match_id']}</strong><br>
-                <span style='font-weight:bold; color:#fff500;'>{result_str}</span><br>
-                {set_str} | GDA: {gda:.2f}<br>
-                {date_str}<br>
-                <a href='{whatsapp_link}' class='whatsapp-share' target='_blank'>
-                    <img src='https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg' alt='WhatsApp' style='width: 24px; vertical-align: middle; margin-right: 5px;'>WhatsApp Share
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown("---")
-
-    st.markdown("---")
     st.header("Player Insights")
 
     # --- CSS for Badges List ---
@@ -3882,15 +3803,16 @@ with tabs[2]:
     st.markdown(badges_css, unsafe_allow_html=True)
 
     # --- Badge Explanations ---
+   
     badge_explanations = {
-        "🎯 Tie-break Monster": "Dominates tie-breaks with the most wins (clutch factor >70% in 3+ clutch matches)",
-        "🔥 Hot Streak": "Achieved a winning streak of 5 or more matches",
-        "📈 Consistent Performer": "Reliable performance with low variation in game differences (consistency index <2 over 5+ matches)",
-        "💪 Ironman": "Played the most matches without missing a session",
-        "🔄 Comeback Kid": "Won 3 or more matches after losing the first set",
-        "🚀 Most Improved": "Recent win rate (last 10 matches) is 20%+ higher than overall career win rate",
-        "🥇 Game Hog": "Won the highest total number of games across all matches"
-    }
+                "🎯 Tie-break Monster": "Dominates tie-breaks with the most wins (clutch factor >70% in 3+ clutch matches)",
+                "🔥 Hot Streak": "Achieved a winning streak of 5 or more matches",
+                "📈 Consistent Performer": "Reliable performance with low variation in game differences (consistency index <2 over 5+ matches)",
+                "💪 Ironman": "Played the most matches without missing a session",
+                "🔄 Comeback Kid": "Won 3 or more matches after losing the first set",
+                "🚀 Most Improved": "Recent win rate (last 10 matches) is 20%+ higher than overall career win rate",
+                "🥇 Game Hog": "Won the highest total number of games across all matches"
+            }
 
     # --- Player Insights ---
     rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
@@ -3920,7 +3842,6 @@ with tabs[2]:
     st.markdown("---")
     st.header("Detailed explanation of Player insights")
     st.markdown("https://github.com/mahadevbk/ar2/blob/main/Player%20insights.pdf")
-
 
 
 
