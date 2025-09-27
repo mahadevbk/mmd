@@ -2653,6 +2653,7 @@ tabs = st.tabs(tab_names)
 with tabs[0]:
     st.header(f"Rankings as of {datetime.now().strftime('%d %b')}")
     ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Nerd Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
+    matches_df = st.session_state.matches_df.copy()
 
     # --- PRE-CALCULATE ALL RANKING DATAFRAMES FOR PERFORMANCE SCORES ---
     # This ensures doubles_rank_df and singles_rank_df are available in all views
