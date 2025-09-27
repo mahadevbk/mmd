@@ -2416,6 +2416,30 @@ def display_hall_of_fame():
         st.error("Please double-check your Supabase table name and column names for any typos.")
 
 
+#-----------------------Create Player function ----------------------------------------------------
+
+
+
+def create_player_chart(win_loss_df, player_name):
+    """
+    Creates a simple bar chart for a player's wins and losses.
+    """
+    # Ensure the 'Outcome' column exists
+    if 'Outcome' not in win_loss_df.columns:
+        raise ValueError("DataFrame must contain an 'Outcome' column.")
+
+    # Create the chart
+    chart = alt.Chart(win_loss_df, title=f"Win/Loss Record for {player_name}").mark_bar().encode(
+        x='Outcome:N', # 'N' for nominal/categorical data
+        y='count():Q', # 'Q' for quantitative data
+        color='Outcome:N'
+    ).properties(
+        width='container'
+    )
+    return chart
+        
+
+
 
 
 
