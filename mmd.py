@@ -758,13 +758,30 @@ def calculate_rankings(matches_to_rank):
         # Check if the match is a mixed doubles game
         is_mixed_doubles = False
         if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
-            # Get genders for team1 and team2 players
-            t1_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t1]
-            t2_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t2]
-            
-            # Check if both teams have one 'M' and one 'F'
-            if (sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
-                is_mixed_doubles = True
+            try:
+                # Get genders for team1 and team2 players
+                t1_genders = []
+                t2_genders = []
+                for p in t1:
+                    if p in players_df['name'].values:
+                        gender = players_df[players_df['name'] == p]['gender'].iloc[0]
+                        t1_genders.append(gender if pd.notna(gender) else None)
+                    else:
+                        t1_genders.append(None)
+                for p in t2:
+                    if p in players_df['name'].values:
+                        gender = players_df[players_df['name'] == p]['gender'].iloc[0]
+                        t2_genders.append(gender if pd.notna(gender) else None)
+                    else:
+                        t2_genders.append(None)
+
+                # Check if both teams have one 'M' and one 'F' and no None values
+                if (None not in t1_genders and None not in t2_genders and 
+                    sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
+                    is_mixed_doubles = True
+            except KeyError as e:
+                st.warning(f"Gender column missing or inaccessible for match {row.get('match_id', 'unknown')}: {str(e)}. Treating as non-mixed doubles.")
+                is_mixed_doubles = False
 
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if not set_score or ('-' not in str(set_score) and 'Tie Break' not in str(set_score)):
@@ -975,7 +992,6 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
-
 
 
 
