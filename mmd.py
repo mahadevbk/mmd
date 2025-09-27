@@ -3678,12 +3678,15 @@ with tabs[1]:
 
 #----------------END OF TAB[1]-----------------------------------------------------------
 
-
 with tabs[2]:
     st.header("Player Profile")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name", key="new_player_input").strip()
+        profile_image = st.file_uploader("Upload Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="new_player_image")
+        birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=1, key="new_player_day")
+        birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=1, key="new_player_month")
+        gender = st.radio("Gender *", ["M", "F"], key=f"new_player_gender_{st.session_state.form_key_suffix}")
         if st.button("Add Player", key="add_player_button"):
             if new_player:
                 if new_player.lower() == "visitor":
@@ -3691,7 +3694,15 @@ with tabs[2]:
                 elif new_player in st.session_state.players_df["name"].tolist():
                     st.warning(f"{new_player} already exists.")
                 else:
-                    new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
+                    image_url = ""
+                    if profile_image:
+                        image_url = upload_image_to_github(profile_image, f"profile_{new_player}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                    new_player_data = {
+                        "name": new_player,
+                        "profile_image_url": image_url,
+                        "birthday": f"{birthday_day:02d}-{birthday_month:02d}",
+                        "gender": gender
+                    }
                     st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                     save_players(st.session_state.players_df)
                     load_players()
@@ -3714,7 +3725,6 @@ with tabs[2]:
                 if current_image and isinstance(current_image, str) and current_image.startswith(('http://', 'https://')):
                     st.image(current_image, width=100)
                 else:
-                    # This will now correctly handle cases with no image or an invalid path
                     st.write("No profile image set.")
                 profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
                 default_day = 1
@@ -3728,6 +3738,8 @@ with tabs[2]:
                         pass
                 birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
                 birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
+                initial_gender = player_data.get("gender", "M")  # Default to M if missing
+                gender_edit = st.radio("Gender *", ["M", "F"], index=0 if initial_gender == "M" else 1, key=f"edit_gender_{selected_player_manage}")
                 col_save, col_delete = st.columns(2)
                 with col_save:
                     if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
@@ -3736,6 +3748,7 @@ with tabs[2]:
                             image_url = upload_image_to_github(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
+                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "gender"] = gender_edit
                         save_players(st.session_state.players_df)
                         load_players()
                         st.success(f"Profile for {selected_player_manage} updated.")
@@ -3823,26 +3836,24 @@ with tabs[2]:
     st.markdown(badges_css, unsafe_allow_html=True)
 
     # --- Badge Explanations ---
-   
     badge_explanations = {
-                "🎯 Tie-break Monster": "Dominates tie-breaks with the most wins (clutch factor >70% in 3+ clutch matches)",
-                "🔥 Hot Streak": "Achieved a winning streak of 5 or more matches",
-                "📈 Consistent Performer": "Reliable performance with low variation in game differences (consistency index <2 over 5+ matches)",
-                "💪 Ironman": "Played the most matches without missing a session",
-                "🔄 Comeback Kid": "Won 3 or more matches after losing the first set",
-                "🚀 Most Improved": "Recent win rate (last 10 matches) is 20%+ higher than overall career win rate",
-                "🥇 Game Hog": "Won the highest total number of games across all matches"
-            }
+        "🎯 Tie-break Monster": "Dominates tie-breaks with the most wins (clutch factor >70% in 3+ clutch matches)",
+        "🔥 Hot Streak": "Achieved a winning streak of 5 or more matches",
+        "📈 Consistent Performer": "Reliable performance with low variation in game differences (consistency index <2 over 5+ matches)",
+        "💪 Ironman": "Played the most matches without missing a session",
+        "🔄 Comeback Kid": "Won 3 or more matches after losing the first set",
+        "🚀 Most Improved": "Recent win rate (last 10 matches) is 20%+ higher than overall career win rate",
+        "🥇 Game Hog": "Won the highest total number of games across all matches"
+    }
 
     # --- Player Insights ---
-    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
+    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
     if players:
         display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
     else:
         st.info("No players available for insights. Please add players above.")
 
     # --- Debugging Output ---
-    #st.write("Debug: Rendering 'View All Badges' expander")  # Debugging to confirm expander is reached
     st.markdown("---")
     st.header("Explanation of Badges : ")
 
