@@ -1179,7 +1179,7 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
                 if win_loss_chart:
                     st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
                 else:
-                    st.info("No win/loss data available for chart.", key=f"{key_prefix}_win_loss_info_{player}")
+                    st.info("No win/loss data available for chart.")
             except NameError:
                 # st.error("Chart creation function not defined.", key=f"{key_prefix}_win_loss_error_{player}")
                 # NEW
