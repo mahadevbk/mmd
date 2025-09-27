@@ -1173,15 +1173,25 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
                 st.image(profile_image, width=150)  # Removed key parameter
             
             st.markdown("##### Win/Loss")
-            win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
-            if win_loss_chart:
-                st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
+            try:
+                win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
+                if win_loss_chart:
+                    st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
+                else:
+                    st.info("No win/loss data available for chart.", key=f"{key_prefix}_win_loss_info_{player}")
+            except NameError:
+                st.error("Chart creation function not defined.", key=f"{key_prefix}_win_loss_error_{player}")
             
             st.markdown("##### Trend")
-            trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
-            if trend_chart:
-                st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
-                st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
+            try:
+                trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
+                if trend_chart:
+                    st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
+                    st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
+                else:
+                    st.info("No trend data available for chart.", key=f"{key_prefix}_trend_info_{player}")
+            except NameError:
+                st.error("Chart creation function not defined.", key=f"{key_prefix}_trend_error_{player}")
         
         with col2:
             st.markdown(f"""
@@ -1214,8 +1224,6 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
             st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
-
-
 
 
 
