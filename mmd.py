@@ -2427,9 +2427,11 @@ def create_player_chart(win_loss_df, player_name, chart_type='Bar'):
     Creates a Plotly chart for a player's wins and losses.
     Can generate a Bar, Pie, or Donut chart.
     """
-    # Check if the dataframe is empty to avoid errors
-    if win_loss_df.empty or 'Outcome' not in win_loss_df.columns:
-        return None # Return nothing if there's no data to plot
+
+    # Check if the input is NOT a DataFrame or if the DataFrame is empty
+    if not isinstance(win_loss_df, pd.DataFrame) or win_loss_df.empty:
+        return None # Return nothing if it's the wrong type or has no data
+       
 
     # Count wins and losses
     counts = win_loss_df['Outcome'].value_counts().reset_index()
