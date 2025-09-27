@@ -3757,6 +3757,10 @@ with tabs[1]:
 
 #----------------END OF TAB[1]-----------------------------------------------------------
 
+
+
+
+
 with tabs[2]:
     st.header("Player Profile")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
@@ -3927,13 +3931,11 @@ with tabs[2]:
 
     # --- Player Insights ---
     rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
-
     if players:
         display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
     else:
         st.info("No players available for insights. Please add players above.")
 
-    # --- Debugging Output ---
     st.markdown("---")
     st.header("Explanation of Badges : ")
 
@@ -3953,13 +3955,6 @@ with tabs[2]:
     st.markdown("---")
     st.header("Detailed explanation of Player insights")
     st.markdown("https://github.com/mahadevbk/ar2/blob/main/Player%20insights.pdf")
-
-
-
-
-
-
-
 
 
 
@@ -4050,6 +4045,10 @@ with tabs[3]:
 
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
+
+
+
+
 
 
 with tabs[4]:
@@ -4590,6 +4589,11 @@ with tabs[4]:
                                 st.rerun()
     st.markdown("---")
     st.markdown("Odds Calculation Logic process uploaded at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
+
+
+
+
+
 
 
 
