@@ -1175,29 +1175,39 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
             
             st.markdown("##### Win/Loss")
             try:
-                # Create a DataFrame for win/loss data
                 win_loss_data = pd.DataFrame({
                     'Outcome': ['Win', 'Loss'],
                     'Count': [int(player_data['Wins']), int(player_data['Losses'])]
                 })
-                win_loss_chart = create_player_chart(win_loss_data, player, chart_type="win_loss")  # Fixed: Pass DataFrame and player_name
+                win_loss_chart = create_player_chart(win_loss_data, player, chart_type="win_loss")
                 if win_loss_chart:
                     st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
                 else:
                     st.info("No win/loss data available for chart.", key=f"{key_prefix}_win_loss_info_{player}")
             except Exception as e:
-                st.error(f"Unable to generate win/loss chart for {player}: {str(e)}", key=f"{key_prefix}_win_loss_error_{player}")
+                st.error(f"Unable to generate win/loss chart for {player}: {str(e)}")  # Removed key parameter
             
             st.markdown("##### Trend")
             try:
-                trend_chart = create_player_chart(player_data['Recent'], player, chart_type="trend")  # Explicitly set chart_type
+                # Convert Recent Trend string (e.g., "W L T") to DataFrame
+                trend_str = player_data.get('Recent Trend', 'No recent matches')
+                if trend_str and trend_str != 'No recent matches':
+                    outcomes = trend_str.split()
+                    outcome_counts = pd.Series(outcomes).value_counts()
+                    trend_data = pd.DataFrame({
+                        'Outcome': outcome_counts.index,
+                        'Count': outcome_counts.values
+                    })
+                else:
+                    trend_data = pd.DataFrame({'Outcome': [], 'Count': []})
+                trend_chart = create_player_chart(trend_data, player, chart_type="trend")
                 if trend_chart:
                     st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
-                    st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
+                    st.markdown(f"<div style='text-align: center;'>{trend_str}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
                 else:
                     st.info("No trend data available for chart.", key=f"{key_prefix}_trend_info_{player}")
             except Exception as e:
-                st.error(f"Unable to generate trend chart for {player}: {str(e)}", key=f"{key_prefix}_trend_error_{player}")
+                st.error(f"Unable to generate trend chart for {player}: {str(e)}")  # Removed key parameter
         
         with col2:
             st.markdown(f"""
@@ -1230,8 +1240,6 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
             st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
-
-
 
 
 
