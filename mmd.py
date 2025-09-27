@@ -1103,16 +1103,16 @@ def create_trend_chart(trend):
 
 
 
-def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix="insights"):
+def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_combined, key_prefix="insights"):
     st.subheader("Player Insights")
     
     # Filter matches for doubles and singles
     doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles']
     singles_matches_df = matches_df[matches_df['match_type'] == 'Singles']
     
-    # Calculate rankings with players_df
-    doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
-    singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
+    # Use provided rank_df_combined or calculate rankings if needed
+    doubles_rank_df, _ = calculate_rankings(doubles_matches_df, players_df)
+    singles_rank_df, _ = calculate_rankings(singles_matches_df, players_df)
     
     # CSS for tooltips
     st.markdown("""
@@ -1147,10 +1147,12 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
     
     for player in players:
         player_data = None
-        if player in rank_df_doubles['Player'].values:
-            player_data = rank_df_doubles[rank_df_doubles['Player'] == player].iloc[0]
-        elif player in rank_df_singles['Player'].values:
-            player_data = rank_df_singles[rank_df_singles['Player'] == player].iloc[0]
+        if player in rank_df_combined['Player'].values:
+            player_data = rank_df_combined[rank_df_combined['Player'] == player].iloc[0]
+        elif player in doubles_rank_df['Player'].values:
+            player_data = doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0]
+        elif player in singles_rank_df['Player'].values:
+            player_data = singles_rank_df[singles_rank_df['Player'] == player].iloc[0]
         
         if player_data is None:
             st.warning(f"No ranking data available for {player}", key=f"{key_prefix}_warning_{player}")
@@ -1199,16 +1201,14 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
                     st.markdown(f"<ul>{''.join(partner_items)}</ul>", unsafe_allow_html=True, key=f"{key_prefix}_partner_stats_{player}")
     
     # Display combined rankings table if available
-    if not rank_df_doubles.empty or not rank_df_singles.empty:
+    if not rank_df_combined.empty:
         st.markdown("### Rankings Overview")
-        if not rank_df_doubles.empty:
+        if not doubles_rank_df.empty:
             st.markdown("#### Doubles Rankings")
-            st.dataframe(rank_df_doubles, key=f"{key_prefix}_doubles_rankings")
-        if not rank_df_singles.empty:
+            st.dataframe(doubles_rank_df, key=f"{key_prefix}_doubles_rankings")
+        if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
-            st.dataframe(rank_df_singles, key=f"{key_prefix}_singles_rankings")
-
-
+            st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
 
 
 
