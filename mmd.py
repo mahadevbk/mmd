@@ -521,7 +521,8 @@ def load_matches():
         
         # Normalize dates to tz-naive
         if 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
+            #df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
+            df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S', utc=True, errors='coerce').dt.tz_localize(None)
         
         # Sort matches by date descending (latest first)
         df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
@@ -535,7 +536,8 @@ def save_matches(df):
     try:
         df_to_save = df.copy()
         if 'date' in df_to_save.columns:
-            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
+            #df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
+            df_to_save['date'] = pd.to_datetime(df_to_save['date'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
             df_to_save['date'] = df_to_save['date'].dt.tz_localize(None)
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -681,7 +683,8 @@ def generate_match_id(matches_df, match_datetime):
     year = match_datetime.year
     quarter = get_quarter(match_datetime.month)
     if not matches_df.empty and 'date' in matches_df.columns:
-        matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
+        #matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
+        matches_df['date'] = pd.to_datetime(matches_df['date'], format='%Y-%m-%d %H:%M:%S', utc=True, errors='coerce').dt.tz_localize(None)
         filtered_matches = matches_df[
             (matches_df['date'].dt.year == year) &
             (matches_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
