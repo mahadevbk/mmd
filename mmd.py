@@ -1100,9 +1100,6 @@ def create_trend_chart(trend):
 
 
 
-
-
-
 def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_combined, key_prefix="insights"):
     st.subheader("Player Insights")
     
@@ -1173,7 +1170,7 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         with col1:
             profile_image = players_df.loc[players_df['name'] == player, 'profile_image_url'].iloc[0] if player in players_df['name'].values else ""
             if profile_image:
-                st.image(profile_image, width=150, key=f"{key_prefix}_image_{player}")
+                st.image(profile_image, width=150)  # Removed key parameter
             
             st.markdown("##### Win/Loss")
             win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
@@ -1217,6 +1214,10 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
             st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
+
+
+
+
 
 
 
