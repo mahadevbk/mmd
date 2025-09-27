@@ -739,6 +739,9 @@ def calculate_rankings(matches_to_rank):
     clutch_matches = defaultdict(int)
     game_diffs = defaultdict(list)
 
+    # Get players dataframe for gender information
+    players_df = st.session_state.players_df
+
     for idx, row in matches_to_rank.iterrows():
         match_type = row['match_type']
 
@@ -751,6 +754,17 @@ def calculate_rankings(matches_to_rank):
 
         match_gd_sum = 0
         is_clutch_match = False
+
+        # Check if the match is a mixed doubles game
+        is_mixed_doubles = False
+        if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
+            # Get genders for team1 and team2 players
+            t1_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t1]
+            t2_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t2]
+            
+            # Check if both teams have one 'M' and one 'F'
+            if (sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
+                is_mixed_doubles = True
 
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if not set_score or ('-' not in str(set_score) and 'Tie Break' not in str(set_score)):
@@ -795,7 +809,8 @@ def calculate_rankings(matches_to_rank):
         # --- results ---
         if row["winner"] == "Team 1":
             for p in t1:
-                scores[p] += 3
+                # Award 3 points for winners in mixed doubles, 2 points otherwise
+                scores[p] += 3 if is_mixed_doubles else 2
                 wins[p] += 1
                 matches_played[p] += 1
                 if is_clutch_match:
@@ -806,6 +821,7 @@ def calculate_rankings(matches_to_rank):
                 else:
                     singles_matches[p] += 1
             for p in t2:
+                # Losers always get 1 point
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
@@ -817,7 +833,8 @@ def calculate_rankings(matches_to_rank):
                     singles_matches[p] += 1
         elif row["winner"] == "Team 2":
             for p in t2:
-                scores[p] += 3
+                # Award 3 points for winners in mixed doubles, 2 points otherwise
+                scores[p] += 3 if is_mixed_doubles else 2
                 wins[p] += 1
                 matches_played[p] += 1
                 if is_clutch_match:
@@ -828,6 +845,7 @@ def calculate_rankings(matches_to_rank):
                 else:
                     singles_matches[p] += 1
             for p in t1:
+                # Losers always get 1 point
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
@@ -839,7 +857,8 @@ def calculate_rankings(matches_to_rank):
                     singles_matches[p] += 1
         elif row["winner"] == "Tie":
             for p in t1 + t2:
-                scores[p] += 1
+                # All players get 1.5 points for a tie
+                scores[p] += 1.5
                 matches_played[p] += 1
                 if is_clutch_match:
                     clutch_matches[p] += 1
@@ -875,7 +894,6 @@ def calculate_rankings(matches_to_rank):
 
     # --- build rank dataframe ---
     rank_data = []
-    players_df = st.session_state.players_df
     for player in scores:
         if player == "Visitor":
             continue
@@ -957,8 +975,6 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
-
-
 
 
 
