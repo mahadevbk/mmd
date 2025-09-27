@@ -2660,6 +2660,14 @@ with tabs[0]:
     singles_matches_df = matches[matches['match_type'] == 'Singles'].copy()
     rank_df_doubles, _ = calculate_rankings(doubles_matches_df)
     rank_df_singles, _ = calculate_rankings(singles_matches_df)
+
+    rank_df_combined, partner_stats = calculate_rankings(matches_df, st.session_state.players_df)
+    rank_df_doubles, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+    rank_df_singles, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
+
+
+
+    
     # --------------------------------------------------------------------
 
     # Helper function to generate a single player card
