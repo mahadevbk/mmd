@@ -3848,6 +3848,7 @@ with tabs[2]:
 
     # --- Player Insights ---
     rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
+
     if players:
         display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
     else:
@@ -3972,8 +3973,6 @@ with tabs[3]:
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
 
-
-
 with tabs[4]:
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
@@ -3990,7 +3989,8 @@ with tabs[4]:
                 st.subheader("Match Odds")
                 players = [t1p1, t1p2, t2p1, t2p2]
                 doubles_rank_df, _ = calculate_rankings(
-                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"]
+                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"],
+                    st.session_state.players_df
                 )
                 if all(p in doubles_rank_df["Player"].values for p in players if p):
                     pairing_text, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
@@ -4009,7 +4009,8 @@ with tabs[4]:
                 st.subheader("Match Odds")
                 if p1 and p2:
                     singles_rank_df, _ = calculate_rankings(
-                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"]
+                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"],
+                        st.session_state.players_df
                     )
                     if p1 in singles_rank_df["Player"].values and p2 in singles_rank_df["Player"].values:
                         odds1, odds2 = suggest_singles_odds([p1, p2], singles_rank_df)
@@ -4101,7 +4102,6 @@ with tabs[4]:
                             st.error(f"Failed to save booking: {str(e)}")
                             st.rerun()  
 
-
     st.markdown("---")
     st.subheader("📅 Upcoming Bookings")
     bookings_df = st.session_state.bookings_df.copy()
@@ -4123,9 +4123,6 @@ with tabs[4]:
             format='%Y-%m-%d %H:%M:%S'
         ).dt.tz_localize('Asia/Dubai')
         
-        # Debug: Display datetime values
-        # st.write("Debug - Bookings datetime:", bookings_df[['booking_id', 'date', 'time', 'datetime']])
-        
         upcoming_bookings = bookings_df[
             (bookings_df['datetime'].notna()) & 
             (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
@@ -4137,8 +4134,8 @@ with tabs[4]:
             try:
                 doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
                 singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
-                doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
-                singles_rank_df, _ = calculate_rankings(singles_matches_df)
+                doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+                singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
             except Exception as e:
                 doubles_rank_df = pd.DataFrame()
                 singles_rank_df = pd.DataFrame()
@@ -4353,8 +4350,6 @@ with tabs[4]:
     
     st.markdown("---")
     
-    
-    
     st.subheader("✏️ Manage Existing Booking")
     if 'edit_booking_key' not in st.session_state:
         st.session_state.edit_booking_key = 0
@@ -4516,6 +4511,11 @@ with tabs[4]:
                                 st.rerun()
     st.markdown("---")
     st.markdown("Odds Calculation Logic process uploaded at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
+
+
+
+
+
 
 
 
