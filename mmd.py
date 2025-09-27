@@ -750,8 +750,6 @@ def get_player_trend(player, matches, max_matches=5):
 #------------------- Update the display_player_insights  and calculate rankings function --------------------------------
 
 
-
-
 def calculate_rankings(matches_to_rank, players_df):
     scores = defaultdict(float)
     wins = defaultdict(int)
@@ -762,15 +760,12 @@ def calculate_rankings(matches_to_rank, players_df):
     games_won = defaultdict(int)
     cumulative_game_diff = defaultdict(int)
     partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
-
-    # --- NEW: clutch + consistency tracking ---
     clutch_wins = defaultdict(int)
     clutch_matches = defaultdict(int)
     game_diffs = defaultdict(list)
 
     for idx, row in matches_to_rank.iterrows():
         match_type = row['match_type']
-
         if match_type == 'Doubles':
             t1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
             t2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
@@ -784,27 +779,22 @@ def calculate_rankings(matches_to_rank, players_df):
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if not set_score or ('-' not in str(set_score) and 'Tie Break' not in str(set_score)):
                 continue
-
             try:
                 team1_games, team2_games = 0, 0
                 is_tie_break = "Tie Break" in str(set_score)
-
                 if is_tie_break:
                     is_clutch_match = True
                     tie_break_scores = [int(s) for s in re.findall(r'\d+', str(set_score))]
                     if len(tie_break_scores) != 2:
                         continue
                     team1_games, team2_games = tie_break_scores
-                    # Normalize tie-break games for consistency
                     team1_games = 7 if team1_games > team2_games else 6
                     team2_games = 6 if team1_games > team2_games else 7
                 else:
                     team1_games, team2_games = map(int, str(set_score).split('-'))
-
                 team1_set_diff = team1_games - team2_games
                 team2_set_diff = team2_games - team1_games
                 match_gd_sum += team1_set_diff
-
                 for p in t1:
                     games_won[p] += team1_games
                     cumulative_game_diff[p] += team1_set_diff
@@ -813,7 +803,6 @@ def calculate_rankings(matches_to_rank, players_df):
                     games_won[p] += team2_games
                     cumulative_game_diff[p] += team2_set_diff
                     game_diffs[p].append(team2_set_diff)
-
             except (ValueError, TypeError) as e:
                 st.warning(f"Skipping invalid set score {set_score} in match {row.get('match_id', 'unknown')}: {str(e)}")
                 continue
@@ -821,7 +810,6 @@ def calculate_rankings(matches_to_rank, players_df):
         if row['set3'] and str(row['set3']).strip():
             is_clutch_match = True
 
-        # Determine if this is a pure mixed doubles match (M&F vs M&F)
         is_pure_mixed = False
         if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
             team1_genders = set()
@@ -837,10 +825,8 @@ def calculate_rankings(matches_to_rank, players_df):
             if team1_genders == {'M', 'F'} and team2_genders == {'M', 'F'}:
                 is_pure_mixed = True
 
-        # Set win points based on match type
         win_points = 3 if is_pure_mixed else 2
 
-        # --- results ---
         if row["winner"] == "Team 1":
             for p in t1:
                 scores[p] += win_points
@@ -896,7 +882,6 @@ def calculate_rankings(matches_to_rank, players_df):
                 else:
                     singles_matches[p] += 1
 
-        # partner stats
         if match_type == 'Doubles':
             for p1 in t1:
                 for p2 in t1:
@@ -921,7 +906,6 @@ def calculate_rankings(matches_to_rank, players_df):
                         else:
                             partner_stats[p1][p2]['ties'] += 1
 
-    # --- build rank dataframe ---
     rank_data = []
     for player in scores:
         if player == "Visitor":
@@ -930,11 +914,9 @@ def calculate_rankings(matches_to_rank, players_df):
         game_diff_avg = cumulative_game_diff[player] / matches_played[player] if matches_played[player] > 0 else 0
         profile_image = players_df.loc[players_df["name"] == player, "profile_image_url"].iloc[0] if player in players_df["name"].values else ""
         player_trend = get_player_trend(player, matches_to_rank)
-
         clutch_factor = (clutch_wins[player] / clutch_matches[player] * 100) if clutch_matches[player] > 0 else 0
         consistency_index = np.std(game_diffs[player]) if game_diffs[player] else 0
 
-        # --- BADGES ---
         badges = []
         if clutch_factor > 70 and clutch_matches[player] >= 3:
             badges.append("🎯 Tie-break Monster")
@@ -945,7 +927,6 @@ def calculate_rankings(matches_to_rank, players_df):
         if matches_played[player] == max(matches_played.values()):
             badges.append("💪 Ironman")
 
-        # NEW: Comeback Kid
         player_matches = matches_to_rank[
             (matches_to_rank['team1_player1'] == player) |
             (matches_to_rank['team1_player2'] == player) |
@@ -968,7 +949,6 @@ def calculate_rankings(matches_to_rank, players_df):
         if comeback_wins >= 3:
             badges.append("🔄 Comeback Kid")
 
-        # NEW: Most Improved (last 10 vs career)
         recent_matches = player_matches.sort_values(by="date", ascending=False).head(10)
         recent_wins = 0
         for _, r in recent_matches.iterrows():
@@ -979,7 +959,6 @@ def calculate_rankings(matches_to_rank, players_df):
         if recent_win_rate - win_percentage >= 20:
             badges.append("🚀 Most Improved")
 
-        # NEW: Game Hog
         if games_won[player] == max(games_won.values()):
             badges.append("🥇 Game Hog")
 
@@ -1004,6 +983,11 @@ def calculate_rankings(matches_to_rank, players_df):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
+
+
+
+
+
 
 
 
