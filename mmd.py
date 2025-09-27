@@ -1106,273 +1106,110 @@ def create_trend_chart(trend):
 
 
 
-def display_player_insights(selected_players, players_df, matches_df, rank_df, partner_stats, key_prefix=""):
-    # This check is crucial for new projects
-    if rank_df.empty:
-        st.info("No ranking data is available to display player insights.")
-        return  
-    if isinstance(selected_players, str):
-        selected_players = [selected_players] if selected_players else []
-    selected_players = [p for p in selected_players if p != "Visitor"]
-    if not selected_players:
-        st.info("No players selected or available for insights.")
-        return
-
-    # --- Birthday View ---
-    view_option = st.radio("Select View", ["Player Insights", "Birthdays"], horizontal=True, key=f"{key_prefix}view_selector")
-    if view_option == "Birthdays":
-        birthday_data = []
-        for player in selected_players:
-            player_info = players_df[players_df["name"] == player].iloc[0] if player in players_df["name"].values else None
-            if player_info is None:
-                continue
-            birthday = player_info.get("birthday", "")
-            profile_image = player_info.get("profile_image_url", "")
-            if birthday and re.match(r'^\d{2}-\d{2}$', birthday):
-                try:
-                    day, month = map(int, birthday.split("-"))
-                    # Use non-leap year (2001) to avoid Feb 29 ambiguity
-                    birthday_dt = datetime(year=2001, month=month, day=day)
-                    birthday_data.append({
-                        "Player": player,
-                        "Birthday": birthday_dt.strftime("%b %d"),
-                        "SortDate": birthday_dt,
-                        "Profile": profile_image
-                    })
-                except ValueError:
-                    continue  # Skip invalid dates like Feb 29
-        if not birthday_data:
-            st.info("No valid birthday data available for selected players.")
-            return
-        birthday_df = pd.DataFrame(birthday_data).sort_values(by="SortDate").reset_index(drop=True)
-        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-        for _, row in birthday_df.iterrows():
-            profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-            st.markdown(f"""
-            <div class="ranking-row">
-                <div class="rank-profile-player-group">
-                    <div class="profile-col">{profile_html}</div>
-                    <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
-                </div>
-                <div class="birthday-col"><span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span></div>
-            </div>""", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        return
-
-    # --- Player Insights View ---
-    active_players = [
-        p for p in selected_players
-        if p in rank_df["Player"].values and rank_df[rank_df["Player"] == p].iloc[0]["Matches"] > 0
-    ]
-    if not active_players:
-        st.info("No players with matches played are available for insights.")
-        return
-
+def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles):
+    st.subheader("Player Insights")
+    
+    # Filter matches for doubles and singles
     doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles']
     singles_matches_df = matches_df[matches_df['match_type'] == 'Singles']
-    doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
-    singles_rank_df, _ = calculate_rankings(singles_matches_df)
-
+    
+    # Calculate rankings with players_df
+    doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+    singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
+    
     # CSS for tooltips
-    tooltip_css = """
+    st.markdown("""
     <style>
-    .badge-container {
+    .tooltip {
         position: relative;
         display: inline-block;
-        margin-right: 4px;
+        cursor: pointer;
     }
-    .badge-tooltip {
+    .tooltip .tooltiptext {
         visibility: hidden;
-        width: 200px;
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #031827;
+        width: 220px;
+        background-color: #555;
+        color: #fff;
         text-align: center;
         border-radius: 6px;
-        padding: 8px;
+        padding: 5px;
         position: absolute;
         z-index: 1;
         bottom: 125%;
         left: 50%;
-        transform: translateX(-50%);
+        margin-left: -110px;
         opacity: 0;
         transition: opacity 0.3s;
-        font-size: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    .badge-container:hover .badge-tooltip {
+    .tooltip:hover .tooltiptext {
         visibility: visible;
         opacity: 1;
     }
-    @media (max-width: 600px) {
-        .badge-tooltip {
-            width: 150px;
-            font-size: 10px;
-        }
-    }
     </style>
-    """
-    st.markdown(tooltip_css, unsafe_allow_html=True)
-
-    for idx, player in enumerate(sorted(active_players)):
-        player_info = players_df[players_df["name"] == player].iloc[0]
-        player_data = rank_df[rank_df["Player"] == player].iloc[0]
-
-        # --- Data Calculation & Formatting ---
-        profile_image = player_info.get("profile_image_url", "")
-        wins, losses = int(player_data["Wins"]), int(player_data["Losses"])
-        trend = get_player_trend(player, matches_df)
-
-        # --- FIXED: Performance Score Calculation with Empty DF Safety ---
-        doubles_perf_score = 0.0
-        if not doubles_rank_df.empty and 'Player' in doubles_rank_df.columns and player in doubles_rank_df['Player'].values:
-            doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df)
+    """, unsafe_allow_html=True)
+    
+    for player in players:
+        player_data = None
+        if player in rank_df_doubles['Player'].values:
+            player_data = rank_df_doubles[rank_df_doubles['Player'] == player].iloc[0]
+        elif player in rank_df_singles['Player'].values:
+            player_data = rank_df_singles[rank_df_singles['Player'] == player].iloc[0]
         
-        singles_perf_score = 0.0
-        if not singles_rank_df.empty and 'Player' in singles_rank_df.columns and player in singles_rank_df['Player'].values:
-            singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df)
-        # --- END FIXED ---
-
-        rank_value = player_data['Rank']
-        rank_display = re.sub(r'[^0-9]', '', str(rank_value))
-
-        birthday_str = ""
-        raw_birthday = player_info.get("birthday")
-        if raw_birthday and isinstance(raw_birthday, str) and re.match(r'^\d{2}-\d{2}$', raw_birthday):
-            try:
-                day, month = map(int, raw_birthday.split("-"))
-                # Use non-leap year (2001) to avoid Feb 29 ambiguity
-                bday_obj = datetime(year=2001, month=month, day=day)
-                birthday_str = bday_obj.strftime("%d %b")
-            except ValueError:
-                birthday_str = ""
-
-        # --- Partner Calculation Logic (Full History) ---
-        partners_list_str = "No doubles matches played."
-        best_partner_str = "N/A"
-        if player in partner_stats and partner_stats[player]:
-            partners_list_items = [
-                f'<li><b>{p}</b>: {item["wins"]}W - {item["losses"]}L ({item["matches"]} played)</li>'
-                for p, item in partner_stats[player].items() if p != "Visitor"
-            ]
-            partners_list_str = f"<ul>{''.join(partners_list_items)}</ul>"
-
-            sorted_partners = sorted(
-                [(p, item) for p, item in partner_stats[player].items() if p != "Visitor"],
-                key=lambda item: (
-                    item[1]['wins'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
-                    item[1]['game_diff_sum'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
-                    item[1]['wins']
-                ),
-                reverse=True
-            )
-            if sorted_partners:
-                best_partner_name = sorted_partners[0][0]
-                best_stats = sorted_partners[0][1]
-                best_win_percent = (best_stats['wins'] / best_stats['matches'] * 100) if best_stats['matches'] > 0 else 0
-                best_partner_str = f"{best_partner_name} ({best_win_percent:.1f}% Win Rate)"
-
-        # --- Badges HTML with Hover Tooltips ---
-        badge_explanations = {
-            "🎯 Tie-break Monster": "Dominates tie-breaks with the most wins (clutch factor >70% in 3+ clutch matches)",
-            "🔥 Hot Streak": "Achieved a winning streak of 5 or more matches",
-            "📈 Consistent Performer": "Reliable performance with low variation in game differences (consistency index <2 over 5+ matches)",
-            "💪 Ironman": "Played the most matches without missing a session",
-            "🔄 Comeback Kid": "Won 3 or more matches after losing the first set",
-            "🚀 Most Improved": "Recent win rate (last 10 matches) is 20%+ higher than overall career win rate",
-            "🥇 Game Hog": "Won the highest total number of games across all matches"
-        }
-        badges = player_data["Badges"]
-        badges_html = ""
-        if badges:
-            badges_html = (
-                "<span class='badges-col' style='display: block; margin-top: 6px;'>"
-                "<span style='font-weight:bold; color:#bbbbbb;'>Badges: </span><br>"
-                + " ".join([
-                    f"<span class='badge-container'>"
-                    f"<span style='background:#fff500; color:#031827; padding:2px 6px; border-radius:6px;'>{b}</span>"
-                    f"<span class='badge-tooltip'>{badge_explanations.get(b, 'No description available')}</span>"
-                    f"</span>"
-                    for b in badges
-                ])
-                + "</span>"
-            )
-
-        # --- Unique key to avoid StreamlitDuplicateElementKey ---
-        unique_id = f"{key_prefix}_{idx}"
-
-        # --- Updated Card Layout ---
-        st.markdown("---")
-
-        header_html = f"""
-        <div style="margin-bottom: 15px;">
-            <h2 style="color: #fff500; margin-bottom: 5px; font-size: 2.0em; font-weight: bold;">{player}</h2>
-            <span style="font-weight: bold; color: #bbbbbb; font-size: 1.1em;">
-                Rank: <span style="color: #fff500;">#{rank_display}</span>
-            </span>
-            {f' | <span style="font-weight:bold; color:#bbbbbb; font-size: 1.1em;">🎂 Birthday: <span style="color: #fff500;">{birthday_str}</span></span>' if birthday_str else ''}
-        </div>
-        """
-        st.markdown(header_html, unsafe_allow_html=True)
-
+        if player_data is None:
+            st.warning(f"No ranking data available for {player}")
+            continue
+        
+        st.markdown(f"### {player}")
+        
+        # Display player stats
         col1, col2 = st.columns([1, 2])
-
-        with col1:  # Left column for visuals
+        with col1:
+            profile_image = players_df.loc[players_df['name'] == player, 'profile_image_url'].iloc[0] if player in players_df['name'].values else ""
             if profile_image:
                 st.image(profile_image, width=150)
-
+            
             st.markdown("##### Win/Loss")
-            win_loss_chart = create_win_loss_donut(wins, losses)
+            win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
             if win_loss_chart:
-                #st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{unique_id}_win_loss")
-                st.plotly_chart(win_loss_chart, config={"responsive": True}, key=f"{unique_id}_win_loss")
-
-            st.markdown("##### Recent Trend")
-            trend_chart = create_trend_chart(trend)
+                st.plotly_chart(win_loss_chart, use_container_width=True, key=f"win_loss_{player}")
+            
+            st.markdown("##### Trend")
+            trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
             if trend_chart:
-                #st.plotly_chart(trend_chart, use_container_width=True, key=f"{unique_id}_trend")
-                st.plotly_chart(trend_chart, config={"responsive": True}, key=f"{unique_id}_trend")
-            else:
-                st.markdown("No recent matches")
-
-            st.markdown(f"<div class='trend-col'>{trend}</div>", unsafe_allow_html=True)
-
-        with col2:  # Right column for stats
-            m_col1, m_col2, m_col3 = st.columns(3)
-            m_col1.metric("Points", f"{player_data['Points']:.1f}")
-            m_col2.metric("Win Rate", f"{player_data['Win %']:.1f}%")
-            m_col3.metric("Matches", f"{int(player_data['Matches'])}")
-
-            clutch_factor = player_data["Clutch Factor"]
-            consistency_index = player_data["Consistency Index"]
-
+                st.plotly_chart(trend_chart, use_container_width=True, key=f"trend_{player}")
+                st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True)
+        
+        with col2:
             st.markdown(f"""
-            <div style="line-height: 2;">
-                <span class="games-won-col" style="display: block;">{int(player_data['Games Won'])}</span>
-                <span class="game-diff-avg-col" style="display: block;">{player_data['Game Diff Avg']:.2f}</span>
-                <span class="cumulative-game-diff-col" style="display: block;">{int(player_data['Cumulative Game Diff'])}</span>
-                <span class="performance-score-col" style="display: block;">
-                    <span style='font-weight:bold; color:#bbbbbb;'>Performance Score: </span>
-                    <span style='font-weight:bold; color:#fff500;'>Doubles: {doubles_perf_score:.1f} ({int(player_data["Doubles Matches"])}), Singles: {singles_perf_score:.1f} ({int(player_data["Singles Matches"])})</span>
-                </span>
-                <span class="clutch-col" style="display: block;">
-                    <span style='font-weight:bold; color:#bbbbbb;'>Clutch Factor: </span>
-                    <span style='font-weight:bold; color:#fff500;'>{clutch_factor:.1f}%</span>
-                </span>
-                <span class="consistency-col" style="display: block;">
-                    <span style='font-weight:bold; color:#bbbbbb;'>Consistency Index: </span>
-                    <span style='font-weight:bold; color:#fff500;'>{consistency_index:.2f}</span>
-                </span>
-                <span class="best-partner-col" style="display: block;">
-                    <span style='font-weight:bold; color:#bbbbbb;'>Most Effective Partner (All Time): </span>{best_partner_str}
-                </span>
-                {badges_html}
+            <div style='line-height: 2;'>
+                <span><b>Points:</b> {player_data['Points']:.1f}</span><br>
+                <span><b>Win Rate:</b> {player_data['Win %']:.1f}%</span><br>
+                <span><b>Matches:</b> {int(player_data['Matches'])}</span><br>
+                <span><b>Games Won:</b> {int(player_data['Games Won'])}</span><br>
+                <span><b>Game Diff Avg:</b> {player_data['Game Diff Avg']:.2f}</span><br>
+                <span><b>Clutch Factor:</b> {player_data['Clutch Factor']:.1f}%</span><br>
+                <span><b>Consistency Index:</b> {player_data['Consistency Index']:.2f}</span><br>
             </div>
             """, unsafe_allow_html=True)
-
-            with st.expander("View Partner Stats", expanded=False, icon="➡️"):
-                st.markdown(partners_list_str, unsafe_allow_html=True)
-
-
+            
+            # Partner stats for doubles
+            if player in partner_stats and partner_stats[player]:
+                with st.expander(f"{player}'s Partner Stats", expanded=False):
+                    partner_items = [
+                        f"<li><b>{p}</b>: {item['wins']}W - {item['losses']}L ({item['matches']} played, Game Diff Sum: {item['game_diff_sum']:.1f})</li>"
+                        for p, item in partner_stats[player].items() if p != "Visitor"
+                    ]
+                    st.markdown(f"<ul>{''.join(partner_items)}</ul>", unsafe_allow_html=True)
+    
+    # Display combined rankings table if available
+    if not rank_df_doubles.empty or not rank_df_singles.empty:
+        st.markdown("### Rankings Overview")
+        if not rank_df_doubles.empty:
+            st.markdown("#### Doubles Rankings")
+            st.dataframe(rank_df_doubles)
+        if not rank_df_singles.empty:
+            st.markdown("#### Singles Rankings")
+            st.dataframe(rank_df_singles)
 
 
 
