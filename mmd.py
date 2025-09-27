@@ -1007,6 +1007,57 @@ def calculate_rankings(matches_to_rank, players_df):
 
 
 
+#----------GET PLAYER TREND ( NEW FUNCTION) ----------------------------
+
+
+def get_player_trend(player, matches, max_matches=5):
+    if not player or player == "Visitor":
+        return "No recent matches"
+    
+    # Filter matches for the player
+    player_matches = matches[
+        (matches['team1_player1'] == player) |
+        (matches['team1_player2'] == player) |
+        (matches['team2_player1'] == player) |
+        (matches['team2_player2'] == player)
+    ].copy()
+    
+    if player_matches.empty:
+        return "No recent matches"
+    
+    # Convert dates to tz-naive and sort
+    try:
+        player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce', utc=True).dt.tz_localize(None)
+        player_matches = player_matches.dropna(subset=['date']).sort_values(by='date', ascending=False)
+    except Exception as e:
+        st.warning(f"Error processing dates for {player}'s matches: {str(e)}")
+        return "No recent matches"
+    
+    # Take the most recent matches
+    player_matches = player_matches.head(max_matches)
+    
+    trend = []
+    for _, row in player_matches.iterrows():
+        if pd.isna(row['winner']) or row['winner'] not in ['Team 1', 'Team 2', 'Tie']:
+            continue  # Skip invalid winner values
+        if row['match_type'] == 'Doubles':
+            team1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
+            team2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
+        else:
+            team1 = [p for p in [row['team1_player1']] if p and p != "Visitor"]
+            team2 = [p for p in [row['team2_player1']] if p and p != "Visitor"]
+        
+        if row['winner'] == 'Tie':
+            trend.append('T')
+        elif (player in team1 and row['winner'] == 'Team 1') or (player in team2 and row['winner'] == 'Team 2'):
+            trend.append('W')
+        else:
+            trend.append('L')
+    
+    return ' '.join(trend) if trend else 'No recent matches'
+
+
+
 
 
 
