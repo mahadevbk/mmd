@@ -701,28 +701,49 @@ def generate_match_id(matches_df, match_datetime):
     return new_id
 
 def get_player_trend(player, matches, max_matches=5):
+    if not player or player == "Visitor":
+        return "No recent matches"
+    
+    # Filter matches for the player
     player_matches = matches[
         (matches['team1_player1'] == player) |
         (matches['team1_player2'] == player) |
         (matches['team2_player1'] == player) |
         (matches['team2_player2'] == player)
     ].copy()
-    player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce')
-    player_matches = player_matches.sort_values(by='date', ascending=False)
+    
+    if player_matches.empty:
+        return "No recent matches"
+    
+    # Convert dates to tz-naive and sort
+    try:
+        player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce', utc=True).dt.tz_localize(None)
+        player_matches = player_matches.dropna(subset=['date']).sort_values(by='date', ascending=False)
+    except Exception as e:
+        st.warning(f"Error processing dates for {player}'s matches: {str(e)}")
+        return "No recent matches"
+    
+    # Take the most recent matches
+    player_matches = player_matches.head(max_matches)
+    
     trend = []
-    for _, row in player_matches.head(max_matches).iterrows():
+    for _, row in player_matches.iterrows():
+        if pd.isna(row['winner']) or row['winner'] not in ['Team 1', 'Team 2', 'Tie']:
+            continue  # Skip invalid winner values
         if row['match_type'] == 'Doubles':
-            team1 = [row['team1_player1'], row['team1_player2']]
-            team2 = [row['team2_player1'], row['team2_player2']]
+            team1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
+            team2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
         else:
-            team1 = [row['team1_player1']]
-            team2 = [row['team2_player1']]
-        if player in team1 and row['winner'] == 'Team 1':
+            team1 = [p for p in [row['team1_player1']] if p and p != "Visitor"]
+            team2 = [p for p in [row['team2_player1']] if p and p != "Visitor"]
+        
+        if row['winner'] == 'Tie':
+            trend.append('T')
+        elif (player in team1 and row['winner'] == 'Team 1') or (player in team2 and row['winner'] == 'Team 2'):
             trend.append('W')
-        elif player in team2 and row['winner'] == 'Team 2':
-            trend.append('W')
-        elif row['winner'] != 'Tie':
+        else:
             trend.append('L')
+    
     return ' '.join(trend) if trend else 'No recent matches'
 
 #------------------- Update the display_player_insights  and calculate rankings function --------------------------------
@@ -982,8 +1003,6 @@ def calculate_rankings(matches_to_rank, players_df):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
-
-
 
 
 
@@ -2534,6 +2553,7 @@ todays_birthdays = check_birthdays(st.session_state.players_df)
 if todays_birthdays:
     display_birthday_message(todays_birthdays)
 
+available_players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"])
 
 court_names = [
     "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
