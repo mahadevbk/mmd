@@ -520,18 +520,16 @@ def load_matches():
             if col not in df.columns:
                 df[col] = ""
         
-        # Normalize dates to tz-naive
+        # Flexible parsing for timestamptz (handles 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SSZ')
         if 'date' in df.columns:
-            #df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
-            df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S', utc=True, errors='coerce').dt.tz_localize(None)
+            df['date'] = pd.to_datetime(df['date'], errors='coerce', utc=True).dt.tz_localize(None)
         
-        # Sort matches by date descending (latest first)
-        df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+        # Sort matches by date descending, with NaT at the end
+        df = df.sort_values(by='date', ascending=False, na_position='last').reset_index(drop=True)
         
         st.session_state.matches_df = df
     except Exception as e:
         st.error(f"Error loading matches: {str(e)}")
-
 
 def save_matches(df):
     try:
