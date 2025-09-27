@@ -2656,10 +2656,12 @@ with tabs[0]:
 
     # --- PRE-CALCULATE ALL RANKING DATAFRAMES FOR PERFORMANCE SCORES ---
     # This ensures doubles_rank_df and singles_rank_df are available in all views
-    doubles_matches_df = matches[matches['match_type'] == 'Doubles'].copy()
-    singles_matches_df = matches[matches['match_type'] == 'Singles'].copy()
-    rank_df_doubles, _ = calculate_rankings(doubles_matches_df)
-    rank_df_singles, _ = calculate_rankings(singles_matches_df)
+   
+    doubles_matches_df = matches[matches['match_type'] == 'Doubles']
+    singles_matches_df = matches[matches['match_type'] == 'Singles']
+    rank_df_doubles, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+    rank_df_singles, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
+   
 
     rank_df_combined, partner_stats = calculate_rankings(matches_df, st.session_state.players_df)
     rank_df_doubles, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
