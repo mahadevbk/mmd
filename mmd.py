@@ -1103,7 +1103,7 @@ def create_trend_chart(trend):
 
 
 
-def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles):
+def display_player_insights(players, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix="insights"):
     st.subheader("Player Insights")
     
     # Filter matches for doubles and singles
@@ -1153,7 +1153,7 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
             player_data = rank_df_singles[rank_df_singles['Player'] == player].iloc[0]
         
         if player_data is None:
-            st.warning(f"No ranking data available for {player}")
+            st.warning(f"No ranking data available for {player}", key=f"{key_prefix}_warning_{player}")
             continue
         
         st.markdown(f"### {player}")
@@ -1163,18 +1163,18 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         with col1:
             profile_image = players_df.loc[players_df['name'] == player, 'profile_image_url'].iloc[0] if player in players_df['name'].values else ""
             if profile_image:
-                st.image(profile_image, width=150)
+                st.image(profile_image, width=150, key=f"{key_prefix}_image_{player}")
             
             st.markdown("##### Win/Loss")
             win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
             if win_loss_chart:
-                st.plotly_chart(win_loss_chart, use_container_width=True, key=f"win_loss_{player}")
+                st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
             
             st.markdown("##### Trend")
             trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
             if trend_chart:
-                st.plotly_chart(trend_chart, use_container_width=True, key=f"trend_{player}")
-                st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True)
+                st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
+                st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
         
         with col2:
             st.markdown(f"""
@@ -1187,28 +1187,26 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
                 <span><b>Clutch Factor:</b> {player_data['Clutch Factor']:.1f}%</span><br>
                 <span><b>Consistency Index:</b> {player_data['Consistency Index']:.2f}</span><br>
             </div>
-            """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True, key=f"{key_prefix}_stats_{player}")
             
             # Partner stats for doubles
             if player in partner_stats and partner_stats[player]:
-                with st.expander(f"{player}'s Partner Stats", expanded=False):
+                with st.expander(f"{player}'s Partner Stats", expanded=False, key=f"{key_prefix}_expander_{player}"):
                     partner_items = [
                         f"<li><b>{p}</b>: {item['wins']}W - {item['losses']}L ({item['matches']} played, Game Diff Sum: {item['game_diff_sum']:.1f})</li>"
                         for p, item in partner_stats[player].items() if p != "Visitor"
                     ]
-                    st.markdown(f"<ul>{''.join(partner_items)}</ul>", unsafe_allow_html=True)
+                    st.markdown(f"<ul>{''.join(partner_items)}</ul>", unsafe_allow_html=True, key=f"{key_prefix}_partner_stats_{player}")
     
     # Display combined rankings table if available
     if not rank_df_doubles.empty or not rank_df_singles.empty:
         st.markdown("### Rankings Overview")
         if not rank_df_doubles.empty:
             st.markdown("#### Doubles Rankings")
-            st.dataframe(rank_df_doubles)
+            st.dataframe(rank_df_doubles, key=f"{key_prefix}_doubles_rankings")
         if not rank_df_singles.empty:
             st.markdown("#### Singles Rankings")
-            st.dataframe(rank_df_singles)
-
-
+            st.dataframe(rank_df_singles, key=f"{key_prefix}_singles_rankings")
 
 
 
