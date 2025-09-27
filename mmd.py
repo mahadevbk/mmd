@@ -2422,23 +2422,59 @@ def display_hall_of_fame():
 
 
 
-def create_player_chart(win_loss_df, player_name):
+def create_player_chart(win_loss_df, player_name, chart_type='Bar'):
     """
-    Creates a simple bar chart for a player's wins and losses.
+    Creates a Plotly chart for a player's wins and losses.
+    Can generate a Bar, Pie, or Donut chart.
     """
-    # Ensure the 'Outcome' column exists
-    if 'Outcome' not in win_loss_df.columns:
-        raise ValueError("DataFrame must contain an 'Outcome' column.")
+    # Check if the dataframe is empty to avoid errors
+    if win_loss_df.empty or 'Outcome' not in win_loss_df.columns:
+        return None # Return nothing if there's no data to plot
 
-    # Create the chart
-    chart = alt.Chart(win_loss_df, title=f"Win/Loss Record for {player_name}").mark_bar().encode(
-        x='Outcome:N', # 'N' for nominal/categorical data
-        y='count():Q', # 'Q' for quantitative data
-        color='Outcome:N'
-    ).properties(
-        width='container'
-    )
-    return chart
+    # Count wins and losses
+    counts = win_loss_df['Outcome'].value_counts().reset_index()
+    counts.columns = ['Outcome', 'Count']
+
+    title = f"Win/Loss Record for {player_name}"
+
+    if chart_type == 'Bar':
+        fig = px.bar(
+            counts, 
+            x='Outcome', 
+            y='Count', 
+            color='Outcome', 
+            title=title,
+            color_discrete_map={'Win': 'green', 'Loss': 'red'}
+        )
+    elif chart_type == 'Pie':
+        fig = px.pie(
+            counts, 
+            names='Outcome', 
+            values='Count', 
+            title=title,
+            color_discrete_map={'Win': 'green', 'Loss': 'red'}
+        )
+    elif chart_type == 'Donut':
+        fig = px.pie(
+            counts, 
+            names='Outcome', 
+            values='Count', 
+            title=title,
+            hole=0.4, # This makes the pie chart a donut
+            color_discrete_map={'Win': 'green', 'Loss': 'red'}
+        )
+    else: # Default to Bar chart if type is unknown
+        fig = px.bar(
+            counts, 
+            x='Outcome', 
+            y='Count', 
+            color='Outcome', 
+            title=title,
+            color_discrete_map={'Win': 'green', 'Loss': 'red'}
+        )
+        
+    fig.update_layout(showlegend=False)
+    return fig
         
 
 
