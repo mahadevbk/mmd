@@ -730,7 +730,7 @@ def get_player_trend(player, matches, max_matches=5):
 
 
 
-def calculate_rankings(matches_to_rank):
+def calculate_rankings(matches_to_rank, players_df):
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -799,10 +799,29 @@ def calculate_rankings(matches_to_rank):
         if row['set3'] and str(row['set3']).strip():
             is_clutch_match = True
 
+        # Determine if this is a pure mixed doubles match (M&F vs M&F)
+        is_pure_mixed = False
+        if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
+            team1_genders = set()
+            for p in t1:
+                gender_row = players_df[players_df['name'] == p]['gender']
+                if not gender_row.empty:
+                    team1_genders.add(gender_row.iloc[0])
+            team2_genders = set()
+            for p in t2:
+                gender_row = players_df[players_df['name'] == p]['gender']
+                if not gender_row.empty:
+                    team2_genders.add(gender_row.iloc[0])
+            if team1_genders == {'M', 'F'} and team2_genders == {'M', 'F'}:
+                is_pure_mixed = True
+
+        # Set win points based on match type
+        win_points = 3 if is_pure_mixed else 2
+
         # --- results ---
         if row["winner"] == "Team 1":
             for p in t1:
-                scores[p] += 3
+                scores[p] += win_points
                 wins[p] += 1
                 matches_played[p] += 1
                 if is_clutch_match:
@@ -824,7 +843,7 @@ def calculate_rankings(matches_to_rank):
                     singles_matches[p] += 1
         elif row["winner"] == "Team 2":
             for p in t2:
-                scores[p] += 3
+                scores[p] += win_points
                 wins[p] += 1
                 matches_played[p] += 1
                 if is_clutch_match:
@@ -882,7 +901,6 @@ def calculate_rankings(matches_to_rank):
 
     # --- build rank dataframe ---
     rank_data = []
-    players_df = st.session_state.players_df
     for player in scores:
         if player == "Visitor":
             continue
@@ -964,7 +982,6 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
-
 
 
 
