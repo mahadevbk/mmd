@@ -390,9 +390,9 @@ if 'image_urls' not in st.session_state:
 # --- Functions ---
 def load_players():
     try:
-        response = supabase.table(players_table_name).select("name, profile_image_url, birthday").execute()
+        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
         df = pd.DataFrame(response.data)
-        expected_columns = ["name", "profile_image_url", "birthday"]
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = ""
@@ -402,7 +402,7 @@ def load_players():
 
 def save_players(players_df):
     try:
-        expected_columns = ["name", "profile_image_url", "birthday"]
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
         players_df_to_save = players_df[expected_columns].copy()
         
         # Replace NaN with None for JSON compliance before saving
