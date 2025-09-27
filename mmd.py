@@ -1011,7 +1011,6 @@ def calculate_rankings(matches_to_rank, players_df):
 
 
 
-
 #------CHART FOR PLAYER TO INSIGHTS -------------------------------------
 
 
