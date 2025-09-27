@@ -42,6 +42,7 @@ import uuid
 import base64
 import time
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
+import altair as alt
 import os
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
