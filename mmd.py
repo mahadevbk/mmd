@@ -1187,7 +1187,8 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
             
             st.markdown("##### Trend")
             try:
-                trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
+                #trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
+                trend_chart = create_player_chart(player_data['Recent'], player)
                 if trend_chart:
                     st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
                     st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
