@@ -399,6 +399,7 @@ def load_players():
         st.session_state.players_df = df
     except Exception as e:
         st.error(f"Error loading players: {str(e)}")
+      
 
 def save_players(players_df):
     try:
