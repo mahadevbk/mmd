@@ -1114,6 +1114,14 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
     doubles_rank_df, _ = calculate_rankings(doubles_matches_df, players_df)
     singles_rank_df, _ = calculate_rankings(singles_matches_df, players_df)
     
+    # Validate rank_df_combined
+    if not isinstance(rank_df_combined, pd.DataFrame) or rank_df_combined.empty or 'Player' not in rank_df_combined.columns:
+        st.warning("Invalid or empty rankings data. Recalculating combined rankings.")
+        rank_df_combined, _ = calculate_rankings(matches_df, players_df)
+        if not isinstance(rank_df_combined, pd.DataFrame) or rank_df_combined.empty:
+            st.error("Failed to compute rankings. Please check match data.")
+            return
+    
     # CSS for tooltips
     st.markdown("""
     <style>
@@ -1209,8 +1217,6 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
             st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
-
-
 
 
 
