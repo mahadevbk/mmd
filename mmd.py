@@ -1171,31 +1171,33 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         with col1:
             profile_image = players_df.loc[players_df['name'] == player, 'profile_image_url'].iloc[0] if player in players_df['name'].values else ""
             if profile_image:
-                st.image(profile_image, width=150)  # Removed key parameter
+                st.image(profile_image, width=150)
             
             st.markdown("##### Win/Loss")
             try:
-                win_loss_chart = create_player_chart(player_data['Wins'], player_data['Losses'], chart_type="win_loss")
+                # Create a DataFrame for win/loss data
+                win_loss_data = pd.DataFrame({
+                    'Outcome': ['Win', 'Loss'],
+                    'Count': [int(player_data['Wins']), int(player_data['Losses'])]
+                })
+                win_loss_chart = create_player_chart(win_loss_data, player, chart_type="win_loss")  # Fixed: Pass DataFrame and player_name
                 if win_loss_chart:
                     st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{key_prefix}_win_loss_{player}")
                 else:
-                    st.info("No win/loss data available for chart.")
-            except NameError:
-                # st.error("Chart creation function not defined.", key=f"{key_prefix}_win_loss_error_{player}")
-                # NEW
-                st.error("Chart creation function not defined.")
+                    st.info("No win/loss data available for chart.", key=f"{key_prefix}_win_loss_info_{player}")
+            except Exception as e:
+                st.error(f"Unable to generate win/loss chart for {player}: {str(e)}", key=f"{key_prefix}_win_loss_error_{player}")
             
             st.markdown("##### Trend")
             try:
-                #trend_chart = create_player_chart(player_data['Recent Trend'], chart_type="trend")
-                trend_chart = create_player_chart(player_data['Recent'], player)
+                trend_chart = create_player_chart(player_data['Recent'], player, chart_type="trend")  # Explicitly set chart_type
                 if trend_chart:
                     st.plotly_chart(trend_chart, use_container_width=True, key=f"{key_prefix}_trend_{player}")
                     st.markdown(f"<div style='text-align: center;'>{player_data['Recent Trend']}</div>", unsafe_allow_html=True, key=f"{key_prefix}_trend_text_{player}")
                 else:
                     st.info("No trend data available for chart.", key=f"{key_prefix}_trend_info_{player}")
-            except NameError:
-                st.error("Chart creation function not defined.", key=f"{key_prefix}_trend_error_{player}")
+            except Exception as e:
+                st.error(f"Unable to generate trend chart for {player}: {str(e)}", key=f"{key_prefix}_trend_error_{player}")
         
         with col2:
             st.markdown(f"""
@@ -1228,6 +1230,10 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
         if not singles_rank_df.empty:
             st.markdown("#### Singles Rankings")
             st.dataframe(singles_rank_df, key=f"{key_prefix}_singles_rankings")
+
+
+
+
 
 
 
