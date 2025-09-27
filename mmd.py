@@ -1181,7 +1181,9 @@ def display_player_insights(players, players_df, matches_df, partner_stats, rank
                 else:
                     st.info("No win/loss data available for chart.", key=f"{key_prefix}_win_loss_info_{player}")
             except NameError:
-                st.error("Chart creation function not defined.", key=f"{key_prefix}_win_loss_error_{player}")
+                # st.error("Chart creation function not defined.", key=f"{key_prefix}_win_loss_error_{player}")
+                # NEW
+                st.error("Chart creation function not defined.")
             
             st.markdown("##### Trend")
             try:
