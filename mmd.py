@@ -537,32 +537,31 @@ def save_matches(df):
     try:
         df_to_save = df.copy()
         if 'date' in df_to_save.columns:
-            #df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
-            df_to_save['date'] = pd.to_datetime(df_to_save['date'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-            df_to_save['date'] = df_to_save['date'].dt.tz_localize(None)
+            # Convert to datetime, handling date-only or full timestamps
+            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
+            # For date-only inputs, set time to 00:00:00
+            df_to_save['date'] = df_to_save['date'].apply(
+                lambda x: x.replace(hour=0, minute=0, second=0) if pd.notnull(x) and x.hour == 0 and x.minute == 0 and x.second == 0 else x
+            )
+            # Ensure UTC for timestamptz
+            df_to_save['date'] = df_to_save['date'].dt.tz_localize('UTC')
             df_to_save = df_to_save.dropna(subset=['date'])
-            df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        
+            # Format as ISO 8601 string for Supabase
+            df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S+00')
+
+        # Check for duplicate match_ids
         duplicates = df_to_save[df_to_save.duplicated(subset=['match_id'], keep=False)]
         if not duplicates.empty:
             st.warning(f"Found duplicate match_id values: {duplicates['match_id'].tolist()}")
             df_to_save = df_to_save.drop_duplicates(subset=['match_id'], keep='last')
 
-        # Replace NaN with None for JSON compliance before saving
+        # Replace NaN with None for JSON compliance
         df_to_save = df_to_save.where(pd.notna(df_to_save), None)
-            
+        
+        # Upsert to Supabase
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
-
-def delete_match_from_db(match_id):
-    try:
-        supabase.table(matches_table_name).delete().eq("match_id", match_id).execute()
-        # Remove the match from session state
-        st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != match_id].reset_index(drop=True)
-        save_matches(st.session_state.matches_df)  # Save to ensure consistency
-    except Exception as e:
-        st.error(f"Error deleting match from database: {str(e)}")
 
 
 
