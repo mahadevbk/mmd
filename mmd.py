@@ -389,15 +389,16 @@ if 'image_urls' not in st.session_state:
 # --- Functions ---
 def load_players():
     try:
-        response = supabase.table(players_table_name).select("name, profile_image_url, birthday").execute()
+        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
         df = pd.DataFrame(response.data)
-        expected_columns = ["name", "profile_image_url", "birthday"]
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
         for col in expected_columns:
             if col not in df.columns:
-                df[col] = ""
+                df[col] = ""  # Default to empty string for missing columns
         st.session_state.players_df = df
     except Exception as e:
         st.error(f"Error loading players: {str(e)}")
+        st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
 
 def save_players(players_df):
     try:
