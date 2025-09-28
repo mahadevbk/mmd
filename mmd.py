@@ -2579,19 +2579,34 @@ tabs = st.tabs(tab_names)
 
 
 with tabs[0]:
-    st.header(f"Rankings as of {datetime.now().strftime('%d %b')}")
-    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Nerd Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
+    st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
+    ranking_type = st.radio(
+        "Select Ranking View",
+        ["Combined", "Doubles", "Singles", "Nerd Stuff", "Table View"],
+        horizontal=True,
+        key="ranking_type_selector"
+    )
+
+    # Ensure matches_df is loaded
+    load_matches()
+    matches_df = st.session_state.matches_df
 
     # --- PRE-CALCULATE ALL RANKING DATAFRAMES FOR PERFORMANCE SCORES ---
-    # This ensures doubles_rank_df and singles_rank_df are available in all views
-    doubles_matches_df = matches[matches['match_type'] == 'Doubles'].copy()
-    singles_matches_df = matches[matches['match_type'] == 'Singles'].copy()
-    rank_df_doubles, _ = calculate_rankings(doubles_matches_df)
-    rank_df_singles, _ = calculate_rankings(singles_matches_df)
-    # --------------------------------------------------------------------
+    if matches_df.empty:
+        st.warning("No match data available. Please add matches to generate rankings.")
+        doubles_rank_df = pd.DataFrame(columns=["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Doubles Matches", "Singles Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Cumulative Game Diff", "Recent Trend", "Clutch Factor", "Consistency Index", "Badges"])
+        singles_rank_df = pd.DataFrame(columns=["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Doubles Matches", "Singles Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Cumulative Game Diff", "Recent Trend", "Clutch Factor", "Consistency Index", "Badges"])
+        partner_stats = {}
+    else:
+        doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles'].copy()
+        singles_matches_df = matches_df[matches_df['match_type'] == 'Singles'].copy()
+        doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
+        singles_rank_df, _ = calculate_rankings(singles_matches_df)
+        # Calculate partner stats for Combined view
+        _, partner_stats = calculate_rankings(matches_df)
 
     # Helper function to generate a single player card
-    def display_ranking_card(player_data, players_df, matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=""):
+    def display_ranking_card(player_data, players_df, matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=""):
         player_name = player_data["Player"]
         player_info = players_df[players_df["name"] == player_name].iloc[0] if player_name in players_df.name.values else None
 
@@ -2606,32 +2621,26 @@ with tabs[0]:
         rank_value = player_data['Rank']
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
 
-        # --- NEW: Performance Score Calculation ---
-        #doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles) if player_name in rank_df_doubles['Player'].values else 0.0
-        #singles_perf_score = _calculate_performance_score(rank_df_singles[rank_df_singles['Player'] == player_name].iloc[0], rank_df_singles) if player_name in rank_df_singles['Player'].values else 0.0
-        
-        # --- NEW: Performance Score Calculation ---
-        if not doubles_rank_df.empty and 'Player' in doubles_rank_df.columns and player in doubles_rank_df['Player'].values:
-            doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df)
+        # --- Performance Score Calculation ---
+        if not doubles_rank_df.empty and 'Player' in doubles_rank_df.columns and player_name in doubles_rank_df['Player'].values:
+            doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player_name].iloc[0], doubles_rank_df)
         else:
             doubles_perf_score = 0.0
-        
-        if not singles_rank_df.empty and 'Player' in singles_rank_df.columns and player in singles_rank_df['Player'].values:
-            singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df)
+
+        if not singles_rank_df.empty and 'Player' in singles_rank_df.columns and player_name in singles_rank_df['Player'].values:
+            singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player_name].iloc[0], singles_rank_df)
         else:
             singles_perf_score = 0.0
-        
-        # --- END NEW ---
 
+        # --- Birthday Calculation ---
         birthday_str = ""
         raw_birthday = player_info.get("birthday")
         if raw_birthday and isinstance(raw_birthday, str) and re.match(r'^\d{2}-\d{2}$', raw_birthday):
             try:
-                #bday_obj = datetime.strptime(raw_birthday, "%d-%m")
                 bday_obj = datetime.strptime(f"{raw_birthday}-2000", "%d-%m-%Y")
                 birthday_str = bday_obj.strftime("%d %b")
             except ValueError:
-                birthday_str = "" # Keep it empty if parsing fails
+                birthday_str = ""
 
         # --- Partner Calculation Logic ---
         partners_list_str = "No doubles matches played."
@@ -2677,18 +2686,15 @@ with tabs[0]:
         with col1:  # Left column for visuals
             if profile_image:
                 st.image(profile_image, width=150)
-                #st.markdown(f'<img src="{profile_image}" class="profile-image" style="width: 100px; height: 100px;">', unsafe_allow_html=True)
 
             st.markdown("##### Win/Loss")
             win_loss_chart = create_win_loss_donut(wins, losses)
             if win_loss_chart:
-                #st.plotly_chart(win_loss_chart, width='stretch', key=f"{key_prefix}_win_loss_{player_name}")
                 st.plotly_chart(win_loss_chart, config={"responsive": True}, key=f"{key_prefix}_win_loss_{player_name}")
 
             st.markdown("##### Trend")
             trend_chart = create_trend_sparkline(trend)
             if trend_chart:
-                #st.plotly_chart(trend_chart, width='stretch', key=f"{key_prefix}_trend_{player_name}")
                 st.plotly_chart(trend_chart, config={"responsive": True}, key=f"{key_prefix}_trend_{player_name}")
                 st.markdown(f"<div class='trend-col' style='text-align: center; margin-top: -15px;'>{trend}</div>", unsafe_allow_html=True)
             else:
@@ -2700,12 +2706,11 @@ with tabs[0]:
             m_col2.metric("Win Rate", f"{player_data['Win %']:.1f}%")
             m_col3.metric("Matches", f"{int(player_data['Matches'])}")
 
-            # --- UPDATED: Detailed Stats Display with Match Counts ---
             st.markdown(f"""
             <div style="line-height: 2;">
-                <span class="games-won-col" style="display: block;"> {int(player_data['Games Won'])}</span>
-                <span class="game-diff-avg-col" style="display: block;"> {player_data['Game Diff Avg']:.2f}</span>
-                <span class="cumulative-game-diff-col" style="display: block;"> {int(player_data['Cumulative Game Diff'])}</span>
+                <span class="games-won-col" style="display: block;">Games Won: {int(player_data['Games Won'])}</span>
+                <span class="game-diff-avg-col" style="display: block;">Game Diff Avg: {player_data['Game Diff Avg']:.2f}</span>
+                <span class="cumulative-game-diff-col" style="display: block;">Cumulative Game Diff: {int(player_data['Cumulative Game Diff'])}</span>
                 <span class="performance-score-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Performance Score: </span>
                     <span style='font-weight:bold; color:#fff500;'>Doubles: {doubles_perf_score:.1f} ({int(player_data["Doubles Matches"])}), Singles: {singles_perf_score:.1f} ({int(player_data["Singles Matches"])})</span>
@@ -2721,13 +2726,14 @@ with tabs[0]:
                 with st.expander("View Full Partner Stats", expanded=False, icon="➡️"):
                     st.markdown(partners_list_str, unsafe_allow_html=True)
 
+    # --- Ranking Views ---
     if ranking_type == "Doubles":
         rank_df, partner_stats = calculate_rankings(doubles_matches_df)
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                display_ranking_card(row, players_df, doubles_matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=f"doubles_{index}")
+                display_ranking_card(row, players_df, doubles_matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=f"doubles_{index}")
 
     elif ranking_type == "Singles":
         rank_df, partner_stats = calculate_rankings(singles_matches_df)
@@ -2735,20 +2741,18 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                display_ranking_card(row, players_df, singles_matches_df, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=f"singles_{index}")
+                display_ranking_card(row, players_df, singles_matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=f"singles_{index}")
 
-    #-----OLED NERD STUFF RESTORED -------------------------
     elif ranking_type == "Nerd Stuff":
-        if matches.empty or players_df.empty:
+        if matches_df.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
         else:
-            rank_df, partner_stats = calculate_rankings(matches)
-            st.header("Stats for Season Q3 2025 (Jul - Aug )")
+            rank_df, partner_stats = calculate_rankings(matches_df)
+            st.header("Stats for Season Q3 2025 (Jul - Aug)")
 
             # Combined Table view in nerd view
-            rank_df_combined, _ = calculate_rankings(matches)
-            display_rankings_table(rank_df_combined, "Combined")
-            #st.markdown("---")
+            display_rankings_table(rank_df, "Combined")
+
             # Most Effective Partnership
             st.markdown("---")
             st.markdown("### 🤝 Most Effective Partnership")
@@ -2761,7 +2765,7 @@ with tabs[0]:
                     if partner == "Visitor" or player < partner:  # Avoid double counting
                         win_rate = stats['wins'] / stats['matches'] if stats['matches'] > 0 else 0
                         avg_game_diff = stats['game_diff_sum'] / stats['matches'] if stats['matches'] > 0 else 0
-                        score = win_rate + (avg_game_diff / 10)  # Adjust weight of game diff
+                        score = win_rate + (avg_game_diff / 10)
                         if score > max_value:
                             max_value = score
                             best_partner = (player, partner, stats)
@@ -2780,7 +2784,7 @@ with tabs[0]:
             # Best Player to Partner With
             st.markdown("### 🥇 Best Player to Partner With")
             player_stats = defaultdict(lambda: {'wins': 0, 'gd_sum': 0, 'partners': set()})
-            for _, row in matches.iterrows():
+            for _, row in matches_df.iterrows():
                 if row['match_type'] == 'Doubles':
                     t1 = [row['team1_player1'], row['team1_player2']]
                     t2 = [row['team2_player1'], row['team2_player2']]
@@ -2827,11 +2831,9 @@ with tabs[0]:
                 max_partners = max(partners_list) if partners_list else 1
 
                 for player, stats in player_stats.items():
-                    # Normalize scores and create a composite score
                     normalized_wins = stats['wins'] / max_wins
                     normalized_gd = stats['gd_sum'] / max_gd
                     normalized_partners = len(stats['partners']) / max_partners
-
                     composite_score = normalized_wins + normalized_gd + normalized_partners
 
                     if composite_score > max_score:
@@ -2866,7 +2868,7 @@ with tabs[0]:
             # Player with highest Game Difference
             st.markdown("### 📈 Player with highest Game Difference")
             cumulative_game_diff = defaultdict(int)
-            for _, row in matches.iterrows():
+            for _, row in matches_df.iterrows():
                 t1 = [row['team1_player1'], row['team1_player2']] if row['match_type'] == 'Doubles' else [row['team1_player1']]
                 t2 = [row['team2_player1'], row['team2_player2']] if row['match_type'] == 'Doubles' else [row['team2_player1']]
                 for set_score in [row['set1'], row['set2'], row['set3']]:
@@ -2893,15 +2895,18 @@ with tabs[0]:
             st.markdown("---")
 
             # Player with the most wins
-            st.markdown(f"### 👑 Player with the Most Wins")
-            most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
-            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
-            st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
+            st.markdown("### 👑 Player with the Most Wins")
+            if not rank_df.empty:
+                most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
+                st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
+            else:
+                st.info("No match data available to determine the most wins.")
 
             st.markdown("---")
 
             # Player with the highest win percentage (minimum 5 matches)
-            st.markdown(f"### 🔥 Highest Win Percentage (Min. 5 Matches)")
+            st.markdown("### 🔥 Highest Win Percentage (Min. 5 Matches)")
             eligible_players = rank_df[rank_df['Matches'] >= 5].sort_values(by="Win %", ascending=False)
             if not eligible_players.empty:
                 highest_win_percent_player = eligible_players.iloc[0]
@@ -2911,23 +2916,22 @@ with tabs[0]:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
 
             st.markdown("---")
-            st.markdown(f"### 🗓️ Community Activity : Last 7 Days ")
-
+            st.markdown("### 🗓️ Community Activity: Last 7 Days")
             if 'matches_df' in st.session_state and not st.session_state.matches_df.empty:
                 display_community_stats(st.session_state.matches_df)
+            else:
+                st.info("No recent match data available for community stats.")
 
             st.markdown("---")
             st.markdown("### 📊 Player Performance Overview")
             nerd_chart = create_nerd_stats_chart(rank_df)
             if nerd_chart:
-                #st.plotly_chart(nerd_chart, width='stretch')
                 st.plotly_chart(nerd_chart, config={"responsive": True})
             else:
                 st.info("Not enough data to generate the performance chart.")
 
             st.markdown("---")
             st.markdown("### 🤝 Partnership Performance Analyzer")
-
             doubles_players = []
             if partner_stats:
                 doubles_players = sorted([p for p in partner_stats.keys() if p != "Visitor"])
@@ -2939,18 +2943,15 @@ with tabs[0]:
                     "Select a player to see their partnership stats:",
                     doubles_players
                 )
-
                 if selected_player_for_partners:
                     partnership_chart = create_partnership_chart(selected_player_for_partners, partner_stats, players_df)
                     if partnership_chart:
-                        #st.plotly_chart(partnership_chart, width='stretch')
                         st.plotly_chart(partnership_chart, config={"responsive": True})
                     else:
                         st.info(f"{selected_player_for_partners} has no partnership data to display.")
-    
 
             st.markdown("---")
-            with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
+            with st.expander("Process being used for Rankings", expanded=False, icon="➡️"):
                 st.markdown("""
                 ### Ranking System Overview
                 - **Points**: Players earn 3 points for a win, 1 point for a loss, and 1.5 points for a tie.
@@ -2961,29 +2962,19 @@ with tabs[0]:
                 - **Matches Included**: All matches, including those with a 'Visitor', contribute to AR players' stats, but 'Visitor' is excluded from rankings and insights.
 
                 Detailed Ranking Logic at https://github.com/mahadevbk/ar2/blob/main/ar_ranking_logic.pdf
-
                 """)
+
     elif ranking_type == "Table View":
-        # Calculate combined rankings
-        rank_df_combined, _ = calculate_rankings(matches)
-        display_rankings_table(rank_df_combined, "Combined")
+        rank_df, _ = calculate_rankings(matches_df)
+        display_rankings_table(rank_df, "Combined")
+        display_rankings_table(doubles_rank_df, "Doubles")
+        display_rankings_table(singles_rank_df, "Singles")
 
-        # Calculate doubles rankings
-        doubles_matches = matches[matches['match_type'] == 'Doubles']
-        rank_df_doubles, _ = calculate_rankings(doubles_matches)
-        display_rankings_table(rank_df_doubles, "Doubles")
-
-        # Calculate singles rankings
-        singles_matches = matches[matches['match_type'] == 'Singles']
-        rank_df_singles, _ = calculate_rankings(singles_matches)
-        display_rankings_table(rank_df_singles, "Singles")
-
-        # Add PDF download button
         st.markdown("---")
         st.subheader("Download Rankings as PDF")
         if st.button("Download All Rankings", key="download_rankings_pdf"):
             try:
-                pdf_data = generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles)
+                pdf_data = generate_pdf_reportlab(rank_df, doubles_rank_df, singles_rank_df)
                 st.download_button(
                     label="Download PDF",
                     data=pdf_data,
@@ -2993,13 +2984,11 @@ with tabs[0]:
                 )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
-    else:  # Combined view
-        filtered_matches = matches.copy()
-        rank_df, partner_stats = calculate_rankings(filtered_matches)
 
+    else:  # Combined view
+        rank_df, partner_stats = calculate_rankings(matches_df)
         if not rank_df.empty and len(rank_df) >= 3:
             top_3_players = rank_df.head(3)
-
             st.markdown("""
             <style>
             .podium-container {
@@ -3072,27 +3061,11 @@ with tabs[0]:
             """
             st.markdown(podium_html, unsafe_allow_html=True)
 
-        
-        # Ensure matches_df is loaded
-        load_matches()
-        matches_df = st.session_state.matches_df
-        
-        # Calculate rankings for doubles and singles
-        doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles']
-        singles_matches_df = matches_df[matches_df['match_type'] == 'Singles']
-        doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
-        singles_rank_df, _ = calculate_rankings(singles_matches_df)
-        
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                display_ranking_card(row, players_df, filtered_matches, doubles_rank_df, singles_rank_df)
-            
-
-
-
-
+                display_ranking_card(row, players_df, matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=f"combined_{index}")
 
 
 
