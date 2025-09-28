@@ -3113,8 +3113,6 @@ with tabs[1]:
         duplicate_ids = st.session_state.matches_df[st.session_state.matches_df['match_id'].duplicated(keep=False)]['match_id'].tolist()
         st.write(f"Duplicate match IDs: {duplicate_ids}")
     
-    
-    
     with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
         # Define available_players
         if "players_df" not in st.session_state or st.session_state.players_df.empty:
@@ -3291,8 +3289,7 @@ with tabs[1]:
                                 st.rerun()
         
         st.markdown("*Required fields", unsafe_allow_html=True)
-        
-
+    
     st.markdown("---")
     st.subheader("Match History")
 
@@ -3301,6 +3298,7 @@ with tabs[1]:
     with col1_filter:
         match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
     with col2_filter:
+        players = sorted([p for p in st.session_state.players_df["name"].tolist() if p != "Visitor"]) if "players_df" in st.session_state else []
         player_search = st.selectbox("Filter by Player", ["All Players"] + players, key="player_search_filter")
 
     # Start with a clean copy of the matches
@@ -3338,8 +3336,44 @@ with tabs[1]:
             
             # Re-sort descending for display (newest first)
             display_matches = valid_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+            
+            # Add Match Type column
+            players_df = st.session_state.get('players_df', pd.DataFrame())
+            display_matches['Match Type'] = ''
+            for idx, row in display_matches.iterrows():
+                if row['match_type'] == 'Singles':
+                    display_matches.at[idx, 'Match Type'] = 'Singles Match'
+                else:  # Doubles
+                    t1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
+                    t2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
+                    is_mixed_doubles = False
+                    if len(t1) == 2 and len(t2) == 2:
+                        try:
+                            t1_genders = []
+                            t2_genders = []
+                            for p in t1:
+                                if p in players_df['name'].values:
+                                    gender = players_df[players_df['name'] == p]['gender'].iloc[0]
+                                    t1_genders.append(gender if pd.notna(gender) else None)
+                                else:
+                                    t1_genders.append(None)
+                            for p in t2:
+                                if p in players_df['name'].values:
+                                    gender = players_df[players_df['name'] == p]['gender'].iloc[0]
+                                    t2_genders.append(gender if pd.notna(gender) else None)
+                                else:
+                                    t2_genders.append(None)
+                            if (None not in t1_genders and None not in t2_genders and 
+                                sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
+                                is_mixed_doubles = True
+                        except KeyError as e:
+                            st.warning(f"Gender column missing for match {row.get('match_id', 'unknown')}. Treating as regular doubles.")
+                            is_mixed_doubles = False
+                        display_matches.at[idx, 'Match Type'] = 'Mixed Doubles Match' if is_mixed_doubles else 'Doubles Match'
+                    else:
+                        display_matches.at[idx, 'Match Type'] = 'Doubles Match'
         else:
-            display_matches = pd.DataFrame()  # Ensure an empty dataframe if no valid dates
+            display_matches = pd.DataFrame()
     else:
         display_matches = pd.DataFrame()
 
@@ -3395,48 +3429,42 @@ with tabs[1]:
             
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}  |  {gda_html}<br>{date_str}</div>"
 
-    
-    # Updated match history loop (replace the loop in the Match History section)
-    
+    # Updated match history display
     if display_matches.empty:
         st.info("No matches found for the selected filters.")
     else:
-        for idx, row in display_matches.iterrows():
-            cols = st.columns([1, 1, 7, 1])
-            with cols[0]:
-                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
-            with cols[1]:
-                match_image_url = row.get("match_image_url")
-                if match_image_url:
-                    try:
-                        st.image(match_image_url, width=50, caption="")
-                        # Add the match card download button without caching
-                        card_key = f"download_match_card_{row['match_id']}_{idx}"
-                        card_bytes = generate_match_card(pd.Series(row.to_dict()), match_image_url)
-                        st.download_button(
-                            label="📇",
-                            data=card_bytes,
-                            file_name=f"match_card_{row['match_id']}.jpg",
-                            mime="image/jpeg",
-                            key=card_key
-                        )
-                    except Exception as e:
-                        st.error(f"Error displaying match image or generating card: {str(e)}")
-            with cols[2]:
-                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-            with cols[3]:
-                share_link = generate_whatsapp_link(row)
-                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
+        # Display as a table instead of a loop
+        display_df = display_matches.copy()
+        display_df['Date'] = display_df['date'].dt.strftime('%Y-%m-%d')
+        display_df['Players'] = display_df.apply(format_match_players, axis=1)
+        display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
+        display_columns = ['serial_number', 'Match Type', 'Date', 'Players', 'Scores']
+        display_df = display_df.rename(columns={
+            'serial_number': 'Match #',
+            'team1_player1': 'Team 1 Player 1',
+            'team1_player2': 'Team 1 Player 2',
+            'team2_player1': 'Team 2 Player 1',
+            'team2_player2': 'Team 2 Player 2',
+            'set1': 'Set 1',
+            'set2': 'Set 2',
+            'set3': 'Set 3'
+        })
+        display_df = display_df.fillna('')
+        st.dataframe(
+            display_df[display_columns],
+            column_config={
+                'Match #': st.column_config.NumberColumn('Match #', width='small'),
+                'Match Type': st.column_config.TextColumn('Match Type', width='medium'),
+                'Date': st.column_config.TextColumn('Date', width='medium'),
+                'Players': st.column_config.TextColumn('Players', width='large'),
+                'Scores': st.column_config.TextColumn('Scores', width='large')
+            },
+            hide_index=True,
+            use_container_width=True
+        )
 
-
-
-
-    
-    #------Updated Manage existing match to address error wile deletion
-
-    #st.markdown("---")
+    # Manage existing matches
+    st.markdown("---")
     st.subheader("✏️ Manage Existing Matches")
     if 'edit_match_key' not in st.session_state:
         st.session_state.edit_match_key = 0
@@ -3657,8 +3685,6 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
-
-
 
 
 
