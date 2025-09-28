@@ -3072,12 +3072,23 @@ with tabs[0]:
             """
             st.markdown(podium_html, unsafe_allow_html=True)
 
+        
+        # Ensure matches_df is loaded
+        load_matches()
+        matches_df = st.session_state.matches_df
+        
+        # Calculate rankings for doubles and singles
+        doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles']
+        singles_matches_df = matches_df[matches_df['match_type'] == 'Singles']
+        doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
+        singles_rank_df, _ = calculate_rankings(singles_matches_df)
+        
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                display_ranking_card(row, players_df, filtered_matches, partner_stats, rank_df_doubles, rank_df_singles, key_prefix=f"combined_{index}")
-
+                display_ranking_card(row, players_df, filtered_matches, doubles_rank_df, singles_rank_df)
+            
 
 
 
