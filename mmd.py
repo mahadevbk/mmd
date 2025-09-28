@@ -2607,8 +2607,17 @@ with tabs[0]:
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
 
         # --- NEW: Performance Score Calculation ---
-        doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles) if player_name in rank_df_doubles['Player'].values else 0.0
-        singles_perf_score = _calculate_performance_score(rank_df_singles[rank_df_singles['Player'] == player_name].iloc[0], rank_df_singles) if player_name in rank_df_singles['Player'].values else 0.0
+        #doubles_perf_score = _calculate_performance_score(rank_df_doubles[rank_df_doubles['Player'] == player_name].iloc[0], rank_df_doubles) if player_name in rank_df_doubles['Player'].values else 0.0
+        #singles_perf_score = _calculate_performance_score(rank_df_singles[rank_df_singles['Player'] == player_name].iloc[0], rank_df_singles) if player_name in rank_df_singles['Player'].values else 0.0
+        # --- NEW: Performance Score Calculation ---
+        doubles_perf_score = _calculate_performance_score(
+            rank_df_doubles[rank_df_doubles['Player'] == player].iloc[0], rank_df_doubles
+        ) if (not rank_df_doubles.empty and 'Player' in rank_df_doubles.columns and player in rank_df_doubles['Player'].values) else 0.0
+        
+        singles_perf_score = _calculate_performance_score(
+            rank_df_singles[rank_df_singles['Player'] == player].iloc[0], rank_df_singles
+        ) if (not rank_df_singles.empty and 'Player' in rank_df_singles.columns and player in rank_df_singles['Player'].values) else 0.0
+        
         # --- END NEW ---
 
         birthday_str = ""
