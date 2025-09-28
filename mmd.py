@@ -3104,6 +3104,9 @@ with tabs[0]:
 
 
 
+
+
+
 with tabs[1]:
     st.header("Matches")
     # Check for duplicate match IDs
@@ -3336,9 +3339,6 @@ with tabs[1]:
             # Re-sort descending for display (newest first)
             display_matches = valid_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
             
-            # Ensure serial_number is preserved
-            display_matches['serial_number'] = display_matches.index.to_series().apply(lambda x: len(display_matches) - x)
-            
             # Add Match Type column
             players_df = st.session_state.get('players_df', pd.DataFrame())
             display_matches['Match Type'] = ''
@@ -3375,19 +3375,9 @@ with tabs[1]:
                     else:
                         display_matches.at[idx, 'Match Type'] = 'Doubles Match'
         else:
-            # Initialize empty DataFrame with all required columns
-            display_matches = pd.DataFrame(columns=[
-                'serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2',
-                'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner',
-                'match_image_url', 'Match Type'
-            ])
+            display_matches = pd.DataFrame()
     else:
-        # Initialize empty DataFrame with all required columns
-        display_matches = pd.DataFrame(columns=[
-            'serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2',
-            'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner',
-            'match_image_url', 'Match Type'
-        ])
+        display_matches = pd.DataFrame()
 
     def format_match_players(row):
         verb, _ = get_match_verb_and_gda(row)
@@ -3418,13 +3408,10 @@ with tabs[1]:
             if s:
                 if "Tie Break" in s:
                     tie_break_scores = s.replace("Tie Break", "").strip().split('-')
-                    if len(tie_break_scores) == 2 and tie_break_scores[0].isdigit() and tie_break_scores[1].isdigit():
-                        if int(tie_break_scores[0]) > int(tie_break_scores[1]):
-                            score_parts_plain.append(f"7-6({s})")
-                        else:
-                            score_parts_plain.append(f"6-7({s})")
+                    if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                        score_parts_plain.append(f"7-6({s})")
                     else:
-                        score_parts_plain.append(s)
+                        score_parts_plain.append(f"6-7({s})")
                 else:
                     score_parts_plain.append(s)
 
@@ -3449,22 +3436,14 @@ with tabs[1]:
         st.info("No matches found for the selected filters.")
     else:
         # Ensure serial_number is present
-        if 'serial_number' not in display_matches.columns or display_matches['serial_number'].isna().all():
+        if 'serial_number' not in display_matches.columns:
             display_matches['serial_number'] = range(1, len(display_matches) + 1)
         
         # Create display DataFrame
         display_df = display_matches.copy()
-        display_df['Date'] = display_df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notna(x) else '')
+        display_df['Date'] = display_df['date'].dt.strftime('%Y-%m-%d')
         display_df['Players'] = display_df.apply(format_match_players, axis=1)
         display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
-        
-        # Define display columns
-        display_columns = ['serial_number', 'Match Type', 'Date', 'Players', 'Scores']
-        
-        # Ensure all columns exist in display_df
-        for col in display_columns:
-            if col not in display_df.columns:
-                display_df[col] = ''
         
         # Rename columns for display
         display_df = display_df.rename(columns={
@@ -3477,6 +3456,14 @@ with tabs[1]:
             'set2': 'Set 2',
             'set3': 'Set 3'
         })
+        
+        # Define display columns using renamed names
+        display_columns = ['Match #', 'Match Type', 'Date', 'Players', 'Scores']
+        
+        # Ensure all columns exist in display_df
+        for col in display_columns:
+            if col not in display_df.columns:
+                display_df[col] = ''
         
         # Fill NaN values
         display_df = display_df.fillna('')
@@ -3717,6 +3704,10 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
+
+
+
+
 
 
 
