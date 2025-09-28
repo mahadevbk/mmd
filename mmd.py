@@ -3159,7 +3159,7 @@ with tabs[1]:
         
         # Winner selection
         if match_type == "Doubles":
-            selected_players = [t1p1, t1p2, t1p2, t2p2]
+            selected_players = [t1p1, t1p2, t2p1, t2p2]
             winner_options = ["Team 1", "Team 2", "Tie"]
         else:
             selected_players = [p1, p2]
@@ -3373,9 +3373,15 @@ with tabs[1]:
                     else:
                         display_matches.at[idx, 'Match Type'] = 'Doubles Match'
         else:
-            display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'Match Type'])
+            # Initialize empty DataFrame with all expected columns
+            display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'match_image_url', 'Match Type'])
+            display_matches['serial_number'] = pd.Series(dtype='int')
+            display_matches['Match Type'] = pd.Series(dtype='str')
     else:
-        display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'Match Type'])
+        # Initialize empty DataFrame with all expected columns
+        display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'match_image_url', 'Match Type'])
+        display_matches['serial_number'] = pd.Series(dtype='int')
+        display_matches['Match Type'] = pd.Series(dtype='str')
 
     def format_match_players(row):
         verb, _ = get_match_verb_and_gda(row)
@@ -3406,10 +3412,13 @@ with tabs[1]:
             if s:
                 if "Tie Break" in s:
                     tie_break_scores = s.replace("Tie Break", "").strip().split('-')
-                    if int(tie_break_scores[0]) > int(tie_break_scores[1]):
-                        score_parts_plain.append(f"7-6({s})")
+                    if len(tie_break_scores) == 2 and tie_break_scores[0].isdigit() and tie_break_scores[1].isdigit():
+                        if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                            score_parts_plain.append(f"7-6({s})")
+                        else:
+                            score_parts_plain.append(f"6-7({s})")
                     else:
-                        score_parts_plain.append(f"6-7({s})")
+                        score_parts_plain.append(s)
                 else:
                     score_parts_plain.append(s)
 
@@ -3434,16 +3443,16 @@ with tabs[1]:
         st.info("No matches found for the selected filters.")
     else:
         # Ensure serial_number is present
-        if 'serial_number' not in display_matches.columns:
-            display_matches['serial_number'] = pd.Series(range(1, len(display_matches) + 1))
+        if 'serial_number' not in display_matches.columns or display_matches['serial_number'].isna().all():
+            display_matches['serial_number'] = pd.Series(range(1, len(display_matches) + 1), index=display_matches.index)
         
         # Display as a table
         display_df = display_matches.copy()
-        display_df['Date'] = display_df['date'].dt.strftime('%Y-%m-%d')
+        display_df['Date'] = display_df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notna(x) else 'Invalid Date')
         display_df['Players'] = display_df.apply(format_match_players, axis=1)
         display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
         display_columns = ['serial_number', 'Match Type', 'Date', 'Players', 'Scores']
-        # Ensure all columns exist
+        # Ensure all columns exist in display_df
         for col in display_columns:
             if col not in display_df.columns:
                 display_df[col] = ''
@@ -3693,7 +3702,6 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
-
 
 
 
