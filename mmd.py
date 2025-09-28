@@ -3837,7 +3837,7 @@ with tabs[2]:
                             if st.button("🗑️ Remove Player", key=f"remove_player_{selected_player}"):
                                 if selected_player.lower() == "visitor":
                                     st.warning("The 'Visitor' player cannot be removed.")
-                                elif delete_password == ADMIN_PASSWORD:
+                                elif delete_password == st.secrets["admin"]["password"]:
                                     try:
                                         # Replace player with "Visitor" in matches
                                         matches_mask = (
