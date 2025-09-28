@@ -3101,8 +3101,6 @@ with tabs[0]:
 
 
 
-
-
 with tabs[1]:
     st.header("Matches")
     # Check for duplicate match IDs
@@ -3417,8 +3415,6 @@ with tabs[1]:
         score_text = ", ".join(score_parts_plain)
         _, gda = get_match_verb_and_gda(row)
         gda_text = f"GDA: {gda:.2f}"
-        target_width = 25
-        padding_spaces = " " * (target_width - len(score_text) - len(gda_text) - 2)  # Adjust for GDA text
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
         gda_html = f"<span style='font-weight:bold; color:#fff500;'>{gda_text}</span>"
@@ -3428,7 +3424,25 @@ with tabs[1]:
         else:
             date_str = "Invalid Date"
             
-        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}  |  {gda_html}<br>{date_str}</div>"
+        return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
+
+    def create_whatsapp_share_link(row):
+        verb, gda = get_match_verb_and_gda(row)
+        scores = ", ".join([s for s in [row['set1'], row['set2'], row['set3']] if s])
+        if row['match_type'] == "Singles":
+            players_text = f"{row['team1_player1']} vs {row['team2_player1']}"
+        else:
+            players_text = f"{row['team1_player1']} & {row['team1_player2']} vs {row['team2_player1']} & {row['team2_player2']}"
+        date_str = row['date'].strftime('%A, %d %b %Y') if pd.notna(row['date']) else "Unknown Date"
+        message = (
+            f"{row['Match Type']} on {date_str}\n"
+            f"{players_text}\n"
+            f"Result: {row['winner'].replace('Team 1', row['team1_player1'] + (' & ' + row['team1_player2'] if row['team1_player2'] else '')).replace('Team 2', row['team2_player1'] + (' & ' + row['team2_player2'] if row['team2_player2'] else ''))}\n"
+            f"Scores: {scores}\n"
+            f"GDA: {gda:.2f}"
+        )
+        encoded_message = urllib.parse.quote(message)
+        return f"https://wa.me/?text={encoded_message}"
 
     # Updated match history display
     if display_matches.empty:
@@ -3438,48 +3452,26 @@ with tabs[1]:
         if 'serial_number' not in display_matches.columns:
             display_matches['serial_number'] = range(1, len(display_matches) + 1)
         
-        # Create display DataFrame
-        display_df = display_matches.copy()
-        display_df['Date'] = display_df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notna(x) else '')
-        display_df['Players'] = display_df.apply(format_match_players, axis=1)
-        display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
-        
-        # Rename columns for display
-        display_df = display_df.rename(columns={
-            'serial_number': 'Match #',
-            'team1_player1': 'Team 1 Player 1',
-            'team1_player2': 'Team 1 Player 2',
-            'team2_player1': 'Team 2 Player 1',
-            'team2_player2': 'Team 2 Player 2',
-            'set1': 'Set 1',
-            'set2': 'Set 2',
-            'set3': 'Set 3'
-        })
-        
-        # Define display columns using renamed names
-        display_columns = ['Match #', 'Match Type', 'Date', 'Players', 'Scores']
-        
-        # Ensure all columns exist in display_df
-        for col in display_columns:
-            if col not in display_df.columns:
-                display_df[col] = ''
-        
-        # Fill NaN values
-        display_df = display_df.fillna('')
-        
-        # Display table
-        st.dataframe(
-            display_df[display_columns],
-            column_config={
-                'Match #': st.column_config.NumberColumn('Match #', width='small'),
-                'Match Type': st.column_config.TextColumn('Match Type', width='medium'),
-                'Date': st.column_config.TextColumn('Date', width='medium'),
-                'Players': st.column_config.TextColumn('Players', width='large'),
-                'Scores': st.column_config.TextColumn('Scores', width='large')
-            },
-            hide_index=True,
-            width='stretch'
-        )
+        for idx, row in display_matches.iterrows():
+            with st.container():
+                # Create columns for layout
+                col1, col2, col3 = st.columns([1, 3, 2])
+                
+                with col1:
+                    st.markdown(f"**Match #{row['serial_number']}**")
+                    st.markdown(f"**{row['Match Type']}**")
+                
+                with col2:
+                    st.markdown(format_match_players(row), unsafe_allow_html=True)
+                    st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+                
+                with col3:
+                    if pd.notna(row.get('match_image_url')) and row['match_image_url']:
+                        st.image(row['match_image_url'], width=150)
+                    share_link = create_whatsapp_share_link(row)
+                    st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
+                
+                st.markdown("---")
 
     # Manage existing matches
     st.markdown("---")
@@ -3539,7 +3531,7 @@ with tabs[1]:
                             key=f"edit_t1p2_{match_id}"
                         )
                     with col2:
-                        t2p1_edit = st.selectbox(
+                        t1p2_edit = st.selectbox(
                             "Team 2 - Player 1 *",
                             [""] + available_players,
                             index=available_players.index(match_row["team2_player1"]) + 1 if match_row["team2_player1"] in available_players else 0,
@@ -3703,6 +3695,8 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
+
+
 
 
 
