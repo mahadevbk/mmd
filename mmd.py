@@ -2563,7 +2563,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
     save_matches(matches)
 
-st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheader.png", width='stretch')
+st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", width='stretch')
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Hall of Fame","Mini Tourney"]
 
@@ -3094,12 +3094,10 @@ with tabs[0]:
 
 
 
+
+
+
 #---------------END OF TAB[0]-------------------------------------------------------------
-
-
-
-
-
 
 
 
@@ -3444,7 +3442,7 @@ with tabs[1]:
             f"GDA: {gda:.2f}"
         )
         encoded_message = urllib.parse.quote(message)
-        return f'<a href="https://wa.me/?text={encoded_message}" target="_blank">🟢</a>'
+        return f"https://wa.me/?text={encoded_message}"
 
     # Updated match history display
     if display_matches.empty:
@@ -3470,7 +3468,8 @@ with tabs[1]:
                 with col3:
                     if pd.notna(row.get('match_image_url')) and row['match_image_url']:
                         st.image(row['match_image_url'], width=150)
-                    st.markdown(create_whatsapp_share_link(row), unsafe_allow_html=True)
+                    share_link = create_whatsapp_share_link(row)
+                    st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
                 
                 st.markdown("---")
 
@@ -3532,7 +3531,7 @@ with tabs[1]:
                             key=f"edit_t1p2_{match_id}"
                         )
                     with col2:
-                        t2p1_edit = st.selectbox(
+                        t1p2_edit = st.selectbox(
                             "Team 2 - Player 1 *",
                             [""] + available_players,
                             index=available_players.index(match_row["team2_player1"]) + 1 if match_row["team2_player1"] in available_players else 0,
@@ -3696,10 +3695,6 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
-
-
-
-
 
 
 
