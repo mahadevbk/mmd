@@ -583,13 +583,13 @@ def upload_image_to_github(file, file_name, image_type="match"):
     # --- Determine the path in the repository ---
     if image_type == "profile":
         # For profiles, the file_name already contains the unique part
-        path_in_repo = f"assets/players/{file_name}.jpg"
+        path_in_repo = f"assets/profile_images/{file_name}.jpg"
     elif image_type == "match":
         # For matches, file_name is the match_id
-        path_in_repo = f"assets/matches/{file_name}.jpg"
+        path_in_repo = f"assets/match_images/{file_name}.jpg"
     elif image_type == "booking":
         # For bookings, file_name is the booking_id
-        path_in_repo = f"assets/bookings/{file_name}.jpg"
+        path_in_repo = f"assets/bookings_images/{file_name}.jpg"
     else:
         path_in_repo = f"assets/others/{file_name}.jpg"
 
