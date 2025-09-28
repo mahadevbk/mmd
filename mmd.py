@@ -400,9 +400,13 @@ def load_players():
         st.error(f"Error loading players: {str(e)}")
         st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
 
+
+
+
+
 def save_players(players_df):
     try:
-        expected_columns = ["name", "profile_image_url", "birthday"]
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
         players_df_to_save = players_df[expected_columns].copy()
         
         # Replace NaN with None for JSON compliance before saving
@@ -414,6 +418,10 @@ def save_players(players_df):
         supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
+
+
+
+
       
 def delete_player_from_db(player_name):
     try:
