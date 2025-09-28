@@ -3127,7 +3127,7 @@ with tabs[1]:
             st.warning("No players available. Please add players in the Player Profile tab.")
             available_players = []
         else:
-            available_players = sorted([p for p in st.session_state.players_df["name"].tolist() if p != "Visitor"] + ["Visitor"])
+            available_players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"])
         
         # Stop if no players are available
         if not available_players:
@@ -3182,8 +3182,8 @@ with tabs[1]:
             elif winner == "Player 2":
                 winner = "Team 2"
         
-        # Image upload
-        match_image = st.file_uploader("Upload Match Photo (optional)", type=["jpg", "jpeg", "png"], key="match_image")
+        # Image upload (now mandatory)
+        match_image = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"], key="match_image")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -3199,9 +3199,12 @@ with tabs[1]:
                         st.session_state.last_match_submit_time = current_time
                         
                         # Basic validation
-                        if match_type == "Doubles":
+                        if not match_image:
+                            st.error("A match photo is required.")
+                            valid = False
+                        elif match_type == "Doubles":
                             if not all(selected_players) or not set1 or not set2:
-                                st.error("For Doubles: All players, Set 1, and Set 2 are required. Set 3 is optional.")
+                                st.error("For Doubles: All players, Set 1, Set 2, and a match photo are required. Set 3 is optional.")
                                 valid = False
                             elif len(set([p for p in selected_players if p != ""])) != len([p for p in selected_players if p != ""]):
                                 st.error("Please select different players for each position.")
@@ -3210,7 +3213,7 @@ with tabs[1]:
                                 valid = True
                         else:  # Singles
                             if not all(selected_players) or not set1:
-                                st.error("For Singles: Both players and Set 1 are required. Set 2 and Set 3 are optional.")
+                                st.error("For Singles: Both players, Set 1, and a match photo are required. Set 2 and Set 3 are optional.")
                                 valid = False
                             elif p1 == p2:
                                 st.error("Please select different players for singles.")
@@ -3268,7 +3271,7 @@ with tabs[1]:
                                 with st.spinner("Uploading match to Supabase..."):
                                     match_datetime = pd.to_datetime(date)
                                     match_id = generate_match_id(st.session_state.matches_df, match_datetime)
-                                    image_url = upload_image_to_github(match_image, match_id, image_type="match") if match_image else ""
+                                    image_url = upload_image_to_github(match_image, match_id, image_type="match")
                                     new_match = {
                                         "match_id": match_id,
                                         "date": date,
