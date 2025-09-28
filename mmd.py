@@ -3159,7 +3159,7 @@ with tabs[1]:
         
         # Winner selection
         if match_type == "Doubles":
-            selected_players = [t1p1, t1p2, t2p1, t2p2]
+            selected_players = [t1p1, t1p2, t1p2, t2p2]
             winner_options = ["Team 1", "Team 2", "Tie"]
         else:
             selected_players = [p1, p2]
@@ -3373,9 +3373,9 @@ with tabs[1]:
                     else:
                         display_matches.at[idx, 'Match Type'] = 'Doubles Match'
         else:
-            display_matches = pd.DataFrame()
+            display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'Match Type'])
     else:
-        display_matches = pd.DataFrame()
+        display_matches = pd.DataFrame(columns=['serial_number', 'date', 'match_type', 'team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'set1', 'set2', 'set3', 'winner', 'Match Type'])
 
     def format_match_players(row):
         verb, _ = get_match_verb_and_gda(row)
@@ -3433,12 +3433,20 @@ with tabs[1]:
     if display_matches.empty:
         st.info("No matches found for the selected filters.")
     else:
-        # Display as a table instead of a loop
+        # Ensure serial_number is present
+        if 'serial_number' not in display_matches.columns:
+            display_matches['serial_number'] = pd.Series(range(1, len(display_matches) + 1))
+        
+        # Display as a table
         display_df = display_matches.copy()
         display_df['Date'] = display_df['date'].dt.strftime('%Y-%m-%d')
         display_df['Players'] = display_df.apply(format_match_players, axis=1)
         display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
         display_columns = ['serial_number', 'Match Type', 'Date', 'Players', 'Scores']
+        # Ensure all columns exist
+        for col in display_columns:
+            if col not in display_df.columns:
+                display_df[col] = ''
         display_df = display_df.rename(columns={
             'serial_number': 'Match #',
             'team1_player1': 'Team 1 Player 1',
@@ -3496,7 +3504,7 @@ with tabs[1]:
             with st.expander("Edit Match Details", expanded=True):
                 date_edit = st.date_input(
                     "Match Date *",
-                    value=pd.to_datetime(match_row["date"], errors="coerce").date(),
+                    value=pd.to_datetime(match_row["date"], errors="coerce").date() if pd.notnull(match_row["date"]) else datetime.date.today(),
                     key=f"edit_match_date_{match_id}"
                 )
                 match_type_edit = st.radio(
@@ -3685,8 +3693,6 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
-
-
 
 
 
