@@ -695,14 +695,14 @@ def generate_match_id(matches_df, match_datetime):
             (matches_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
         ]
         serial_number = len(filtered_matches) + 1
-        new_id = f"AR{quarter}{year}-{serial_number:02d}"
+        new_id = f"MMD{quarter}{year}-{serial_number:02d}"
         # Ensure the ID is unique
         while new_id in matches_df['match_id'].values:
             serial_number += 1
-            new_id = f"AR{quarter}{year}-{serial_number:02d}"
+            new_id = f"MMD{quarter}{year}-{serial_number:02d}"
     else:
         serial_number = 1
-        new_id = f"AR{quarter}{year}-{serial_number:02d}"
+        new_id = f"MMD{quarter}{year}-{serial_number:02d}"
     return new_id
 
 def get_player_trend(player, matches, max_matches=5):
