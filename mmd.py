@@ -536,24 +536,27 @@ def load_matches():
         st.error(f"Error loading matches: {str(e)}")
 
 
-def save_matches(df):
+def save_matches(matches_df):
     try:
-        df_to_save = df.copy()
-        if 'date' in df_to_save.columns:
-            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
-            df_to_save['date'] = df_to_save['date'].dt.tz_localize(None)
-            df_to_save = df_to_save.dropna(subset=['date'])
-            df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
+                           "team2_player1", "team2_player2", "set1", "set2", "set3", 
+                           "winner", "match_image_url"]
+        matches_df_to_save = matches_df[expected_columns].copy()
         
-        duplicates = df_to_save[df_to_save.duplicated(subset=['match_id'], keep=False)]
-        if not duplicates.empty:
-            st.warning(f"Found duplicate match_id values: {duplicates['match_id'].tolist()}")
-            df_to_save = df_to_save.drop_duplicates(subset=['match_id'], keep='last')
-
-        # Replace NaN with None for JSON compliance before saving
-        df_to_save = df_to_save.where(pd.notna(df_to_save), None)
-            
-        supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
+        # Replace NaN with None for JSON compliance
+        matches_df_to_save = matches_df_to_save.where(pd.notna(matches_df_to_save), None)
+        
+        # Ensure no null match IDs
+        matches_df_to_save = matches_df_to_save[matches_df_to_save["match_id"].notnull() & (matches_df_to_save["match_id"] != "")]
+        
+        # Remove duplicates based on 'match_id', keeping the last entry
+        matches_df_to_save = matches_df_to_save.drop_duplicates(subset=['match_id'], keep='last')
+        
+        if matches_df_to_save.empty:
+            st.warning("No valid matches to save (all match IDs were null or empty).")
+            return
+        
+        supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
