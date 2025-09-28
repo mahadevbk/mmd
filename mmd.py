@@ -3738,32 +3738,36 @@ with tabs[1]:
 
 
 
+
 with tabs[2]:
     st.header("Player Profile")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
-        new_player = st.text_input("Player Name", key="new_player_input").strip()
-        new_gender = st.radio("Gender", ["M", "F"], index=0, key="new_player_gender", horizontal=True)
+        new_player = st.text_input("Player Name *", key="new_player_input").strip()
+        new_gender = st.radio("Gender *", ["M", "F"], index=None, key="new_player_gender", horizontal=True)
+        st.markdown("*Required fields", unsafe_allow_html=True)
         if st.button("Add Player", key="add_player_button"):
-            if new_player:
-                if new_player.lower() == "visitor":
-                    st.warning("The name 'Visitor' is reserved and cannot be added.")
-                elif new_player in st.session_state.players_df["name"].tolist():
-                    st.warning(f"{new_player} already exists.")
-                else:
-                    new_player_data = {
-                        "name": new_player,
-                        "profile_image_url": "",
-                        "birthday": "",
-                        "gender": new_gender
-                    }
-                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"{new_player} added.")
-                    st.rerun()
+            if not new_player:
+                st.warning("Please enter a player name.")
+            elif new_gender is None:
+                st.warning("Please select a gender.")
+            elif new_player.lower() == "visitor":
+                st.warning("The name 'Visitor' is reserved and cannot be added.")
+            elif new_player in st.session_state.players_df["name"].tolist():
+                st.warning(f"{new_player} already exists.")
             else:
-                st.warning("Please enter a player name to add.")
+                new_player_data = {
+                    "name": new_player,
+                    "profile_image_url": "",
+                    "birthday": "",
+                    "gender": new_gender
+                }
+                st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
+                save_players(st.session_state.players_df)
+                load_players()
+                st.success(f"{new_player} added.")
+                st.rerun()
+        
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
 
