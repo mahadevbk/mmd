@@ -3766,89 +3766,107 @@ with tabs[2]:
                 st.warning("Please enter a player name to add.")
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
-        players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
-        if not players:
-            st.info("No players available. Add a new player to begin.")
-        else:
-            selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
-            if selected_player_manage:
-                player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player_manage].iloc[0]
-                current_image = player_data.get("profile_image_url", "")
-                current_birthday = player_data.get("birthday", "")
-                current_gender = player_data.get("gender", "M")  # Default to "M" if gender is missing
-                st.markdown(f"**Current Profile for {selected_player_manage}**")
-                if current_image:
-                    st.image(current_image, width=100)
-                else:
-                    st.write("No profile image set.")
-                profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
-                default_day = 1
-                default_month = 1
-                if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
-                    try:
-                        day_str, month_str = current_birthday.split("-")
-                        default_day = int(day_str)
-                        default_month = int(month_str)
-                    except (ValueError, IndexError):
-                        pass
-                birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
-                birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
-                gender_edit = st.radio("Gender", ["M", "F"], index=0 if current_gender == "M" else 1, key=f"gender_edit_{selected_player_manage}", horizontal=True)
-                col_save, col_delete = st.columns(2)
-                with col_save:
-                    if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
-                        image_url = current_image
-                        if profile_image:
-                            image_url = upload_image_to_github(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
-                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
-                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
-                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "gender"] = gender_edit
-                        save_players(st.session_state.players_df)
-                        load_players()
-                        st.success(f"Profile for {selected_player_manage} updated.")
-                        st.rerun()
-                with col_delete:
-                    if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
-                        if selected_player_manage.lower() == "visitor":
-                            st.warning("The 'Visitor' player cannot be removed.")
-                        else:
-                            st.session_state.confirm_delete_player = selected_player_manage
-                            st.session_state.confirm_input = ""
 
-                    if 'confirm_delete_player' in st.session_state and st.session_state.confirm_delete_player == selected_player_manage:
-                        st.warning(f"Are you sure you want to delete {selected_player_manage}? This action cannot be undone.")
-                        confirm_text = st.text_input(f"Type '{selected_player_manage}' to confirm deletion:", key=f"confirm_input_{selected_player_manage}")
-                        col_confirm, col_cancel = st.columns(2)
-                        with col_confirm:
-                            if st.button("Confirm Deletion", key=f"confirm_delete_btn_{selected_player_manage}"):
-                                if confirm_text == selected_player_manage:
-                                    matches_mask = (
-                                        (st.session_state.matches_df["team1_player1"] == selected_player_manage) |
-                                        (st.session_state.matches_df["team1_player2"] == selected_player_manage) |
-                                        (st.session_state.matches_df["team2_player1"] == selected_player_manage) |
-                                        (st.session_state.matches_df["team2_player2"] == selected_player_manage)
-                                    )
-                                    if matches_mask.any():
-                                        st.session_state.matches_df.loc[matches_mask, "team1_player1"] = st.session_state.matches_df.loc[matches_mask, "team1_player1"].replace(selected_player_manage, "Visitor")
-                                        st.session_state.matches_df.loc[matches_mask, "team1_player2"] = st.session_state.matches_df.loc[matches_mask, "team1_player2"].replace(selected_player_manage, "Visitor")
-                                        st.session_state.matches_df.loc[matches_mask, "team2_player1"] = st.session_state.matches_df.loc[matches_mask, "team2_player1"].replace(selected_player_manage, "Visitor")
-                                        st.session_state.matches_df.loc[matches_mask, "team2_player2"] = st.session_state.matches_df.loc[matches_mask, "team2_player2"].replace(selected_player_manage, "Visitor")
-                                        save_matches(st.session_state.matches_df)
-                                        load_matches()
-                                        st.info(f"Replaced {selected_player_manage} with 'Visitor' in associated matches.")
-                                    delete_player_from_db(selected_player_manage)
-                                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
-                                    save_players(st.session_state.players_df)
-                                    load_players()
-                                    st.success(f"{selected_player_manage} removed successfully.")
-                                    del st.session_state.confirm_delete_player
-                                    st.rerun()
+        st.subheader("✏️ Edit or Remove Existing Player")
+        if 'players_df' in st.session_state and not st.session_state.players_df.empty:
+            players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
+            if not players:
+                st.info("No players available. Add a new player to begin.")
+            else:
+                selected_player = st.selectbox("Select Player", [""] + players, key="manage_player_select")
+                if selected_player:
+                    player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player].iloc[0]
+                    current_image = player_data.get("profile_image_url", "")
+                    current_birthday = player_data.get("birthday", "")
+                    current_gender = player_data.get("gender", "M")  # Default to "M" if gender is missing
+                    st.markdown(f"**Current Profile for {selected_player}**")
+                    if current_image:
+                        st.image(current_image, width=100)
+                    else:
+                        st.write("No profile image set.")
+                    
+                    with st.expander("Edit Player Details", expanded=True):
+                        new_name = st.text_input("Player Name *", value=player_data["name"])
+                        # Birthday inputs (day and month)
+                        default_day = 1
+                        default_month = 1
+                        if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
+                            try:
+                                day_str, month_str = current_birthday.split("-")
+                                default_day = int(day_str)
+                                default_month = int(month_str)
+                            except (ValueError, IndexError):
+                                pass
+                        birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player}")
+                        birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player}")
+                        # Gender selector
+                        gender_edit = st.radio("Gender", ["M", "F"], index=0 if current_gender == "M" else 1, key=f"gender_edit_{selected_player}", horizontal=True)
+                        profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player}")
+                        st.markdown("*Required fields", unsafe_allow_html=True)
+                        
+                        col_save, col_delete = st.columns(2)
+                        with col_save:
+                            if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player}"):
+                                if not new_name.strip():
+                                    st.error("Player name is required.")
                                 else:
-                                    st.error("Confirmation text does not match. Deletion cancelled.")
-                        with col_cancel:
-                            if st.button("Cancel Deletion", key=f"cancel_delete_btn_{selected_player_manage}"):
-                                del st.session_state.confirm_delete_player
-                                st.rerun()
+                                    image_url = current_image
+                                    if profile_image:
+                                        image_url = upload_image_to_github(
+                                            profile_image,
+                                            re.sub(r'[^a-zA-Z0-9]', '_', new_name.lower()),
+                                            image_type="profile"
+                                        )
+                                    updated_player = {
+                                        "name": new_name,
+                                        "profile_image_url": image_url,
+                                        "birthday": f"{birthday_day:02d}-{birthday_month:02d}",
+                                        "gender": gender_edit
+                                    }
+                                    try:
+                                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player] = updated_player
+                                        save_players(st.session_state.players_df)
+                                        load_players()
+                                        st.success(f"Profile for {new_name} updated.")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Failed to save player: {str(e)}")
+                        
+                        with col_delete:
+                            delete_password = st.text_input("Admin Password to Delete", type="password", key=f"delete_password_{selected_player}")
+                            if st.button("🗑️ Remove Player", key=f"remove_player_{selected_player}"):
+                                if selected_player.lower() == "visitor":
+                                    st.warning("The 'Visitor' player cannot be removed.")
+                                elif delete_password == ADMIN_PASSWORD:
+                                    try:
+                                        # Replace player with "Visitor" in matches
+                                        matches_mask = (
+                                            (st.session_state.matches_df["team1_player1"] == selected_player) |
+                                            (st.session_state.matches_df["team1_player2"] == selected_player) |
+                                            (st.session_state.matches_df["team2_player1"] == selected_player) |
+                                            (st.session_state.matches_df["team2_player2"] == selected_player)
+                                        )
+                                        if matches_mask.any():
+                                            st.session_state.matches_df.loc[matches_mask, "team1_player1"] = st.session_state.matches_df.loc[matches_mask, "team1_player1"].replace(selected_player, "Visitor")
+                                            st.session_state.matches_df.loc[matches_mask, "team1_player2"] = st.session_state.matches_df.loc[matches_mask, "team1_player2"].replace(selected_player, "Visitor")
+                                            st.session_state.matches_df.loc[matches_mask, "team2_player1"] = st.session_state.matches_df.loc[matches_mask, "team2_player1"].replace(selected_player, "Visitor")
+                                            st.session_state.matches_df.loc[matches_mask, "team2_player2"] = st.session_state.matches_df.loc[matches_mask, "team2_player2"].replace(selected_player, "Visitor")
+                                            save_matches(st.session_state.matches_df)
+                                            load_matches()
+                                            st.info(f"Replaced {selected_player} with 'Visitor' in associated matches.")
+                                        delete_player_from_db(selected_player)
+                                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player].reset_index(drop=True)
+                                        save_players(st.session_state.players_df)
+                                        load_players()
+                                        st.success(f"{selected_player} removed successfully.")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Failed to delete player: {str(e)}")
+                                else:
+                                    st.error("Incorrect admin password. Deletion aborted.")
+        else:
+            st.info("No players available to edit.")
+
 
     st.markdown("---")
     st.header("Player Insights")
