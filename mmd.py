@@ -3103,10 +3103,6 @@ with tabs[0]:
 
 
 
-
-
-
-
 with tabs[1]:
     st.header("Matches")
     # Check for duplicate match IDs
@@ -3408,10 +3404,13 @@ with tabs[1]:
             if s:
                 if "Tie Break" in s:
                     tie_break_scores = s.replace("Tie Break", "").strip().split('-')
-                    if int(tie_break_scores[0]) > int(tie_break_scores[1]):
-                        score_parts_plain.append(f"7-6({s})")
+                    if len(tie_break_scores) == 2 and tie_break_scores[0].isdigit() and tie_break_scores[1].isdigit():
+                        if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                            score_parts_plain.append(f"7-6({s})")
+                        else:
+                            score_parts_plain.append(f"6-7({s})")
                     else:
-                        score_parts_plain.append(f"6-7({s})")
+                        score_parts_plain.append(s)
                 else:
                     score_parts_plain.append(s)
 
@@ -3441,7 +3440,7 @@ with tabs[1]:
         
         # Create display DataFrame
         display_df = display_matches.copy()
-        display_df['Date'] = display_df['date'].dt.strftime('%Y-%m-%d')
+        display_df['Date'] = display_df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notna(x) else '')
         display_df['Players'] = display_df.apply(format_match_players, axis=1)
         display_df['Scores'] = display_df.apply(format_match_scores_and_date, axis=1)
         
@@ -3479,7 +3478,7 @@ with tabs[1]:
                 'Scores': st.column_config.TextColumn('Scores', width='large')
             },
             hide_index=True,
-            use_container_width=True
+            width='stretch'
         )
 
     # Manage existing matches
@@ -3704,6 +3703,15 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
+
+
+
+
+
+
+
+
+
 
 
 
