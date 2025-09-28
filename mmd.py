@@ -3101,6 +3101,11 @@ with tabs[0]:
 
 
 
+
+
+
+
+
 with tabs[1]:
     st.header("Matches")
     # Check for duplicate match IDs
@@ -3442,7 +3447,7 @@ with tabs[1]:
             f"GDA: {gda:.2f}"
         )
         encoded_message = urllib.parse.quote(message)
-        return f"https://wa.me/?text={encoded_message}"
+        return f'<a href="https://wa.me/?text={encoded_message}" target="_blank">🟢</a>'
 
     # Updated match history display
     if display_matches.empty:
@@ -3468,8 +3473,7 @@ with tabs[1]:
                 with col3:
                     if pd.notna(row.get('match_image_url')) and row['match_image_url']:
                         st.image(row['match_image_url'], width=150)
-                    share_link = create_whatsapp_share_link(row)
-                    st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
+                    st.markdown(create_whatsapp_share_link(row), unsafe_allow_html=True)
                 
                 st.markdown("---")
 
@@ -3531,7 +3535,7 @@ with tabs[1]:
                             key=f"edit_t1p2_{match_id}"
                         )
                     with col2:
-                        t1p2_edit = st.selectbox(
+                        t2p1_edit = st.selectbox(
                             "Team 2 - Player 1 *",
                             [""] + available_players,
                             index=available_players.index(match_row["team2_player1"]) + 1 if match_row["team2_player1"] in available_players else 0,
@@ -3695,6 +3699,10 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
+
+
+
+
 
 
 
