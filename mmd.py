@@ -3770,8 +3770,6 @@ with tabs[2]:
         
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
-
-        st.subheader("✏️ Edit or Remove Existing Player")
         if 'players_df' in st.session_state and not st.session_state.players_df.empty:
             players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
             if not players:
@@ -3790,7 +3788,7 @@ with tabs[2]:
                         st.write("No profile image set.")
                     
                     with st.expander("Edit Player Details", expanded=True):
-                        new_name = st.text_input("Player Name *", value=player_data["name"])
+                        new_name = st.text_input("Player Name *", value=player_data["name"], key=f"name_edit_{selected_player}")
                         # Birthday inputs (day and month)
                         default_day = 1
                         default_month = 1
@@ -3804,7 +3802,7 @@ with tabs[2]:
                         birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player}")
                         birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player}")
                         # Gender selector
-                        gender_edit = st.radio("Gender", ["M", "F"], index=0 if current_gender == "M" else 1, key=f"gender_edit_{selected_player}", horizontal=True)
+                        gender_edit = st.radio("Gender *", ["M", "F"], index=0 if current_gender == "M" else 1, key=f"gender_edit_{selected_player}", horizontal=True)
                         profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player}")
                         st.markdown("*Required fields", unsafe_allow_html=True)
                         
@@ -3813,6 +3811,10 @@ with tabs[2]:
                             if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player}"):
                                 if not new_name.strip():
                                     st.error("Player name is required.")
+                                elif new_name.lower() == "visitor":
+                                    st.error("The name 'Visitor' is reserved and cannot be used.")
+                                elif new_name != selected_player and new_name in st.session_state.players_df["name"].tolist():
+                                    st.error(f"{new_name} already exists. Choose a different name.")
                                 else:
                                     image_url = current_image
                                     if profile_image:
@@ -3828,7 +3830,12 @@ with tabs[2]:
                                         "gender": gender_edit
                                     }
                                     try:
-                                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player] = updated_player
+                                        # Update the specific row in the DataFrame using index
+                                        player_index = st.session_state.players_df[st.session_state.players_df["name"] == selected_player].index[0]
+                                        st.session_state.players_df.iloc[player_index] = pd.Series(updated_player)
+                                        # Ensure no null names in DataFrame
+                                        st.session_state.players_df["name"] = st.session_state.players_df["name"].fillna("")
+                                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != ""]
                                         save_players(st.session_state.players_df)
                                         load_players()
                                         st.success(f"Profile for {new_name} updated.")
@@ -3839,9 +3846,19 @@ with tabs[2]:
                         with col_delete:
                             delete_password = st.text_input("Admin Password to Delete", type="password", key=f"delete_password_{selected_player}")
                             if st.button("🗑️ Remove Player", key=f"remove_player_{selected_player}"):
+                                try:
+                                    admin_password = st.secrets["admin"]["password"]
+                                except KeyError:
+                                    st.error("Admin password not configured in secrets. Contact the administrator.")
+                                    admin_password = None
+                                
                                 if selected_player.lower() == "visitor":
                                     st.warning("The 'Visitor' player cannot be removed.")
-                                elif delete_password == st.secrets["admin"]["password"]:
+                                elif admin_password is None:
+                                    st.error("Deletion aborted due to missing admin password configuration.")
+                                elif delete_password != admin_password:
+                                    st.error("Incorrect admin password. Deletion aborted.")
+                                else:
                                     try:
                                         # Replace player with "Visitor" in matches
                                         matches_mask = (
@@ -3866,12 +3883,9 @@ with tabs[2]:
                                         st.rerun()
                                     except Exception as e:
                                         st.error(f"Failed to delete player: {str(e)}")
-                                else:
-                                    st.error("Incorrect admin password. Deletion aborted.")
         else:
             st.info("No players available to edit.")
-
-
+    
     st.markdown("---")
     st.header("Player Insights")
 
@@ -3931,8 +3945,7 @@ with tabs[2]:
 
     # --- Debugging Output ---
     st.markdown("---")
-    st.header("Explanation of Badges : ")
-
+    st.header("Explanation of Badges")
     # --- All Badges Expander ---
     with st.expander("View All Badges", expanded=False, icon="➡️"):
         badges_list_html = "<div class='badges-list-container'>"
