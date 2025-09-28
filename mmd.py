@@ -1062,6 +1062,8 @@ def create_trend_chart(trend):
 
 
 def display_player_insights(selected_players, players_df, matches_df, doubles_rank_df, singles_rank_df, key_prefix=""):
+    import pandas as pd
+    from collections import defaultdict
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
     selected_players = [p for p in selected_players if p != "Visitor"]
@@ -1120,6 +1122,12 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
     if not active_players:
         st.info("No players with matches played are available for insights.")
         return
+
+    # Ensure doubles_rank_df and singles_rank_df are DataFrames
+    if not isinstance(doubles_rank_df, pd.DataFrame):
+        doubles_rank_df = pd.DataFrame(columns=["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Doubles Matches", "Singles Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Cumulative Game Diff", "Recent Trend", "Clutch Factor", "Consistency Index", "Badges"])
+    if not isinstance(singles_rank_df, pd.DataFrame):
+        singles_rank_df = pd.DataFrame(columns=["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Doubles Matches", "Singles Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Cumulative Game Diff", "Recent Trend", "Clutch Factor", "Consistency Index", "Badges"])
 
     # CSS for tooltips
     tooltip_css = """
@@ -1318,8 +1326,6 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
 
             with st.expander("View Partner Stats", expanded=False, icon="➡️"):
                 st.markdown(partners_list_str, unsafe_allow_html=True)
-
-
 
 
 
