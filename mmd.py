@@ -1061,7 +1061,7 @@ def create_trend_chart(trend):
 
 
 
-def display_player_insights(selected_players, players_df, matches_df, rank_df, partner_stats, key_prefix=""):
+def display_player_insights(selected_players, players_df, matches_df, doubles_rank_df, singles_rank_df, key_prefix=""):
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
     selected_players = [p for p in selected_players if p != "Visitor"]
@@ -1111,18 +1111,15 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         return
 
     # --- Player Insights View ---
+    # Use rank_df_combined for filtering active players
+    rank_df_combined, partner_stats = calculate_rankings(matches_df)
     active_players = [
         p for p in selected_players
-        if p in rank_df["Player"].values and rank_df[rank_df["Player"] == p].iloc[0]["Matches"] > 0
+        if p in rank_df_combined["Player"].values and rank_df_combined[rank_df_combined["Player"] == p].iloc[0]["Matches"] > 0
     ]
     if not active_players:
         st.info("No players with matches played are available for insights.")
         return
-
-    doubles_matches_df = matches_df[matches_df['match_type'] == 'Doubles']
-    singles_matches_df = matches_df[matches_df['match_type'] == 'Singles']
-    doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
-    singles_rank_df, _ = calculate_rankings(singles_matches_df)
 
     # CSS for tooltips
     tooltip_css = """
@@ -1166,15 +1163,23 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
     for idx, player in enumerate(sorted(active_players)):
         player_info = players_df[players_df["name"] == player].iloc[0]
-        player_data = rank_df[rank_df["Player"] == player].iloc[0]
+        player_data = rank_df_combined[rank_df_combined["Player"] == player].iloc[0]
 
         # --- Data Calculation & Formatting ---
         profile_image = player_info.get("profile_image_url", "")
         wins, losses = int(player_data["Wins"]), int(player_data["Losses"])
         trend = get_player_trend(player, matches_df)
 
-        doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df) if player in doubles_rank_df['Player'].values else 0.0
-        singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df) if player in singles_rank_df['Player'].values else 0.0
+        # --- Performance Score Calculation ---
+        if not doubles_rank_df.empty and 'Player' in doubles_rank_df.columns and player in doubles_rank_df['Player'].values:
+            doubles_perf_score = _calculate_performance_score(doubles_rank_df[doubles_rank_df['Player'] == player].iloc[0], doubles_rank_df)
+        else:
+            doubles_perf_score = 0.0
+
+        if not singles_rank_df.empty and 'Player' in singles_rank_df.columns and player in singles_rank_df['Player'].values:
+            singles_perf_score = _calculate_performance_score(singles_rank_df[singles_rank_df['Player'] == player].iloc[0], singles_rank_df)
+        else:
+            singles_perf_score = 0.0
 
         rank_value = player_data['Rank']
         rank_display = re.sub(r'[^0-9]', '', str(rank_value))
@@ -1267,13 +1272,11 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             st.markdown("##### Win/Loss")
             win_loss_chart = create_win_loss_donut(wins, losses)
             if win_loss_chart:
-                #st.plotly_chart(win_loss_chart, use_container_width=True, key=f"{unique_id}_win_loss")
                 st.plotly_chart(win_loss_chart, config={"responsive": True}, key=f"{unique_id}_win_loss")
 
             st.markdown("##### Recent Trend")
             trend_chart = create_trend_chart(trend)
             if trend_chart:
-                #st.plotly_chart(trend_chart, use_container_width=True, key=f"{unique_id}_trend")
                 st.plotly_chart(trend_chart, config={"responsive": True}, key=f"{unique_id}_trend")
             else:
                 st.markdown("No recent matches")
@@ -1291,9 +1294,9 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
             st.markdown(f"""
             <div style="line-height: 2;">
-                <span class="games-won-col" style="display: block;">{int(player_data['Games Won'])}</span>
-                <span class="game-diff-avg-col" style="display: block;">{player_data['Game Diff Avg']:.2f}</span>
-                <span class="cumulative-game-diff-col" style="display: block;">{int(player_data['Cumulative Game Diff'])}</span>
+                <span class="games-won-col" style="display: block;">Games Won: {int(player_data['Games Won'])}</span>
+                <span class="game-diff-avg-col" style="display: block;">Game Diff Avg: {player_data['Game Diff Avg']:.2f}</span>
+                <span class="cumulative-game-diff-col" style="display: block;">Cumulative Game Diff: {int(player_data['Cumulative Game Diff'])}</span>
                 <span class="performance-score-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Performance Score: </span>
                     <span style='font-weight:bold; color:#fff500;'>Doubles: {doubles_perf_score:.1f} ({int(player_data["Doubles Matches"])}), Singles: {singles_perf_score:.1f} ({int(player_data["Singles Matches"])})</span>
@@ -1315,7 +1318,6 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
             with st.expander("View Partner Stats", expanded=False, icon="➡️"):
                 st.markdown(partners_list_str, unsafe_allow_html=True)
-
 
 
 
