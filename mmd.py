@@ -3802,6 +3802,11 @@ with tabs[1]:
                         # Add the match card download button without caching
                         card_key = f"download_match_card_{row['match_id']}_{idx}"
                         card_bytes = generate_match_card(pd.Series(row.to_dict()), match_image_url)
+                        
+                        if st.button("📇 View Match Card", key=f"view_{row['match_id']}"):
+                          # Option 1: Display the image directly in Streamlit
+                          st.image(image_data_uri, caption=f"Match Card {row['match_id']}")
+                          
                         st.download_button(
                             label="📇",
                             data=card_bytes,
