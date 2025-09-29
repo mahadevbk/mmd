@@ -3779,7 +3779,7 @@ with tabs[1]:
                       
                           
                         st.download_button(
-                            label="📇",
+                            label="💌",
                             data=card_bytes,
                             file_name=f"match_card_{row['match_id']}.jpg",
                             mime="image/jpeg",
