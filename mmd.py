@@ -3817,8 +3817,9 @@ with tabs[1]:
             with cols[3]:
                 share_link = generate_whatsapp_link(row)
                 st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
             st.markdown(f"**{row['Match Type']}**")
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
+            #st.markdown(f"**{row['Match Type']}**")
             
 
 
