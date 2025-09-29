@@ -3759,33 +3759,68 @@ with tabs[1]:
         return f"https://wa.me/?text={encoded_message}"
 
     # Updated match history display
-    if display_matches.empty:
+    #if display_matches.empty:
+    #    st.info("No matches found for the selected filters.")
+    #else:
+    #    # Ensure serial_number is present
+    #    if 'serial_number' not in display_matches.columns:
+    #        display_matches['serial_number'] = range(1, len(display_matches) + 1)
+    #    
+    #    for idx, row in display_matches.iterrows():
+    #        with st.container():
+    #            # Create columns for layout
+    #            col1, col2, col3 = st.columns([1, 3, 2])
+    #            
+    #            with col1:
+    #                st.markdown(f"**Match #{row['serial_number']}**")
+    #                st.markdown(f"**{row['Match Type']}**")
+    #            
+    #            with col2:
+    #                st.markdown(format_match_players(row), unsafe_allow_html=True)
+    #                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+    #            
+    #            with col3:
+    #                if pd.notna(row.get('match_image_url')) and row['match_image_url']:
+    #                    st.image(row['match_image_url'], width=150)
+    #                share_link = create_whatsapp_share_link(row)
+    #                st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
+    #            
+    #            st.markdown("---")
+
+     if display_matches.empty:
         st.info("No matches found for the selected filters.")
     else:
-        # Ensure serial_number is present
-        if 'serial_number' not in display_matches.columns:
-            display_matches['serial_number'] = range(1, len(display_matches) + 1)
-        
         for idx, row in display_matches.iterrows():
-            with st.container():
-                # Create columns for layout
-                col1, col2, col3 = st.columns([1, 3, 2])
-                
-                with col1:
-                    st.markdown(f"**Match #{row['serial_number']}**")
-                    st.markdown(f"**{row['Match Type']}**")
-                
-                with col2:
-                    st.markdown(format_match_players(row), unsafe_allow_html=True)
-                    st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-                
-                with col3:
-                    if pd.notna(row.get('match_image_url')) and row['match_image_url']:
-                        st.image(row['match_image_url'], width=150)
-                    share_link = create_whatsapp_share_link(row)
-                    st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
-                
-                st.markdown("---")
+            cols = st.columns([1, 1, 7, 1])
+            with cols[0]:
+                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
+            with cols[1]:
+                match_image_url = row.get("match_image_url")
+                if match_image_url:
+                    try:
+                        st.image(match_image_url, width=50, caption="")
+                        # Add the match card download button without caching
+                        card_key = f"download_match_card_{row['match_id']}_{idx}"
+                        card_bytes = generate_match_card(pd.Series(row.to_dict()), match_image_url)
+                        st.download_button(
+                            label="📇",
+                            data=card_bytes,
+                            file_name=f"match_card_{row['match_id']}.jpg",
+                            mime="image/jpeg",
+                            key=card_key
+                        )
+                    except Exception as e:
+                        st.error(f"Error displaying match image or generating card: {str(e)}")
+            with cols[2]:
+                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
+                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+            with cols[3]:
+                share_link = generate_whatsapp_link(row)
+                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
+            st.markdown(f"**{row['Match Type']}**")
+            
+
 
     # Manage existing matches
     st.markdown("---")
