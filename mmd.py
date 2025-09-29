@@ -536,6 +536,7 @@ def load_matches():
         st.error(f"Error loading matches: {str(e)}")
 
 
+
 def save_matches(matches_df):
     try:
         expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
@@ -545,6 +546,11 @@ def save_matches(matches_df):
         
         # Replace NaN with None for JSON compliance
         matches_df_to_save = matches_df_to_save.where(pd.notna(matches_df_to_save), None)
+        
+        # Convert Timestamp dates to ISO strings (Supabase-compatible)
+        matches_df_to_save['date'] = matches_df_to_save['date'].apply(
+            lambda d: d.isoformat() if isinstance(d, pd.Timestamp) and pd.notnull(d) else None
+        )
         
         # Ensure no null match IDs
         matches_df_to_save = matches_df_to_save[matches_df_to_save["match_id"].notnull() & (matches_df_to_save["match_id"] != "")]
@@ -557,8 +563,16 @@ def save_matches(matches_df):
             return
         
         supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
+        st.success("Matches saved successfully.")  # Optional: Add for feedback
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
+
+
+
+
+
+
+
 
 def delete_match_from_db(match_id):
     try:
