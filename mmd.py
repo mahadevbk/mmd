@@ -553,6 +553,7 @@ def load_matches():
 def save_matches(matches_df):
     """
     Saves matches to Supabase after validating and standardizing date formats.
+    Returns True if save is successful, False otherwise.
     """
     try:
         expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
@@ -572,7 +573,6 @@ def save_matches(matches_df):
         invalid_date_rows = matches_df_to_save[matches_df_to_save['date'].isna()]
         if not invalid_date_rows.empty:
             st.warning(f"Found {len(invalid_date_rows)} matches with invalid or missing dates. Setting to current date: {invalid_date_rows['match_id'].tolist()}")
-            # Set fallback to current date (or reject these rows if preferred)
             matches_df_to_save.loc[matches_df_to_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d')
         
         # Ensure no null or empty match IDs
@@ -583,13 +583,15 @@ def save_matches(matches_df):
         
         if matches_df_to_save.empty:
             st.warning("No valid matches to save (all match IDs were null or empty).")
-            return
+            return False
         
         # Upsert to Supabase
         supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
-        st.success("Matches saved successfully.")
+        st.success("Match saved successfully. Refreshing page...")
+        return True
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
+        return False
 
 
 
