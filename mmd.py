@@ -551,6 +551,9 @@ def load_matches():
 
 
 def save_matches(matches_df):
+    """
+    Saves matches to Supabase after validating and standardizing date formats.
+    """
     try:
         expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
                            "team2_player1", "team2_player2", "set1", "set2", "set3", 
@@ -560,12 +563,19 @@ def save_matches(matches_df):
         # Replace NaN with None for JSON compliance
         matches_df_to_save = matches_df_to_save.where(pd.notna(matches_df_to_save), None)
         
-        # Convert Timestamp dates to ISO strings (Supabase-compatible)
+        # Validate and standardize dates
         matches_df_to_save['date'] = matches_df_to_save['date'].apply(
-            lambda d: d.isoformat() if isinstance(d, pd.Timestamp) and pd.notnull(d) else None
+            lambda d: pd.to_datetime(d, errors='coerce').strftime('%Y-%m-%d') if pd.notnull(pd.to_datetime(d, errors='coerce')) else None
         )
         
-        # Ensure no null match IDs
+        # Log and handle records with invalid/missing dates
+        invalid_date_rows = matches_df_to_save[matches_df_to_save['date'].isna()]
+        if not invalid_date_rows.empty:
+            st.warning(f"Found {len(invalid_date_rows)} matches with invalid or missing dates. Setting to current date: {invalid_date_rows['match_id'].tolist()}")
+            # Set fallback to current date (or reject these rows if preferred)
+            matches_df_to_save.loc[matches_df_to_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d')
+        
+        # Ensure no null or empty match IDs
         matches_df_to_save = matches_df_to_save[matches_df_to_save["match_id"].notnull() & (matches_df_to_save["match_id"] != "")]
         
         # Remove duplicates based on 'match_id', keeping the last entry
@@ -575,8 +585,9 @@ def save_matches(matches_df):
             st.warning("No valid matches to save (all match IDs were null or empty).")
             return
         
+        # Upsert to Supabase
         supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
-        st.success("Matches saved successfully.")  # Optional: Add for feedback
+        st.success("Matches saved successfully.")
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
