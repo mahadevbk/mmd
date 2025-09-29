@@ -3759,33 +3759,7 @@ with tabs[1]:
         return f"https://wa.me/?text={encoded_message}"
 
     # Updated match history display
-    #if display_matches.empty:
-    #    st.info("No matches found for the selected filters.")
-    #else:
-    #    # Ensure serial_number is present
-    #    if 'serial_number' not in display_matches.columns:
-    #        display_matches['serial_number'] = range(1, len(display_matches) + 1)
-    #    
-    #    for idx, row in display_matches.iterrows():
-    #        with st.container():
-    #            # Create columns for layout
-    #            col1, col2, col3 = st.columns([1, 3, 2])
-    #            
-    #            with col1:
-    #                st.markdown(f"**Match #{row['serial_number']}**")
-    #                st.markdown(f"**{row['Match Type']}**")
-    #            
-    #            with col2:
-    #                st.markdown(format_match_players(row), unsafe_allow_html=True)
-    #                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-    #            
-    #            with col3:
-    #                if pd.notna(row.get('match_image_url')) and row['match_image_url']:
-    #                    st.image(row['match_image_url'], width=150)
-    #                share_link = create_whatsapp_share_link(row)
-    #                st.markdown(f'<a href="{share_link}" target="_blank">Share on WhatsApp</a>', unsafe_allow_html=True)
-    #            
-    #            st.markdown("---")
+
 
     if display_matches.empty:
         st.info("No matches found for the selected filters.")
@@ -3802,10 +3776,7 @@ with tabs[1]:
                         # Add the match card download button without caching
                         card_key = f"download_match_card_{row['match_id']}_{idx}"
                         card_bytes = generate_match_card(pd.Series(row.to_dict()), match_image_url)
-                        
-                        if st.button("📇 View Match Card", key=f"view_{row['match_id']}"):
-                          # Option 1: Display the image directly in Streamlit
-                          st.image(image_data_uri, caption=f"Match Card {row['match_id']}")
+                      
                           
                         st.download_button(
                             label="📇",
