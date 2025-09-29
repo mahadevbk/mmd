@@ -2503,7 +2503,7 @@ def generate_match_card(row, image_url):
     rounded_img = Image.new('RGBA', (new_width, base_height), (0, 0, 0, 0))
     rounded_img.paste(img_rgba, (0, 0), mask)
     
-    # Create Polaroid canvas with gradient background
+    # --- MODIFICATION: Create Polaroid canvas with gradient background ---
     border_sides = 30
     border_bottom = 150  # Space for text
     new_img_width = new_width + 2 * border_sides
@@ -2525,7 +2525,7 @@ def generate_match_card(row, image_url):
 
     polaroid_img = gradient_background
 
-    # Create optic yellow shadow for the image
+    # --- MODIFICATION: Create optic yellow shadow for the image ---
     shadow_offset_img = 5
     shadow_size = (new_width + 10, base_height + 10)
     shadow = Image.new('RGBA', shadow_size, (0, 0, 0, 0))
@@ -2539,6 +2539,8 @@ def generate_match_card(row, image_url):
     # Paste the rounded image
     polaroid_img.paste(rounded_img, (border_sides, border_sides), rounded_img)
     
+    # --- (Rest of the function remains the same for logic) ---
+
     # Prepare teams
     match_type = row['match_type']
     if match_type == 'Doubles':
@@ -2612,14 +2614,17 @@ def generate_match_card(row, image_url):
     
     date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
     
-    # Draw text
+    # =========================================================================
+    # --- START: MODIFIED TEXT DRAWING SECTION ---
+    # =========================================================================
+    
     draw = ImageDraw.Draw(polaroid_img)
     try:
         font = ImageFont.truetype("CoveredByYourGrace-Regular.ttf", 50)
     except IOError:
         font = ImageFont.load_default() # Simplified fallback
     
-    # Font scaling logic
+    # Font scaling logic...
     max_text_width = new_width * 0.8
     players_bbox = draw.textbbox((0, 0), players_text, font=font)
     if (players_bbox[2] - players_bbox[0]) > max_text_width:
@@ -2635,7 +2640,7 @@ def generate_match_card(row, image_url):
     x_center = new_img_width / 2
     y_positions = [text_area_top + 30, text_area_top + 80, text_area_top + 130]
     
-    # Define text and shadow colors
+    # --- Define text and shadow colors ---
     optic_yellow = (204, 255, 0, 255)
     medium_grey = (128, 128, 128, 255)
     shadow_fill = (53, 66, 0, 255)
@@ -2649,7 +2654,7 @@ def generate_match_card(row, image_url):
         # Draw main text
         draw_surface.text((x, y), text, font=font, fill=fill_color, anchor=anchor)
 
-    # Draw Line 1: Player Names (Yellow) and Verb (Grey)
+    # --- Draw Line 1: Player Names (Yellow) and Verb (Grey) ---
     y1 = y_positions[0]
     if winner == 'Tie':
         part1, part2, part3 = team1, f' {verb} ', team2
@@ -2670,12 +2675,13 @@ def generate_match_card(row, image_url):
     current_x += width2
     draw_text_with_shadow(draw, (current_x, y1), part3, font, optic_yellow, anchor="lm")
 
-    # Draw Line 2: Set Scores (Yellow)
+    # --- Draw Line 2: Set Scores (Yellow) ---
     y2 = y_positions[1]
+    # For single-color lines, we can still center it directly
     draw.text((x_center + shadow_offset, y2 + shadow_offset), set_text, font=font, fill=shadow_fill, anchor="mm")
     draw.text((x_center, y2), set_text, font=font, fill=optic_yellow, anchor="mm")
 
-    # Draw Line 3: GDA & Date (Labels Grey, Values Yellow)
+    # --- Draw Line 3: GDA & Date (Labels Grey, Values Yellow) ---
     y3 = y_positions[2]
     gda_label, gda_value = "GDA: ", f"{gda:.2f}"
     date_label, date_value = " | Date: ", date_str
@@ -2695,13 +2701,16 @@ def generate_match_card(row, image_url):
     current_x += date_label_w
     draw_text_with_shadow(draw, (current_x, y3), date_value, font, optic_yellow, anchor="lm")
     
-    # Convert image to JPEG and encode to base64
+    # =========================================================================
+    # --- END: MODIFIED TEXT DRAWING SECTION ---
+    # =========================================================================
+    
     polaroid_img = polaroid_img.convert('RGB')
+    
     buf = io.BytesIO()
     polaroid_img.save(buf, format='JPEG')
     buf.seek(0)
-    base64_string = base64.b64encode(buf.getvalue()).decode('utf-8')
-    return f"data:image/jpeg;base64,{base64_string}"
+    return buf.getvalue()
 
 
 
