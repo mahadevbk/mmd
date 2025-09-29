@@ -574,10 +574,10 @@ def delete_match_from_db(match_id):
 
 
 
-# NEW FUNCTION: Replacing old upload_image_to_supabase function with this one.
 def upload_image_to_github(file, file_name, image_type="match"):
     """
     Uploads a file to a specified folder in a GitHub repository and returns its public URL.
+    Handles both new uploads and updates by fetching sha if the file exists.
     """
     if not file:
         return ""
@@ -593,18 +593,15 @@ def upload_image_to_github(file, file_name, image_type="match"):
 
     # --- Determine the path in the repository ---
     if image_type == "profile":
-        # For profiles, the file_name already contains the unique part
         path_in_repo = f"assets/profile_images/{file_name}.jpg"
     elif image_type == "match":
-        # For matches, file_name is the match_id
         path_in_repo = f"assets/match_images/{file_name}.jpg"
     elif image_type == "booking":
-        # For bookings, file_name is the booking_id
         path_in_repo = f"assets/bookings_images/{file_name}.jpg"
     else:
         path_in_repo = f"assets/others/{file_name}.jpg"
 
-    # --- Prepare the file and API request ---
+    # --- Prepare the API URL and headers ---
     api_url = f"https://api.github.com/repos/{repo_full_name}/contents/{path_in_repo}"
 
     headers = {
@@ -612,7 +609,19 @@ def upload_image_to_github(file, file_name, image_type="match"):
         "Accept": "application/vnd.github.v3+json",
     }
 
-    # Read file content and encode it in base64
+    # --- Check if the file exists and get sha (for updates) ---
+    sha = None
+    get_response = requests.get(api_url, headers=headers)
+    if get_response.status_code == 200:
+        sha = get_response.json().get('sha')
+        st.info(f"File {path_in_repo} already exists. Updating with sha: {sha}")
+    elif get_response.status_code == 404:
+        st.info(f"File {path_in_repo} does not exist. Creating new file.")
+    else:
+        st.error(f"GitHub GET Error: Status {get_response.status_code}. Response: {get_response.text}")
+        return ""
+
+    # --- Prepare the file content ---
     content_bytes = file.getvalue()
     content_base64 = base64.b64encode(content_bytes).decode("utf-8")
 
@@ -621,23 +630,24 @@ def upload_image_to_github(file, file_name, image_type="match"):
         "branch": branch,
         "content": content_base64,
     }
+    if sha:
+        payload["sha"] = sha  # Include sha only for updates
 
-    # --- Make the API call to upload the file ---
+    # --- Make the API call to upload/update the file ---
     try:
         response = requests.put(api_url, headers=headers, json=payload)
-        response.raise_for_status() # Raises an exception for bad status codes (4xx or 5xx)
-
-        # If successful, construct the public raw URL
-        st.success(f"Image '{file_name}.jpg' uploaded to GitHub successfully!")
+        response.raise_for_status()  # Raises exception for bad status codes
+        st.success(f"Image '{file_name}.jpg' uploaded/updated to GitHub successfully!")
         return f"https://raw.githubusercontent.com/{repo_full_name}/{branch}/{path_in_repo}"
-
     except requests.exceptions.HTTPError as e:
-        st.error(f"GitHub API Error: Failed to upload image. Status Code: {e.response.status_code}")
+        st.error(f"GitHub API Error: Failed to upload/update image. Status Code: {e.response.status_code}")
         st.error(f"Response: {e.response.text}")
-        return "" # Return empty string on failure
+        return ""
     except Exception as e:
         st.error(f"An unexpected error occurred during image upload: {str(e)}")
         return ""
+
+
 
 
         
