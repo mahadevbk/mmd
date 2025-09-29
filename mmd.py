@@ -552,7 +552,7 @@ def load_matches():
 
 def save_matches(matches_df):
     """
-    Saves matches to Supabase after validating and standardizing date formats.
+    Saves matches to Supabase after validating and standardizing date formats to 'YYYY-MM-DD HH:MM:SS'.
     Returns True if save is successful, False otherwise.
     """
     try:
@@ -564,16 +564,16 @@ def save_matches(matches_df):
         # Replace NaN with None for JSON compliance
         matches_df_to_save = matches_df_to_save.where(pd.notna(matches_df_to_save), None)
         
-        # Validate and standardize dates
+        # Validate and standardize dates to 'YYYY-MM-DD HH:MM:SS'
         matches_df_to_save['date'] = matches_df_to_save['date'].apply(
-            lambda d: pd.to_datetime(d, errors='coerce').strftime('%Y-%m-%d') if pd.notnull(pd.to_datetime(d, errors='coerce')) else None
+            lambda d: pd.to_datetime(d, errors='coerce').strftime('%Y-%m-%d %H:%M:%S') if pd.notnull(pd.to_datetime(d, errors='coerce')) else None
         )
         
         # Log and handle records with invalid/missing dates
         invalid_date_rows = matches_df_to_save[matches_df_to_save['date'].isna()]
         if not invalid_date_rows.empty:
-            st.warning(f"Found {len(invalid_date_rows)} matches with invalid or missing dates. Setting to current date: {invalid_date_rows['match_id'].tolist()}")
-            matches_df_to_save.loc[matches_df_to_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d')
+            st.warning(f"Found {len(invalid_date_rows)} matches with invalid or missing dates. Setting to current date and time: {invalid_date_rows['match_id'].tolist()}")
+            matches_df_to_save.loc[matches_df_to_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # Ensure no null or empty match IDs
         matches_df_to_save = matches_df_to_save[matches_df_to_save["match_id"].notnull() & (matches_df_to_save["match_id"] != "")]
