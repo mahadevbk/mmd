@@ -3787,7 +3787,7 @@ with tabs[1]:
     #            
     #            st.markdown("---")
 
-     if display_matches.empty:
+    if display_matches.empty:
         st.info("No matches found for the selected filters.")
     else:
         for idx, row in display_matches.iterrows():
