@@ -2587,7 +2587,7 @@ def generate_match_card(row, image_url):
     abs_gda = abs(gda)
     
     # Define verb lists
-    strong_verbs = ["obliterated", "crushed", "smashed", "annihilated", "destroyed"]
+    strong_verbs = ["obliterated", "crushed", "smashed", "annihilated", "destroyed","beat the hell out of","deadpooled"]
     solid_verbs = ["dominated", "overpowered", "outplayed", "thrashed"]
     decent_verbs = ["defeated", "beat", "conquered", "toppled"]
     close_verbs = ["overcame", "outlasted", "surpassed", "bested"]
