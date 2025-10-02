@@ -1412,6 +1412,39 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                 st.markdown(partners_list_str, unsafe_allow_html=True)
 
 
+          # New head to head stats  block in player insights
+
+            with st.expander("Head-to-Head vs Other Players", expanded=False, icon="➡️"):
+                other_players = [p for p in available_players if p != player]
+                opponent = st.selectbox("Select Opponent", [""] + other_players, key=f"h2h_opponent_{player}_{idx}")
+                if opponent:
+                    h2h_stats = calculate_head_to_head(player, opponent, matches_df)
+                    
+                    # Display stats in a table
+                    stats_data = []
+                    for match_type, stats in h2h_stats.items():
+                        stats_data.append({
+                            "Match Type": match_type,
+                            "Total Matches": stats["matches"],
+                            f"{player} Wins": stats["wins_a"],
+                            f"{opponent} Wins": stats["wins_b"],
+                            "Ties": stats["ties"]
+                        })
+                    
+                    h2h_df = pd.DataFrame(stats_data)
+                    st.table(h2h_df)
+                    
+                    # Overall summary
+                    total_matches = sum(stats["matches"] for stats in h2h_stats.values())
+                    if total_matches > 0:
+                        overall_wins_player = sum(stats["wins_a"] for stats in h2h_stats.values())
+                        overall_wins_opponent = sum(stats["wins_b"] for stats in h2h_stats.values())
+                        overall_ties = sum(stats["ties"] for stats in h2h_stats.values())
+                        st.metric(f"Overall vs {opponent}", f"{overall_wins_player}-{overall_wins_opponent}-{overall_ties}")
+                else:
+                    st.info("Select an opponent to view head-to-head stats.")
+
+
 
 
 
