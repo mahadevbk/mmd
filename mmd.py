@@ -2546,6 +2546,17 @@ def display_hall_of_fame():
     """
     st.header("🏆 Hall of Fame")
 
+    def season_to_date(season_str):
+        if not season_str:
+            return datetime(1900, 1, 1)
+        match = re.match(r'Q(\d) (\d{4})', season_str)
+        if match:
+            q = int(match.group(1))
+            year = int(match.group(2))
+            month = (q - 1) * 3 + 3  # Q1:3, Q2:6, Q3:9, Q4:12
+            return datetime(year, month, 1)
+        return datetime(1900, 1, 1)
+
     try:
         response = supabase.table(hall_of_fame_table_name).select("*").order("Season", desc=True).order("Rank", desc=False).execute()
         hof_data = response.data
@@ -2555,7 +2566,7 @@ def display_hall_of_fame():
             return
 
         # Using a set for faster unique lookups
-        seasons = sorted(list(set(p['Season'] for p in hof_data)), reverse=True)
+        seasons = sorted(list(set(p['Season'] for p in hof_data)), key=season_to_date, reverse=True)
 
         for season in seasons:
             st.subheader(f"🏅 Season: {season}")
