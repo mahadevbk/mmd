@@ -2735,6 +2735,12 @@ tabs = st.tabs(tab_names)
 
 
 with tabs[0]:
+
+    load_players()
+    load_matches()
+    available_players = sorted([name for name in st.session_state.players_df["name"].values if name]) if not st.session_state.players_df.empty else []
+
+    
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     ranking_type = st.radio(
         "Select Ranking View",
@@ -3105,6 +3111,49 @@ with tabs[0]:
                         st.plotly_chart(partnership_chart, config={"responsive": True})
                     else:
                         st.info(f"{selected_player_for_partners} has no partnership data to display.")
+
+
+            # --- Head-to-Head Stats ---
+           
+            st.markdown("---")
+            st.subheader("Head-to-Head Stats")
+            col_ht1, col_ht2 = st.columns(2)
+            with col_ht1:
+                player_a = st.selectbox("Select Player A", [""] + available_players, key="ht_player_a")
+            with col_ht2:
+                player_b = st.selectbox("Select Player B", [""] + available_players, key="ht_player_b")
+        
+            if player_a and player_b and player_a != player_b:
+                h2h_stats = calculate_head_to_head(player_a, player_b, st.session_state.matches_df)
+                
+                # Display stats in a table
+                stats_data = []
+                for match_type, stats in h2h_stats.items():
+                    stats_data.append({
+                        "Match Type": match_type,
+                        "Total Matches": stats["matches"],
+                        f"{player_a} Wins": stats["wins_a"],
+                        f"{player_b} Wins": stats["wins_b"],
+                        "Ties": stats["ties"]
+                    })
+                
+                h2h_df = pd.DataFrame(stats_data)
+                st.table(h2h_df)
+                
+                # Overall summary
+                total_matches = sum(stats["matches"] for stats in h2h_stats.values())
+                if total_matches > 0:
+                    overall_wins_a = sum(stats["wins_a"] for stats in h2h_stats.values())
+                    overall_wins_b = sum(stats["wins_b"] for stats in h2h_stats.values())
+                    overall_ties = sum(stats["ties"] for stats in h2h_stats.values())
+                    st.metric("Overall Record", f"{overall_wins_a}-{overall_wins_b}-{overall_ties}")
+            else:
+                st.info("Select two different players to view head-to-head stats.")
+
+
+
+
+            
 
             st.markdown("---")
             with st.expander("Process being used for Rankings", expanded=False, icon="➡️"):
