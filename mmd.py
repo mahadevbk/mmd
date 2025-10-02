@@ -3727,11 +3727,12 @@ with tabs[1]:
 
 
     # Manage existing matches
+        
     st.markdown("---")
     st.subheader("✏️ Manage Existing Matches")
     if 'edit_match_key' not in st.session_state:
         st.session_state.edit_match_key = 0
-
+    
     if st.session_state.matches_df.empty:
         st.info("No matches available to manage.")
     else:
@@ -3749,13 +3750,13 @@ with tabs[1]:
             winner = row['winner'] if row['winner'] else "Unknown"
             desc = f"Date: {date_str} | Match Type: {row['match_type']} | Players: {players_str} | Winner: {winner} | Match ID: {row['match_id']}"
             match_options.append(desc)
-
+    
         selected_match = st.selectbox("Select a match to edit or delete", [""] + match_options, key=f"select_match_to_edit_{st.session_state.edit_match_key}")
         if selected_match:
             match_id = selected_match.split(" | Match ID: ")[-1]
             match_row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == match_id].iloc[0]
             match_idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == match_id].index[0]
-
+    
             with st.expander("Edit Match Details", expanded=True):
                 date_edit = st.date_input(
                     "Match Date *",
@@ -3768,72 +3769,99 @@ with tabs[1]:
                     index=0 if match_row["match_type"] == "Doubles" else 1,
                     key=f"edit_match_type_{match_id}"
                 )
+                
+                # Initialize player variables to avoid NameError
+                t1p1_edit = match_row.get("team1_player1", "")
+                t1p2_edit = match_row.get("team1_player2", "")
+                t2p1_edit = match_row.get("team2_player1", "")
+                t2p2_edit = match_row.get("team2_player2", "")
+                
                 if match_type_edit == "Doubles":
                     col1, col2 = st.columns(2)
                     with col1:
+                        t1p1_index = available_players.index(t1p1_edit) + 1 if t1p1_edit and t1p1_edit in available_players else 0
                         t1p1_edit = st.selectbox(
                             "Team 1 - Player 1 *",
                             [""] + available_players,
-                            index=available_players.index(match_row["team1_player1"]) + 1 if match_row["team1_player1"] in available_players else 0,
+                            index=t1p1_index,
                             key=f"edit_t1p1_{match_id}"
                         )
+                        t1p2_index = available_players.index(t1p2_edit) + 1 if t1p2_edit and t1p2_edit in available_players else 0
                         t1p2_edit = st.selectbox(
                             "Team 1 - Player 2 *",
                             [""] + available_players,
-                            index=available_players.index(match_row["team1_player2"]) + 1 if match_row["team1_player2"] in available_players else 0,
+                            index=t1p2_index,
                             key=f"edit_t1p2_{match_id}"
                         )
                     with col2:
-                        t1p2_edit = st.selectbox(
+                        t2p1_index = available_players.index(t2p1_edit) + 1 if t2p1_edit and t2p1_edit in available_players else 0
+                        t2p1_edit = st.selectbox(
                             "Team 2 - Player 1 *",
                             [""] + available_players,
-                            index=available_players.index(match_row["team2_player1"]) + 1 if match_row["team2_player1"] in available_players else 0,
+                            index=t2p1_index,
                             key=f"edit_t2p1_{match_id}"
                         )
+                        t2p2_index = available_players.index(t2p2_edit) + 1 if t2p2_edit and t2p2_edit in available_players else 0
                         t2p2_edit = st.selectbox(
                             "Team 2 - Player 2 *",
                             [""] + available_players,
-                            index=available_players.index(match_row["team2_player2"]) + 1 if match_row["team2_player2"] in available_players else 0,
+                            index=t2p2_index,
                             key=f"edit_t2p2_{match_id}"
                         )
                 else:
-                    t1p1_edit = st.selectbox(
-                        "Player 1 *",
-                        [""] + available_players,
-                        index=available_players.index(match_row["team1_player1"]) + 1 if match_row["team1_player1"] in available_players else 0,
-                        key=f"edit_s1p1_{match_id}"
-                    )
-                    t2p1_edit = st.selectbox(
-                        "Player 2 *",
-                        [""] + available_players,
-                        index=available_players.index(match_row["team2_player1"]) + 1 if match_row["team2_player1"] in available_players else 0,
-                        key=f"edit_s1p2_{match_id}"
-                    )
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        t1p1_index = available_players.index(t1p1_edit) + 1 if t1p1_edit and t1p1_edit in available_players else 0
+                        t1p1_edit = st.selectbox(
+                            "Player 1 *",
+                            [""] + available_players,
+                            index=t1p1_index,
+                            key=f"edit_s1p1_{match_id}"
+                        )
+                    with col2:
+                        t2p1_index = available_players.index(t2p1_edit) + 1 if t2p1_edit and t2p1_edit in available_players else 0
+                        t2p1_edit = st.selectbox(
+                            "Player 2 *",
+                            [""] + available_players,
+                            index=t2p1_index,
+                            key=f"edit_s1p2_{match_id}"
+                        )
+                    # For singles, clear partner fields
                     t1p2_edit = ""
                     t2p2_edit = ""
-
+    
+                # Safe index for set scores
+                def safe_index(lst, value):
+                    try:
+                        return lst.index(value) + 1 if value in lst else 0
+                    except ValueError:
+                        return 0
+    
+                set_scores = tennis_scores()
                 set1_edit = st.selectbox(
                     "Set 1 Score *",
-                    [""] + tennis_scores(),
-                    index=tennis_scores().index(match_row["set1"]) + 1 if match_row["set1"] in tennis_scores() else 0,
+                    [""] + set_scores,
+                    index=safe_index(set_scores, match_row["set1"]),
                     key=f"edit_set1_{match_id}"
                 )
                 set2_edit = st.selectbox(
                     "Set 2 Score (optional)",
-                    [""] + tennis_scores(),
-                    index=tennis_scores().index(match_row["set2"]) + 1 if match_row["set2"] in tennis_scores() else 0,
+                    [""] + set_scores,
+                    index=safe_index(set_scores, match_row["set2"]),
                     key=f"edit_set2_{match_id}"
                 )
                 set3_edit = st.selectbox(
                     "Set 3 Score (optional)",
-                    [""] + tennis_scores(),
-                    index=tennis_scores().index(match_row["set3"]) + 1 if match_row["set3"] in tennis_scores() else 0,
+                    [""] + set_scores,
+                    index=safe_index(set_scores, match_row["set3"]),
                     key=f"edit_set3_{match_id}"
                 )
+                winner_options = ["Team 1", "Team 2", "Tie"]
+                winner_index = winner_options.index(match_row["winner"]) if match_row["winner"] in winner_options else 0
                 winner_edit = st.radio(
                     "Winner *",
-                    ["Team 1", "Team 2", "Tie"],
-                    index=["Team 1", "Team 2", "Tie"].index(match_row["winner"]) if match_row["winner"] in ["Team 1", "Team 2", "Tie"] else 0,
+                    winner_options,
+                    index=winner_index,
                     key=f"edit_winner_{match_id}"
                 )
                 uploaded_image_edit = st.file_uploader(
@@ -3842,7 +3870,7 @@ with tabs[1]:
                     key=f"edit_match_image_{match_id}"
                 )
                 st.markdown("*Required fields", unsafe_allow_html=True)
-
+    
                 col_save, col_delete = st.columns(2)
                 with col_save:
                     if st.button("Save Changes", key=f"save_match_changes_{match_id}"):
@@ -3865,7 +3893,7 @@ with tabs[1]:
                                 elif t1p1_edit == t2p1_edit:
                                     st.error("Please select different players for singles.")
                                     valid = False
-
+    
                         if valid:
                             team1_sets_won = 0
                             team2_sets_won = 0
@@ -3890,7 +3918,7 @@ with tabs[1]:
                                     st.error(f"Invalid score: {score}. Please use formats like '6-4' or 'Tie Break 10-7'.")
                                     valid = False
                                     break
-
+    
                             if valid:
                                 if len(valid_sets) == 1 and winner_edit != "Tie":
                                     st.error("A match with only one set should be a tie or have additional sets.")
@@ -3905,7 +3933,7 @@ with tabs[1]:
                                     elif team1_sets_won == team2_sets_won and winner_edit != "Tie":
                                         st.error("Teams won an equal number of sets. Please select 'Tie' as the winner or correct the scores.")
                                         valid = False
-
+    
                         if valid:
                             try:
                                 image_url_edit = match_row["match_image_url"]
@@ -3935,7 +3963,7 @@ with tabs[1]:
                                 st.error(f"Failed to save match: {str(e)}")
                                 st.session_state.edit_match_key += 1
                                 st.rerun()
-
+    
                 with col_delete:
                     if st.button("🗑️ Delete This Match", key=f"delete_match_{match_id}"):
                         try:
@@ -3948,8 +3976,6 @@ with tabs[1]:
                             st.error(f"Failed to delete match: {str(e)}")
                             st.session_state.edit_match_key += 1
                             st.rerun()
-
-
 
 
 
