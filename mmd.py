@@ -2016,6 +2016,7 @@ def display_match_table(df, title):
 def generate_whatsapp_link(row):
     """
     Generate a WhatsApp share link with match details, including GDA-based verb and GDA value.
+    Flattened to single line to ensure proper pre-fill on iOS.
     """
     # Get verb and GDA
     verb, gda = get_match_verb_and_gda(row)
@@ -2058,10 +2059,10 @@ def generate_whatsapp_link(row):
     else:  # Team 2
         headline = f"*{t2} {verb} {t1}*"
     
-    # Construct share text
-    share_text = f"{headline}\nSet scores {scores_str}{gda_text}\nDate: *{date_str}*"
+    # Construct share text as single line with separators
+    share_text = f"{headline} | Set scores {scores_str}{gda_text} | Date: *{date_str}*"
     #if row["match_image_url"]:
-    #    share_text += f"\nImage: {row['match_image_url']}"
+    #    share_text += f" | Image: {row['match_image_url']}"
     
     # Encode text for WhatsApp URL
     encoded_text = urllib.parse.quote(share_text)
