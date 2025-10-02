@@ -2604,6 +2604,71 @@ def display_hall_of_fame():
         st.error("Please double-check your Supabase table name and column names for any typos.")
 
 
+        
+#--------------------New Head to Head Function ----------------------------------------------
+
+
+
+
+def calculate_head_to_head(player_a, player_b, matches_df):
+    """
+    Calculate head-to-head stats between two players, separated by match type.
+    
+    Args:
+        player_a (str): Name of the first player.
+        player_b (str): Name of the second player.
+        matches_df (pd.DataFrame): DataFrame containing match data.
+    
+    Returns:
+        dict: Dictionary with stats for Singles and Doubles.
+    """
+    if not player_a or not player_b:
+        return {"Singles": {"matches": 0, "wins_a": 0, "wins_b": 0, "ties": 0},
+                "Doubles": {"matches": 0, "wins_a": 0, "wins_b": 0, "ties": 0}}
+    
+    h2h_stats = {"Singles": {"matches": 0, "wins_a": 0, "wins_b": 0, "ties": 0},
+                 "Doubles": {"matches": 0, "wins_a": 0, "wins_b": 0, "ties": 0}}
+    
+    # Filter matches involving both players
+    relevant_matches = matches_df[
+        ((matches_df['team1_player1'] == player_a) | (matches_df['team1_player2'] == player_a) | 
+         (matches_df['team2_player1'] == player_a) | (matches_df['team2_player2'] == player_a)) &
+        ((matches_df['team1_player1'] == player_b) | (matches_df['team1_player2'] == player_b) | 
+         (matches_df['team2_player1'] == player_b) | (matches_df['team2_player2'] == player_b))
+    ].copy()
+    
+    for _, row in relevant_matches.iterrows():
+        match_type = row['match_type']
+        if match_type not in h2h_stats:
+            continue
+        
+        # Check if they are opponents (not partners)
+        team_a = [p for p in [row['team1_player1'], row['team1_player2']] if p == player_a]
+        team_b = [p for p in [row['team1_player1'], row['team1_player2']] if p == player_b]
+        if team_a and team_b:  # Both on Team 1: partners, skip
+            continue
+        team_a = [p for p in [row['team2_player1'], row['team2_player2']] if p == player_a]
+        team_b = [p for p in [row['team2_player1'], row['team2_player2']] if p == player_b]
+        if team_a and team_b:  # Both on Team 2: partners, skip
+            continue
+        
+        # They are opponents
+        h2h_stats[match_type]["matches"] += 1
+        
+        winner = row['winner']
+        if winner == "Tie":
+            h2h_stats[match_type]["ties"] += 1
+        else:
+            # Determine which team player_a is on
+            is_a_on_team1 = player_a in [row['team1_player1'], row['team1_player2']]
+            if (is_a_on_team1 and winner == "Team 1") or (not is_a_on_team1 and winner == "Team 2"):
+                h2h_stats[match_type]["wins_a"] += 1
+            else:
+                h2h_stats[match_type]["wins_b"] += 1
+    
+    return h2h_stats
+
+
 
 
 
