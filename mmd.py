@@ -4332,6 +4332,8 @@ with tabs[3]:
 
 
 
+
+
 with tabs[4]:
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
@@ -4565,7 +4567,7 @@ with tabs[4]:
                                 })
                             all_pairings.sort(key=lambda x: x['diff'])
                             pairing_suggestion = "<div><strong style='color:white;'>Pairing Combos and Odds:</strong></div>"
-                            plain_suggestion = "\n*Pairing Combos and Odds:*\n"
+                            plain_suggestion = "*Pairing Combos and Odds:* | "
                             for idx, pairing in enumerate(all_pairings[:3], 1):
                                 pairing_suggestion += (
                                     f"<div>Option {idx}: {pairing['pairing']} "
@@ -4573,8 +4575,9 @@ with tabs[4]:
                                     f"<span style='font-weight:bold; color:#fff500;'>{pairing['team2_odds']:.1f}%</span>)</div>"
                                 )
                                 plain_suggestion += (
-                                    f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%)\n"
+                                    f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
                                 )
+                            plain_suggestion = plain_suggestion.rstrip(" | ")
                     elif row['match_type'] == "Doubles" and len(players) < 4:
                         pairing_suggestion = "<div><strong style='color:white;'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
                         plain_suggestion = "Not enough players for pairing odds"
@@ -4614,10 +4617,10 @@ with tabs[4]:
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
                 full_date = f"{weekday}, {date_part}, {time_ampm}"
                 court_name = row['court_name']
-                players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
-                standby_text = f"\nSTD. BY: *{row['standby_player']}*" if row['standby_player'] else ""
+                players_list = ", ".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
+                standby_text = f" | STD. BY: *{row['standby_player']}*" if row['standby_player'] else ""
                 
-                share_text = f"*Game Booking:*\nDate: *{full_date}*\nCourt: *{court_name}*\nPlayers:\n{players_list}{standby_text}\n{plain_suggestion}\nCourt location: {court_url}"
+                share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}* | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
                 encoded_text = urllib.parse.quote(share_text)
                 whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
                 
