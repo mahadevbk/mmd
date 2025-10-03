@@ -4742,14 +4742,12 @@ with tabs[4]:
     day_options = [d.strftime("%A, %d %b") for d in next_10_days]
     date_options = [d.isoformat() for d in next_10_days]
     
-    # Time slots matching existing booking times
-    time_slots = [
-        "6:00 AM", "6:30 AM", "7:30 AM"
-    ] + [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(7, 22)]
+    # Time slots (hourly from 6AM to 9PM for simplicity and small cells)
+    time_slots = [f"{h % 12 if h % 12 != 0 else 12}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
     
-    # Load availability from Supabase (new table: availability)
+    # Load availability from Supabase
     availability_table_name = "availability"
-    expected_columns = ["id", "player_name", "date", "time_slot"]  # Moved outside try block
+    expected_columns = ["id", "player_name", "date", "time_slot"]
     
     if 'availability_df' not in st.session_state:
         try:
@@ -4761,130 +4759,146 @@ with tabs[4]:
             st.session_state.availability_df = df
         except Exception as e:
             st.error(f"Error loading availability: {str(e)}")
-            # Note: Table 'availability' does not exist. Please create it in Supabase with columns: id (uuid), player_name (text), date (text), time_slot (text)
             st.session_state.availability_df = pd.DataFrame(columns=expected_columns)
     
     def save_availability(availability_df):
         try:
-            # Ensure table exists before saving (basic check)
-            supabase.table(availability_table_name).select("count", count="exact").execute()  # This will fail if table doesn't exist
             supabase.table(availability_table_name).upsert(availability_df.to_dict("records")).execute()
             st.success("Availability updated successfully!")
+            st.rerun()
         except Exception as e:
             st.error(f"Error saving availability: {str(e)}")
-            st.warning("Table 'availability' may not exist. Please create it in Supabase Dashboard with columns: id (uuid primary key), player_name (text), date (text), time_slot (text)")
     
-    def delete_availability(player_name, date, time_slot):
+    def delete_availability(player_name, date_str):
         try:
-            supabase.table(availability_table_name).delete().eq("player_name", player_name).eq("date", date).eq("time_slot", time_slot).execute()
+            # Delete all entries for player and date
+            supabase.table(availability_table_name).delete().eq("player_name", player_name).eq("date", date_str).execute()
             st.session_state.availability_df = st.session_state.availability_df[
                 ~((st.session_state.availability_df["player_name"] == player_name) & 
-                  (st.session_state.availability_df["date"] == date) & 
-                  (st.session_state.availability_df["time_slot"] == time_slot))
+                  (st.session_state.availability_df["date"] == date_str))
             ].reset_index(drop=True)
             save_availability(st.session_state.availability_df)
         except Exception as e:
             st.error(f"Error deleting availability: {str(e)}")
     
-    # Add/Update Availability Form
+    # Add/Update Availability Form (simplified: one day at a time)
     with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
         selected_player = st.selectbox("Select Player", [""] + available_players, key="avail_player")
-        if selected_player:
-            selected_days = st.multiselect("Select Days (Next 10 Days)", day_options, key="avail_days")
-            if selected_days:
-                for day_label in selected_days:
-                    day_date = next_10_days[day_options.index(day_label)]
-                    day_key = f"times_{day_label.replace(', ', '_')}"
-                    selected_times = st.multiselect(
-                        f"Available Times for {day_label}",
-                        time_slots,
-                        key=day_key,
-                        default=[],
-                        help="Select multiple time slots you're free for"
-                    )
-                    # Show current availability for this day
-                    current_avail = st.session_state.availability_df[
-                        (st.session_state.availability_df["player_name"] == selected_player) &
-                        (st.session_state.availability_df["date"] == day_date.isoformat())
-                    ]["time_slot"].tolist()
-                    if current_avail:
-                        st.info(f"Current availability for {day_label}: {', '.join(current_avail)}")
+        selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
+        if selected_player and selected_day_label:
+            day_date = next_10_days[day_options.index(selected_day_label)]
+            day_key = f"times_{selected_day_label.replace(', ', '_')}"
+            selected_times = st.multiselect(
+                f"Available Times for {selected_day_label}",
+                time_slots,
+                key=day_key,
+                help="Select multiple time slots you're free for"
+            )
+            # Show current availability for this day
+            current_avail = st.session_state.availability_df[
+                (st.session_state.availability_df["player_name"] == selected_player) &
+                (st.session_state.availability_df["date"] == day_date.isoformat())
+            ]["time_slot"].tolist()
+            if current_avail:
+                st.info(f"Current availability for {selected_day_label}: {', '.join(sorted(current_avail))}")
+            
+            col_update, col_clear = st.columns(2)
+            with col_update:
+                if st.button(f"Update Availability for {selected_day_label}", key=f"update_{selected_day_label.replace(', ', '_')}"):
+                    # Remove old entries for this player/day
+                    st.session_state.availability_df = st.session_state.availability_df[
+                        ~((st.session_state.availability_df["player_name"] == selected_player) &
+                          (st.session_state.availability_df["date"] == day_date.isoformat()))
+                    ].reset_index(drop=True)
                     
-                    # Add button for this day
-                    if st.button(f"Update Availability for {day_label}", key=f"update_{day_label.replace(', ', '_')}"):
-                        # Remove old entries for this player/day
-                        st.session_state.availability_df = st.session_state.availability_df[
-                            ~((st.session_state.availability_df["player_name"] == selected_player) &
-                              (st.session_state.availability_df["date"] == day_date.isoformat()))
-                        ].reset_index(drop=True)
-                        
-                        # Add new entries
-                        for time_slot in selected_times:
-                            new_entry = {
-                                "id": str(uuid.uuid4()),
-                                "player_name": selected_player,
-                                "date": day_date.isoformat(),
-                                "time_slot": time_slot
-                            }
-                            st.session_state.availability_df = pd.concat([
-                                st.session_state.availability_df,
-                                pd.DataFrame([new_entry])
-                            ], ignore_index=True)
-                        
-                        save_availability(st.session_state.availability_df)
-                        st.rerun()
+                    # Add new entries
+                    for time_slot in selected_times:
+                        new_entry = {
+                            "id": str(uuid.uuid4()),
+                            "player_name": selected_player,
+                            "date": day_date.isoformat(),
+                            "time_slot": time_slot
+                        }
+                        st.session_state.availability_df = pd.concat([
+                            st.session_state.availability_df,
+                            pd.DataFrame([new_entry])
+                        ], ignore_index=True)
+                    
+                    save_availability(st.session_state.availability_df)
+            
+            with col_clear:
+                if st.button(f"Clear Availability for {selected_day_label}", key=f"clear_{selected_day_label.replace(', ', '_')}"):
+                    delete_availability(selected_player, day_date.isoformat())
     
-    # Display Availability Calendar-Style View
+    # Display Availability Overview (table per day with players as rows, times as columns)
     st.markdown("---")
     st.subheader("Upcoming Availability Overview")
     
     if st.session_state.availability_df.empty:
         st.info("No availability entries yet. Add some using the form above!")
     else:
-        # Group by date
-        avail_grouped = st.session_state.availability_df.groupby("date")
+        # Filter to next 10 days
+        recent_avail = st.session_state.availability_df[st.session_state.availability_df['date'].isin(date_options)]
+        day_grouped = recent_avail.groupby("date")
         
-        for date_str, group in avail_grouped:
-            if date_str in date_options:  # Only show next 10 days
-                day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
-                st.markdown(f"#### {day_label}")
-                
-                # Group by time slot
-                time_grouped = group.groupby("time_slot")
-                cols = st.columns(3)  # 3 columns for time slots
-                col_idx = 0
-                for time_slot, time_group in time_grouped:
-                    with cols[col_idx]:
-                        players_avail = time_group["player_name"].unique()
-                        player_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in sorted(players_avail)])
-                        st.markdown(f"""
-                        <div style='background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid #fff500; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px;'>
-                            <strong style='color:#fff500;'>{time_slot}</strong><br>
-                            {player_str}
-                        </div>
-                        """, unsafe_allow_html=True)
-                    col_idx = (col_idx + 1) % 3
-                
-                st.markdown("---")
+        for date_str in date_options:
+            day_data = day_grouped.get_group(date_str) if date_str in day_grouped.groups else pd.DataFrame()
+            if day_data.empty:
+                continue
+            
+            day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
+            st.markdown(f"#### {day_label}")
+            
+            # Get unique players for this day
+            players = sorted(day_data['player_name'].unique())
+            
+            # Create pivot dataframe: rows=players, columns=time_slots, values=1 if available else 0
+            pivot_data = []
+            for player in players:
+                row = {'Player': player}
+                player_times = set(day_data[day_data['player_name'] == player]['time_slot'].tolist())
+                for ts in time_slots:
+                    row[ts] = 1 if ts in player_times else 0
+                pivot_data.append(row)
+            
+            pivot_df = pd.DataFrame(pivot_data).set_index('Player')
+            
+            # Styler function to highlight available slots (green) and unavailable (gray)
+            def highlight_available(val):
+                color = '#90EE90' if val == 1 else '#f0f0f0'  # Light green for available, light gray for not
+                return f'background-color: {color}; text-align: center; font-size: 10px; padding: 2px;'
+            
+            styled_df = pivot_df.style.applymap(highlight_available)
+            
+            # Display with small height for compact view
+            st.dataframe(styled_df, use_container_width=True, height=120 + len(players)*25, hide_index=False)
+            
+            st.markdown("---")
     
-    # Manage Existing Availability (optional expander for bulk actions)
+    # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
         if not st.session_state.availability_df.empty:
             st.dataframe(st.session_state.availability_df, use_container_width=True)
             
-            selected_to_delete = st.multiselect("Select entries to delete", 
+            selected_to_delete = st.multiselect("Select entries to delete (by ID)", 
                                               st.session_state.availability_df["id"].tolist(),
                                               key="delete_avail")
             if st.button("Delete Selected"):
                 for entry_id in selected_to_delete:
                     entry = st.session_state.availability_df[st.session_state.availability_df["id"] == entry_id].iloc[0]
-                    delete_availability(entry["player_name"], entry["date"], entry["time_slot"])
-                st.rerun()
+                    # Delete single entry
+                    try:
+                        supabase.table(availability_table_name).delete().eq("id", entry_id).execute()
+                        st.session_state.availability_df = st.session_state.availability_df[
+                            st.session_state.availability_df["id"] != entry_id
+                        ].reset_index(drop=True)
+                    except Exception as e:
+                        st.error(f"Error deleting {entry_id}: {str(e)}")
+                save_availability(st.session_state.availability_df)
         else:
             st.info("No availability to manage.")
     
-    # Continue with the existing bookings_df processing below this point...    
-
+    # Continue with the existing bookings_df processing below this point...
 
 
 
