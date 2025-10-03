@@ -4725,6 +4725,12 @@ with tabs[4]:
     
     st.markdown("---")
     
+   
+    
+    
+    
+    
+    
     #------------new Calendar feature -------------------------------
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
@@ -4766,7 +4772,7 @@ with tabs[4]:
     
     def save_availability(availability_df):
         try:
-            if availability_df.empty:
+            if len(availability_df) == 0:
                 return  # Skip upsert if no data
             # Ensure id is int
             if 'id' in availability_df.columns:
@@ -4875,17 +4881,18 @@ with tabs[4]:
             
             pivot_df = pd.DataFrame(pivot_data).set_index('Player')
             
-            # Styler function to highlight available slots (green with black text) and unavailable (gray with no text)
-            def highlight_available(val):
-                if val == 1:
-                    return 'background-color: #90EE90; color: black; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
-                else:
-                    return 'background-color: #f0f0f0; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
-            
-            # Map values: show ● for 1, empty for 0
+            # Function to format display values
             def display_value(val):
                 return '●' if val == 1 else ''
             
+            # Styler function to highlight based on original value (green with black text for 1, gray for 0)
+            def highlight_available(val):
+                if val == 1:
+                    return 'background-color: #90EE90; color: black; text-align: center; font-size: 6px; padding: 0px;'
+                else:
+                    return 'background-color: #f0f0f0; text-align: center; font-size: 6px; padding: 0px;'
+            
+            # Apply formatting and styling
             styled_df = pivot_df.style.applymap(highlight_available).map(display_value)
             
             # Display with smaller height for compact view (reduced cell size)
@@ -4916,7 +4923,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
     
 
 
