@@ -4735,7 +4735,7 @@ with tabs[4]:
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-    
+
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4811,9 +4811,12 @@ with tabs[4]:
                 (st.session_state.availability_df["date"] == day_date.isoformat())
             ]
             if not current_row.empty:
-                current_comment = current_row.iloc[0]["comment"]
-                if current_comment:
-                    st.info(f"Current comment for {selected_day_label}: {current_comment}")
+                if 'comment' in current_row.columns:
+                    current_comment = current_row.iloc[0]["comment"]
+                    if current_comment:
+                        st.info(f"Current comment for {selected_day_label}: {current_comment}")
+                else:
+                    st.warning("Comment column not found in current data.")
             
             col_update, col_clear = st.columns(2)
             with col_update:
@@ -4840,75 +4843,7 @@ with tabs[4]:
                         st.session_state.availability_df = pd.concat([
                             st.session_state.availability_df,
                             pd.DataFrame([new_entry])
-                        ], ignore_index=True)
-                        
-                        save_availability(st.session_state.availability_df)
-            
-            with col_clear:
-                if st.button(f"Clear Availability for {selected_day_label}", key=f"clear_{selected_day_label.replace(', ', '_')}"):
-                    delete_availability(selected_player, day_date.isoformat())
-    
-    # Display Availability Overview
-    st.markdown("---")
-    st.subheader("Upcoming Availability Overview")
-    
-    if st.session_state.availability_df.empty:
-        st.info("No availability entries yet. Add some using the form above!")
-    else:
-        # Filter to next 10 days
-        recent_avail = st.session_state.availability_df[st.session_state.availability_df['date'].isin(date_options)]
-        day_grouped = recent_avail.groupby("date")
-        
-        for date_str in date_options:
-            day_data = day_grouped.get_group(date_str) if date_str in day_grouped.groups else pd.DataFrame()
-            if day_data.empty:
-                continue
-            
-            day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
-            st.markdown(f"#### {day_label}")
-            
-            # Group by player and get latest comment (assuming one per player per day)
-            player_comments = {}
-            for _, row in day_data.iterrows():
-                player = row['player_name']
-                if player not in player_comments:
-                    player_comments[player] = row['comment']
-            
-            # Display in columns
-            num_players = len(player_comments)
-            if num_players > 0:
-                cols = st.columns(min(2, num_players))
-                col_idx = 0
-                for player, comment in sorted(player_comments.items()):
-                    with cols[col_idx % len(cols)]:
-                        st.markdown(f"**{player}:** {comment}")
-                    col_idx += 1
-            
-            st.markdown("---")
-    
-    # Manage Existing Availability (optional)
-    with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
-        if not st.session_state.availability_df.empty:
-            st.dataframe(st.session_state.availability_df, use_container_width=True)
-            
-            selected_to_delete = st.multiselect("Select entries to delete (by ID)", 
-                                              st.session_state.availability_df["id"].tolist(),
-                                              key="delete_avail")
-            if st.button("Delete Selected"):
-                for entry_id in selected_to_delete:
-                    # Delete single entry by id
-                    try:
-                        supabase.table(availability_table_name).delete().eq("id", entry_id).execute()
-                        st.session_state.availability_df = st.session_state.availability_df[
-                            st.session_state.availability_df["id"] != entry_id
-                        ].reset_index(drop=True)
-                    except Exception as e:
-                        st.error(f"Error deleting {entry_id}: {str(e)}")
-                save_availability(st.session_state.availability_df)
-        else:
-            st.info("No availability to manage.")
-    
-    # Continue with the existing bookings_df processing below this point...
+                        ],
 
 
     
