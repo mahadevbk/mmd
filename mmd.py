@@ -4727,9 +4727,8 @@ with tabs[4]:
     
     #------------new Calendar feature -------------------------------
 
-    
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-    
+
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4750,25 +4749,30 @@ with tabs[4]:
     
     # Load availability from Supabase (new table: availability)
     availability_table_name = "availability"
+    expected_columns = ["id", "player_name", "date", "time_slot"]  # Moved outside try block
+    
     if 'availability_df' not in st.session_state:
         try:
             response = supabase.table(availability_table_name).select("*").execute()
             df = pd.DataFrame(response.data)
-            expected_columns = ["id", "player_name", "date", "time_slot"]
             for col in expected_columns:
                 if col not in df.columns:
                     df[col] = ""
             st.session_state.availability_df = df
         except Exception as e:
             st.error(f"Error loading availability: {str(e)}")
+            # Note: Table 'availability' does not exist. Please create it in Supabase with columns: id (uuid), player_name (text), date (text), time_slot (text)
             st.session_state.availability_df = pd.DataFrame(columns=expected_columns)
     
     def save_availability(availability_df):
         try:
+            # Ensure table exists before saving (basic check)
+            supabase.table(availability_table_name).select("count", count="exact").execute()  # This will fail if table doesn't exist
             supabase.table(availability_table_name).upsert(availability_df.to_dict("records")).execute()
             st.success("Availability updated successfully!")
         except Exception as e:
             st.error(f"Error saving availability: {str(e)}")
+            st.warning("Table 'availability' may not exist. Please create it in Supabase Dashboard with columns: id (uuid primary key), player_name (text), date (text), time_slot (text)")
     
     def delete_availability(player_name, date, time_slot):
         try:
@@ -4879,8 +4883,14 @@ with tabs[4]:
         else:
             st.info("No availability to manage.")
     
-    # Continue with the existing bookings_df processing below this point...
+    # Continue with the existing bookings_df processing below this point...    
 
+
+
+
+
+
+    
 
 
 
