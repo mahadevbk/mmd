@@ -4728,7 +4728,7 @@ with tabs[4]:
     #------------new Calendar feature -------------------------------
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-
+    
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4756,6 +4756,9 @@ with tabs[4]:
             for col in expected_columns:
                 if col not in df.columns:
                     df[col] = ""
+            # Ensure id is int if present
+            if 'id' in df.columns:
+                df['id'] = pd.to_numeric(df['id'], errors='coerce').fillna(0).astype(int)
             st.session_state.availability_df = df
         except Exception as e:
             st.error(f"Error loading availability: {str(e)}")
@@ -4763,6 +4766,9 @@ with tabs[4]:
     
     def save_availability(availability_df):
         try:
+            # Ensure id is int
+            if 'id' in availability_df.columns:
+                availability_df['id'] = pd.to_numeric(availability_df['id'], errors='coerce').fillna(0).astype(int)
             supabase.table(availability_table_name).upsert(availability_df.to_dict("records")).execute()
             st.success("Availability updated successfully!")
             st.rerun()
@@ -4811,10 +4817,13 @@ with tabs[4]:
                           (st.session_state.availability_df["date"] == day_date.isoformat()))
                     ].reset_index(drop=True)
                     
+                    # Get next id
+                    next_id = st.session_state.availability_df['id'].max() + 1 if not st.session_state.availability_df.empty else 1
+                    
                     # Add new entries
                     for time_slot in selected_times:
                         new_entry = {
-                            "id": str(uuid.uuid4()),
+                            "id": next_id,
                             "player_name": selected_player,
                             "date": day_date.isoformat(),
                             "time_slot": time_slot
@@ -4823,6 +4832,7 @@ with tabs[4]:
                             st.session_state.availability_df,
                             pd.DataFrame([new_entry])
                         ], ignore_index=True)
+                        next_id += 1
                     
                     save_availability(st.session_state.availability_df)
             
@@ -4863,15 +4873,15 @@ with tabs[4]:
             
             pivot_df = pd.DataFrame(pivot_data).set_index('Player')
             
-            # Styler function to highlight available slots (green) and unavailable (gray)
+            # Styler function to highlight available slots (green) and unavailable (gray) with smaller cells
             def highlight_available(val):
                 color = '#90EE90' if val == 1 else '#f0f0f0'  # Light green for available, light gray for not
-                return f'background-color: {color}; text-align: center; font-size: 10px; padding: 2px;'
+                return f'background-color: {color}; text-align: center; font-size: 8px; padding: 1px 2px; width: 30px;'
             
             styled_df = pivot_df.style.applymap(highlight_available)
             
-            # Display with small height for compact view
-            st.dataframe(styled_df, use_container_width=True, height=120 + len(players)*25, hide_index=False)
+            # Display with smaller height for compact view (reduced to ~1/4 cell size)
+            st.dataframe(styled_df, use_container_width=True, height=60 + len(players)*15, hide_index=False)
             
             st.markdown("---")
     
@@ -4885,8 +4895,7 @@ with tabs[4]:
                                               key="delete_avail")
             if st.button("Delete Selected"):
                 for entry_id in selected_to_delete:
-                    entry = st.session_state.availability_df[st.session_state.availability_df["id"] == entry_id].iloc[0]
-                    # Delete single entry
+                    # Delete single entry by id
                     try:
                         supabase.table(availability_table_name).delete().eq("id", entry_id).execute()
                         st.session_state.availability_df = st.session_state.availability_df[
@@ -4899,7 +4908,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
 
 
 
