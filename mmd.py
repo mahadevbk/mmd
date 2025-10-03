@@ -4728,8 +4728,9 @@ with tabs[4]:
     #------------new Calendar feature -------------------------------
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+   
     
-    st.markdown("---")
+    
     st.subheader("👥 Player Availability")
     st.markdown("""
     *Players can indicate their availability for the next 10 days. This helps in scheduling matches more efficiently.*
@@ -4742,8 +4743,8 @@ with tabs[4]:
     day_options = [d.strftime("%A, %d %b") for d in next_10_days]
     date_options = [d.isoformat() for d in next_10_days]
     
-    # Time slots (hourly from 6AM to 9PM for simplicity and small cells)
-    time_slots = [f"{h % 12 if h % 12 != 0 else 12}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
+    # Time slots (abbreviated hourly from 6AM to 9PM for smaller cells)
+    time_slots = [f"{h%12 or 12}{'AM' if h<12 else 'PM'}" for h in range(6, 22)]
     
     # Load availability from Supabase
     availability_table_name = "availability"
@@ -4873,15 +4874,17 @@ with tabs[4]:
             
             pivot_df = pd.DataFrame(pivot_data).set_index('Player')
             
-            # Styler function to highlight available slots (green) and unavailable (gray) with smaller cells
+            # Styler function to highlight available slots (green with black text) and unavailable (gray) with smaller cells
             def highlight_available(val):
-                color = '#90EE90' if val == 1 else '#f0f0f0'  # Light green for available, light gray for not
-                return f'background-color: {color}; text-align: center; font-size: 8px; padding: 1px 2px; width: 30px;'
+                if val == 1:
+                    return 'background-color: #90EE90; color: black; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
+                else:
+                    return 'background-color: #f0f0f0; color: gray; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
             
             styled_df = pivot_df.style.applymap(highlight_available)
             
-            # Display with smaller height for compact view (reduced to ~1/4 cell size)
-            st.dataframe(styled_df, use_container_width=True, height=60 + len(players)*15, hide_index=False)
+            # Display with smaller height for compact view (reduced cell size)
+            st.dataframe(styled_df, use_container_width=True, height=40 + len(players)*12, hide_index=False)
             
             st.markdown("---")
     
@@ -4908,8 +4911,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
-
 
 
     
