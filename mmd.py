@@ -4735,8 +4735,6 @@ with tabs[4]:
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     
-    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4799,6 +4797,15 @@ with tabs[4]:
     
     # Add/Update Availability Form (simplified: one day at a time)
     with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
+        st.markdown("""
+        <style>
+        div[data-testid="stMultiSelect"] em {
+            color: black !important;
+            font-style: normal !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         selected_player = st.selectbox("Select Player", [""] + available_players, key="avail_player")
         selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
         if selected_player and selected_day_label:
@@ -4926,7 +4933,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
 
     
 
