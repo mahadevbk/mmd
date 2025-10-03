@@ -4735,6 +4735,10 @@ with tabs[4]:
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
 
+
+
+    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4810,12 +4814,9 @@ with tabs[4]:
                 (st.session_state.availability_df["date"] == day_date.isoformat())
             ]
             if not current_row.empty:
-                if 'comment' in current_row.columns:
-                    current_comment = current_row.iloc[0]["comment"]
-                    if current_comment:
-                        st.info(f"Current comment for {selected_day_label}: {current_comment}")
-                else:
-                    st.warning("Comment column not found in current data.")
+                current_comment = current_row.iloc[0].get("comment", "")
+                if current_comment:
+                    st.info(f"Current comment for {selected_day_label}: {current_comment}")
             
             col_update, col_clear = st.columns(2)
             with col_update:
@@ -4874,7 +4875,7 @@ with tabs[4]:
             for _, row in day_data.iterrows():
                 player = row['player_name']
                 if player not in player_comments:
-                    player_comments[player] = row['comment']
+                    player_comments[player] = row.get('comment', '')
             
             # Display in columns
             num_players = len(player_comments)
@@ -4911,7 +4912,8 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-    
+
+
         
 
     
