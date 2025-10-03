@@ -4736,7 +4736,7 @@ with tabs[4]:
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-    
+
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4887,15 +4887,16 @@ with tabs[4]:
             def display_value(val):
                 return '●' if val == 1 else ''
             
-            # Styler function to highlight based on original value (green with black text for 1, gray for 0)
+            # Styler function to highlight based on displayed value (green with black text for '●', gray for '')
             def highlight_available(val):
-                if val == 1:
+                if val == '●':
                     return 'background-color: #90EE90; color: black; text-align: center; font-size: 6px; padding: 0px;'
                 else:
                     return 'background-color: #f0f0f0; text-align: center; font-size: 6px; padding: 0px;'
             
-            # Apply formatting and styling
-            styled_df = pivot_df.style.applymap(highlight_available).map(display_value)
+            # First map to display values, then apply styles
+            display_df = pivot_df.map(display_value)
+            styled_df = display_df.style.applymap(highlight_available)
             
             # Display with smaller height for compact view (reduced cell size)
             st.dataframe(styled_df, use_container_width=True, height=40 + len(players)*12, hide_index=False)
@@ -4925,7 +4926,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
 
 
     
