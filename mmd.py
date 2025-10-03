@@ -4736,6 +4736,7 @@ with tabs[4]:
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
 
 
+
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
 
     st.markdown("---")
@@ -4765,6 +4766,9 @@ with tabs[4]:
             # Ensure id is int if present
             if 'id' in df.columns:
                 df['id'] = pd.to_numeric(df['id'], errors='coerce').fillna(0).astype(int)
+            # Drop any old columns like 'time_slot' if present
+            if 'time_slot' in df.columns:
+                df = df.drop(columns=['time_slot'])
             st.session_state.availability_df = df
         except Exception as e:
             st.error(f"Error loading availability: {str(e)}")
@@ -4774,8 +4778,10 @@ with tabs[4]:
         try:
             if len(availability_df) == 0:
                 return  # Skip upsert if no data
+            # Select only expected columns
+            availability_df_to_save = availability_df[expected_columns].copy()
             # Replace NaN with None for JSON compliance
-            availability_df_to_save = availability_df.where(pd.notna(availability_df), None)
+            availability_df_to_save = availability_df_to_save.where(pd.notna(availability_df_to_save), None)
             # Ensure id is int
             if 'id' in availability_df_to_save.columns:
                 availability_df_to_save['id'] = pd.to_numeric(availability_df_to_save['id'], errors='coerce').fillna(0).astype(int)
@@ -4913,6 +4919,9 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
+
+
+
 
 
 
