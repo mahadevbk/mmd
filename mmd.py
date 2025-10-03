@@ -4918,7 +4918,7 @@ with tabs[4]:
         else:
             st.info("No availability to manage.")
 
-       st.markdown("---")
+    st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
     
 
