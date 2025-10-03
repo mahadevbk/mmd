@@ -4734,7 +4734,8 @@ with tabs[4]:
     #------------new Calendar feature -------------------------------
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-    
+    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4934,7 +4935,6 @@ with tabs[4]:
     
     # Continue with the existing bookings_df processing below this point...
 
-    
 
 
 
