@@ -4728,9 +4728,8 @@ with tabs[4]:
     #------------new Calendar feature -------------------------------
 
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-   
     
-    
+    st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
     *Players can indicate their availability for the next 10 days. This helps in scheduling matches more efficiently.*
@@ -4767,6 +4766,8 @@ with tabs[4]:
     
     def save_availability(availability_df):
         try:
+            if availability_df.empty:
+                return  # Skip upsert if no data
             # Ensure id is int
             if 'id' in availability_df.columns:
                 availability_df['id'] = pd.to_numeric(availability_df['id'], errors='coerce').fillna(0).astype(int)
@@ -4874,14 +4875,18 @@ with tabs[4]:
             
             pivot_df = pd.DataFrame(pivot_data).set_index('Player')
             
-            # Styler function to highlight available slots (green with black text) and unavailable (gray) with smaller cells
+            # Styler function to highlight available slots (green with black text) and unavailable (gray with no text)
             def highlight_available(val):
                 if val == 1:
                     return 'background-color: #90EE90; color: black; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
                 else:
-                    return 'background-color: #f0f0f0; color: gray; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
+                    return 'background-color: #f0f0f0; text-align: center; font-size: 6px; padding: 0px; width: 20px; height: 10px;'
             
-            styled_df = pivot_df.style.applymap(highlight_available)
+            # Map values: show ● for 1, empty for 0
+            def display_value(val):
+                return '●' if val == 1 else ''
+            
+            styled_df = pivot_df.style.applymap(highlight_available).map(display_value)
             
             # Display with smaller height for compact view (reduced cell size)
             st.dataframe(styled_df, use_container_width=True, height=40 + len(players)*12, hide_index=False)
@@ -4911,7 +4916,6 @@ with tabs[4]:
             st.info("No availability to manage.")
     
     # Continue with the existing bookings_df processing below this point...
-
 
     
 
