@@ -4736,7 +4736,6 @@ with tabs[4]:
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
 
 
-
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
 
     st.markdown("---")
@@ -4775,10 +4774,12 @@ with tabs[4]:
         try:
             if len(availability_df) == 0:
                 return  # Skip upsert if no data
+            # Replace NaN with None for JSON compliance
+            availability_df_to_save = availability_df.where(pd.notna(availability_df), None)
             # Ensure id is int
-            if 'id' in availability_df.columns:
-                availability_df['id'] = pd.to_numeric(availability_df['id'], errors='coerce').fillna(0).astype(int)
-            supabase.table(availability_table_name).upsert(availability_df.to_dict("records")).execute()
+            if 'id' in availability_df_to_save.columns:
+                availability_df_to_save['id'] = pd.to_numeric(availability_df_to_save['id'], errors='coerce').fillna(0).astype(int)
+            supabase.table(availability_table_name).upsert(availability_df_to_save.to_dict("records")).execute()
             st.success("Availability updated successfully!")
             st.rerun()
         except Exception as e:
@@ -4892,7 +4893,7 @@ with tabs[4]:
     # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
         if not st.session_state.availability_df.empty:
-            st.dataframe(st.session_state.availability_df, use_container_width=True)
+            st.dataframe(st.session_state.availability_df, width="stretch")
             
             selected_to_delete = st.multiselect("Select entries to delete (by ID)", 
                                               st.session_state.availability_df["id"].tolist(),
@@ -4913,6 +4914,15 @@ with tabs[4]:
     
     # Continue with the existing bookings_df processing below this point...
 
+
+
+
+
+    
+
+
+
+    
 
         
 
