@@ -4740,10 +4740,9 @@ with tabs[4]:
 
     
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+
+
     
-
-
-   
     
     st.markdown("---")
     st.subheader("👥 Player Availability")
@@ -4944,9 +4943,6 @@ with tabs[4]:
                         # Build HTML card content
                         players_html = ""
                         for player, comment in sorted(player_comments.items()):
-                            # Truncate long comments with tooltip; replace newlines for short display
-                            short_comment = comment.replace('\n', ' ').strip()
-                            short_comment = short_comment[:50] + "..." if len(short_comment) > 50 else short_comment
                             # For title, replace newlines with ' | ' for better tooltip display
                             title_attr = comment.replace('\n', ' | ')
                             players_html += f"""
@@ -4962,7 +4958,7 @@ with tabs[4]:
                             {players_html}
                         </div>
                         """
-                        st.markdown(card_html, unsafe_allow_html=True)
+                        st.html(card_html)
     
     # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
@@ -4988,7 +4984,6 @@ with tabs[4]:
     
     st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
-
 
 
 
