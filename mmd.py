@@ -4733,12 +4733,12 @@ with tabs[4]:
     
     #------------new Calendar feature -------------------------------
 
+
+
+
+    
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-
-
-
-    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
-
+    
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4858,7 +4858,7 @@ with tabs[4]:
                 if st.button(f"Clear Availability for {selected_day_label}", key=f"clear_{selected_day_label.replace(', ', '_')}"):
                     delete_availability(selected_player, day_date.isoformat())
     
-    # Display Availability Overview
+    # Display Availability Overview (Enhanced)
     st.markdown("---")
     st.subheader("Upcoming Availability Overview")
     
@@ -4869,32 +4869,109 @@ with tabs[4]:
         recent_avail = st.session_state.availability_df[st.session_state.availability_df['date'].isin(date_options)]
         day_grouped = recent_avail.groupby("date")
         
-        for date_str in date_options:
-            day_data = day_grouped.get_group(date_str) if date_str in day_grouped.groups else pd.DataFrame()
-            if day_data.empty:
-                continue
-            
-            day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
-            st.markdown(f"#### {day_label}")
-            
-            # Group by player and get latest comment (assuming one per player per day)
-            player_comments = {}
-            for _, row in day_data.iterrows():
-                player = row['player_name']
-                if player not in player_comments:
-                    player_comments[player] = row.get('comment', '')
-            
-            # Display in columns
-            num_players = len(player_comments)
-            if num_players > 0:
-                cols = st.columns(min(2, num_players))
-                col_idx = 0
-                for player, comment in sorted(player_comments.items()):
-                    with cols[col_idx % len(cols)]:
-                        st.markdown(f"**{player}:** {comment}")
-                    col_idx += 1
-            
-            st.markdown("---")
+        # Custom CSS for day cards (add to your existing <style> block)
+        st.markdown("""
+        <style>
+        .availability-day-card {
+            background: linear-gradient(to bottom, #031827, #07314f);
+            border: 1px solid #fff500;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 245, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: left;
+        }
+        .availability-day-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(255, 245, 0, 0.4);
+        }
+        .day-header {
+            color: #fff500;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .player-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            background: rgba(255, 245, 0, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #fff500;
+        }
+        .player-name {
+            font-weight: bold;
+            color: #fff500;
+            margin-right: 8px;
+            min-width: 80px;
+        }
+        .player-comment {
+            color: #ffffff;
+            font-size: 0.9em;
+            flex-grow: 1;
+        }
+        .copy-btn {
+            background-color: #25D366;
+            color: white !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8em;
+            border: none;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Grid: 3 columns for desktop, stack on mobile
+        for i in range(0, len(date_options), 3):
+            cols = st.columns(3)
+            for j, date_str in enumerate(date_options[i:i+3]):
+                with cols[j]:
+                    day_data = day_grouped.get_group(date_str) if date_str in day_grouped.groups else pd.DataFrame()
+                    if day_data.empty:
+                        continue
+                    
+                    day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
+                    player_comments = {}
+                    for _, row in day_data.iterrows():
+                        player = row['player_name']
+                        if player not in player_comments:
+                            player_comments[player] = row.get('comment', '')
+                    
+                    if player_comments:
+                        # Build HTML card content
+                        players_html = ""
+                        for player, comment in sorted(player_comments.items()):
+                            # Truncate long comments with tooltip
+                            short_comment = comment[:50] + "..." if len(comment) > 50 else comment
+                            players_html += f"""
+                            <div class="player-item">
+                                <span class="player-name">👤 {player}:</span>
+                                <span class="player-comment" title="{comment}">{short_comment}</span>
+                            </div>
+                            """
+                        
+                        # Copy-to-clipboard text
+                        copy_text = f"Availability for {day_label}:\n" + "\n".join([f"{p}: {c}" for p, c in sorted(player_comments.items())])
+                        
+                        card_html = f"""
+                        <div class="availability-day-card">
+                            <div class="day-header">📅 {day_label}</div>
+                            {players_html}
+                            <div style="margin-top: 10px;">
+                                <button class="copy-btn" onclick="navigator.clipboard.writeText(`{copy_text.replace('`', '\\`')}`); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 2000);">📋 Copy</button>
+                            </div>
+                        </div>
+                        """
+                        st.markdown(card_html, unsafe_allow_html=True)
     
     # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
@@ -4917,10 +4994,9 @@ with tabs[4]:
                 save_availability(st.session_state.availability_df)
         else:
             st.info("No availability to manage.")
-
+    
     st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
-    
 
 
 
