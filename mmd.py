@@ -4960,14 +4960,15 @@ with tabs[4]:
                         # Build HTML card content
                         players_html = ""
                         for player, comment in sorted(player_comments.items()):
-                            # Truncate long comments with tooltip
-                            short_comment = comment[:50] + "..." if len(comment) > 50 else comment
+                            # Truncate long comments with tooltip; replace newlines for short display
+                            short_comment = comment.replace('\n', ' ').strip()
+                            short_comment = short_comment[:50] + "..." if len(short_comment) > 50 else short_comment
                             # For title, replace newlines with ' | ' for better tooltip display
                             title_attr = comment.replace('\n', ' | ')
                             players_html += f"""
                             <div class="player-item">
                                 <span class="player-name">👤 {player}:</span>
-                                <span class="player-comment" title="{title_attr}">{short_comment}</span>
+                                <span class="player-comment" title="{title_attr}">{comment}</span>
                             </div>
                             """
                         
@@ -4984,7 +4985,7 @@ with tabs[4]:
                             </div>
                         </div>
                         """
-                        st.markdown(card_html, unsafe_allow_html=True)
+                        st.html(card_html)
     
     # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
@@ -5010,7 +5011,6 @@ with tabs[4]:
     
     st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
-
 
 
 
