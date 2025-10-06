@@ -4741,6 +4741,10 @@ with tabs[4]:
     
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     
+    #------------new Calendar feature -------------------------------
+    
+    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+    
     st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
@@ -4915,6 +4919,7 @@ with tabs[4]:
             color: #ffffff;
             font-size: 0.9em;
             flex-grow: 1;
+            white-space: pre-line;
         }
         .copy-btn {
             background-color: #25D366;
@@ -4957,14 +4962,16 @@ with tabs[4]:
                         for player, comment in sorted(player_comments.items()):
                             # Truncate long comments with tooltip
                             short_comment = comment[:50] + "..." if len(comment) > 50 else comment
+                            # For title, replace newlines with ' | ' for better tooltip display
+                            title_attr = comment.replace('\n', ' | ')
                             players_html += f"""
                             <div class="player-item">
                                 <span class="player-name">👤 {player}:</span>
-                                <span class="player-comment" title="{comment}">{short_comment}</span>
+                                <span class="player-comment" title="{title_attr}">{short_comment}</span>
                             </div>
                             """
                         
-                        # Copy-to-clipboard text
+                        # Copy-to-clipboard text (preserve newlines)
                         copy_text = f"Availability for {day_label}:\n" + "\n".join([f"{p}: {c}" for p, c in sorted(player_comments.items())])
                         js_text = json.dumps(copy_text)
                         
@@ -5003,8 +5010,6 @@ with tabs[4]:
     
     st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
-
-
 
 
 
