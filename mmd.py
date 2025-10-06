@@ -4737,6 +4737,8 @@ with tabs[4]:
 
 
     
+
+    
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     
     st.markdown("---")
@@ -4923,12 +4925,15 @@ with tabs[4]:
             font-size: 0.8em;
             border: none;
             cursor: pointer;
+            margin-top: 5px;
         }
         .copy-btn:hover {
             opacity: 0.9;
         }
         </style>
         """, unsafe_allow_html=True)
+        
+        import json  # For safe JS string escaping
         
         # Grid: 3 columns for desktop, stack on mobile
         for i in range(0, len(date_options), 3):
@@ -4961,13 +4966,14 @@ with tabs[4]:
                         
                         # Copy-to-clipboard text
                         copy_text = f"Availability for {day_label}:\n" + "\n".join([f"{p}: {c}" for p, c in sorted(player_comments.items())])
+                        js_text = json.dumps(copy_text)
                         
                         card_html = f"""
                         <div class="availability-day-card">
                             <div class="day-header">📅 {day_label}</div>
                             {players_html}
                             <div style="margin-top: 10px;">
-                                <button class="copy-btn" onclick="navigator.clipboard.writeText(`{copy_text.replace('`', '\\`')}`); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 2000);">📋 Copy</button>
+                                <button class="copy-btn" onclick='navigator.clipboard.writeText({js_text}); this.textContent="Copied!"; setTimeout(() => {{this.textContent="Copy"}}, 2000);'>📋 Copy</button>
                             </div>
                         </div>
                         """
