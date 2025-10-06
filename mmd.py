@@ -4741,9 +4741,9 @@ with tabs[4]:
     
     # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
     
-    #------------new Calendar feature -------------------------------
-    
-    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+
+
+   
     
     st.markdown("---")
     st.subheader("👥 Player Availability")
@@ -4921,24 +4921,8 @@ with tabs[4]:
             flex-grow: 1;
             white-space: pre-line;
         }
-        .copy-btn {
-            background-color: #25D366;
-            color: white !important;
-            padding: 4px 8px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 0.8em;
-            border: none;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-        .copy-btn:hover {
-            opacity: 0.9;
-        }
         </style>
         """, unsafe_allow_html=True)
-        
-        import json  # For safe JS string escaping
         
         # Grid: 3 columns for desktop, stack on mobile
         for i in range(0, len(date_options), 3):
@@ -4972,20 +4956,13 @@ with tabs[4]:
                             </div>
                             """
                         
-                        # Copy-to-clipboard text (preserve newlines)
-                        copy_text = f"Availability for {day_label}:\n" + "\n".join([f"{p}: {c}" for p, c in sorted(player_comments.items())])
-                        js_text = json.dumps(copy_text)
-                        
                         card_html = f"""
                         <div class="availability-day-card">
                             <div class="day-header">📅 {day_label}</div>
                             {players_html}
-                            <div style="margin-top: 10px;">
-                                <button class="copy-btn" onclick='navigator.clipboard.writeText({js_text}); this.textContent="Copied!"; setTimeout(() => {{this.textContent="Copy"}}, 2000);'>📋 Copy</button>
-                            </div>
                         </div>
                         """
-                        st.html(card_html)
+                        st.markdown(card_html, unsafe_allow_html=True)
     
     # Manage Existing Availability (optional)
     with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
@@ -5011,7 +4988,6 @@ with tabs[4]:
     
     st.markdown("---")
     # Continue with the existing bookings_df processing below this point...
-
 
 
 
