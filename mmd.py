@@ -2714,7 +2714,64 @@ def calculate_head_to_head(player_a, player_b, matches_df):
     return h2h_stats
 
 
+#--------------------CHECK FOR DUPLICATE POSTINGS -------------------------------------------
 
+
+
+
+
+
+# Add this new function after the existing functions (e.g., after generate_match_id)
+def is_duplicate_match(new_match, matches_df):
+    """
+    Checks if a match with the same players (normalized for team order) and exact scores already exists.
+    Ignores date and match_id.
+    
+    Args:
+        new_match (dict): Dict with keys like 'match_type', 'team1_player1', 'team1_player2', etc., 'set1', 'set2', 'set3'.
+        matches_df (pd.DataFrame): Existing matches DataFrame.
+    
+    Returns:
+        bool: True if duplicate found.
+    """
+    if matches_df.empty:
+        return False
+    
+    match_type = new_match.get('match_type', '')
+    set1 = new_match.get('set1', '')
+    set2 = new_match.get('set2', '')
+    set3 = new_match.get('set3', '')
+    
+    # Normalize players: sort within teams, then sort teams by first player's name
+    def normalize_teams(t1p1, t1p2, t2p1, t2p2):
+        # Filter out "Visitor" or empty
+        team1 = sorted([p for p in [t1p1, t1p2] if p and p != "Visitor"])
+        team2 = sorted([p for p in [t2p1, t2p2] if p and p != "Visitor"])
+        # Sort teams: by the first player in each (alphabetically)
+        teams = sorted([tuple(team1), tuple(team2)], key=lambda t: t[0] if t else '')
+        return teams
+    
+    new_teams = normalize_teams(
+        new_match.get('team1_player1', ''), new_match.get('team1_player2', ''),
+        new_match.get('team2_player1', ''), new_match.get('team2_player2', '')
+    )
+    
+    for _, row in matches_df.iterrows():
+        if row['match_type'] != match_type:
+            continue
+        
+        row_teams = normalize_teams(
+            row['team1_player1'], row['team1_player2'],
+            row['team2_player1'], row['team2_player2']
+        )
+        
+        row_set1, row_set2, row_set3 = row['set1'], row['set2'], row['set3']
+        
+        if (row_teams == new_teams and
+            row_set1 == set1 and row_set2 == set2 and row_set3 == set3):
+            return True
+    
+    return False
 
 
     
@@ -2755,6 +2812,15 @@ fun_verbs = [
 players_df = st.session_state.players_df
 matches = st.session_state.matches_df
 players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in players_df.columns else []
+
+#-------------ADDING SESSION STATE TO CHECK FOR DUPLICATE MATCHES -------------------------
+
+if 'pending_match' not in st.session_state:
+    st.session_state.pending_match = None
+if 'duplicate_flag' not in st.session_state:
+    st.session_state.duplicate_flag = False
+
+
 
 if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
     matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
@@ -3355,6 +3421,7 @@ with tabs[1]:
         duplicate_ids = st.session_state.matches_df[st.session_state.matches_df['match_id'].duplicated(keep=False)]['match_id'].tolist()
         st.write(f"Duplicate match IDs: {duplicate_ids}")
     
+    
     with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
         # Define available_players
         if "players_df" not in st.session_state or st.session_state.players_df.empty:
@@ -3502,10 +3569,11 @@ with tabs[1]:
                         # Save match if valid
                         if valid:
                             try:
-                                with st.spinner("Uploading match to Supabase..."):
+                                with st.spinner("Checking for duplicates and uploading match to Supabase..."):
                                     match_datetime = pd.to_datetime(date)
                                     match_id = generate_match_id(st.session_state.matches_df, match_datetime)
                                     image_url = upload_image_to_github(match_image, match_id, image_type="match")
+                                    
                                     new_match = {
                                         "match_id": match_id,
                                         "date": date,
@@ -3520,20 +3588,70 @@ with tabs[1]:
                                         "winner": winner,
                                         "match_image_url": image_url
                                     }
-                                    st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
-                                    save_matches(st.session_state.matches_df)
-                                    st.success(f"Match {match_id} posted successfully!")
-                                    st.session_state.form_key_suffix += 1
-                                    st.rerun()
+                                    
+                                    # Check for duplicate (exclude match_id, date, winner, match_image_url from check)
+                                    check_dict = {
+                                        "match_type": match_type,
+                                        "team1_player1": t1p1,
+                                        "team1_player2": t1p2 if match_type == "Doubles" else "",
+                                        "team2_player1": t2p1,
+                                        "team2_player2": t2p2 if match_type == "Doubles" else "",
+                                        "set1": set1,
+                                        "set2": set2,
+                                        "set3": set3
+                                    }
+                                    
+                                    if is_duplicate_match(check_dict, st.session_state.matches_df):
+                                        st.session_state.pending_match = new_match
+                                        st.session_state.duplicate_flag = True
+                                        st.rerun()
+                                    else:
+                                        # No duplicate: add and save
+                                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                                        save_matches(st.session_state.matches_df)
+                                        st.success(f"Match {match_id} posted successfully!")
+                                        st.session_state.form_key_suffix += 1
+                                        st.rerun()
                             except Exception as e:
                                 st.error(f"Failed to add match: {str(e)}")
-                                if match_id in st.session_state.matches_df["match_id"].values:
+                                if 'match_id' in locals() and match_id in st.session_state.matches_df["match_id"].values:
                                     st.session_state.matches_df = st.session_state.matches_df.drop(
                                         st.session_state.matches_df[st.session_state.matches_df["match_id"] == match_id].index
                                     )
                                 st.rerun()
         
+        # Handle duplicate resolution
+        if st.session_state.get('duplicate_flag', False):
+            st.warning("⚠️ This match (combination of players and scores) is already posted in the system.")
+            
+            col_choice1, col_choice2 = st.columns(2)
+            with col_choice1:
+                if st.button("Add as 2nd Match", key="add_duplicate"):
+                    if st.session_state.get('pending_match'):
+                        # Add the pending match
+                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([st.session_state.pending_match])], ignore_index=True)
+                        save_matches(st.session_state.matches_df)
+                        st.success("Match added as second entry!")
+                    st.session_state.duplicate_flag = False
+                    st.session_state.pending_match = None
+                    st.session_state.form_key_suffix += 1
+                    st.rerun()
+            
+            with col_choice2:
+                if st.button("Ignore", key="ignore_duplicate"):
+                    st.info("Match entry ignored.")
+                    st.session_state.duplicate_flag = False
+                    st.session_state.pending_match = None
+                    st.rerun()
+            
+            # Show details of the potential duplicate for reference
+            if st.session_state.get('pending_match'):
+                st.markdown("**Pending Match Details:**")
+                st.json({k: v for k, v in st.session_state.pending_match.items() if k != "match_id"})
+        
         st.markdown("*Required fields", unsafe_allow_html=True)
+        
+        st.markdown("---")
     
     st.markdown("---")
     st.subheader("Match History")
