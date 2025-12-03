@@ -4,3 +4,8 @@ primaryColor="#ccff00"
 backgroundColor="#041136"
 secondaryBackgroundColor="#0d5384"
 textColor="#ffffff"
+[server]
+websocketPingInterval = 50  # Seconds; try 50-60 to avoid closures
+enableWebsocketCompression = false  # Disable if not needed—reduces overhead
+maxMessageSize = 50  # MB; lower if large uploads cause issues (default 200)
+disconnectedSessionTTL = 300  # Seconds; longer TTL for disconnected sessions
