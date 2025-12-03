@@ -1,4 +1,5 @@
-streamlit
+streamlit==1.41.0  # Latest as of Dec 2025; fixes many WebSocket bugs
+tornado==6.4.1  # Stable version
 pandas
 supabase
 python-dateutil
