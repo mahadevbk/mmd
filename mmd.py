@@ -1296,12 +1296,14 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
             ]
             partners_list_str = f"<ul>{''.join(partners_list_items)}</ul>"
 
+            
             sorted_partners = sorted(
-                [(p, item) for p, item in partner_stats[player].items() if p != "Visitor"],
-                key=lambda item: (
-                    item[1]['wins'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
-                    item[1]['game_diff_sum'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
-                    item[1]['wins']
+                [(p, item) for p, item in partner_stats[player].items() if p != "Visitor" and item['matches'] > 0],
+                key=lambda x: (
+                    x[1]['wins'] / x[1]['matches'],                                              # 1. Win rate
+                    x[1]['matches'],                                                             # 2. Sample size (more matches = better)
+                    x[1]['game_diff_sum'] / x[1]['matches'] if x[1]['matches'] > 0 else 0,      # 3. Avg game diff
+                    x[1]['wins']                                                                 # 4. Raw wins
                 ),
                 reverse=True
             )
