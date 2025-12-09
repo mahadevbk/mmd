@@ -798,7 +798,6 @@ def get_player_trend(player, matches, max_matches=5):
 
 
 
-
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
     wins = defaultdict(int)
@@ -977,7 +976,7 @@ def calculate_rankings(matches_to_rank):
                 for p2 in t2:
                     if p1 != p2:
                         partner_stats[p1][p2]['matches'] += 1
-                        partner_stats[p1][p2]['game_diff_sum'] += match_gd_sum if row["winner"] == "Team 2" else -match_gd_sum
+                        partner_stats[p1][p2]['game_diff_sum'] += -match_gd_sum
                         if row["winner"] == "Team 2":
                             partner_stats[p1][p2]['wins'] += 1
                         elif row["winner"] == "Team 1":
