@@ -3460,65 +3460,63 @@ with tabs[0]:
 with tabs[1]:
     st.header("Matches")
 
-    # Helper function – resize image proportionally (max 1200px on longest side)
+    # ---------- Helper: resize image to max 1200 px on longest side ----------
     def resize_image_if_needed(uploaded_file, max_size=1200):
-        """Returns a BytesIO object (resized if needed) ready for upload."""
+        """Return a BytesIO object (resized if needed) ready for GitHub upload."""
         if not uploaded_file:
             return None
 
-        # Reset pointer and open with PIL
         uploaded_file.seek(0)
-        img = Image.open(uploaded_file)
+        try:
+            img = Image.open(uploaded_file)
+        except Exception:
+            return uploaded_file  # fallback – let upload fail later handle the error
 
-        # Keep original format (fallback to JPEG)
         original_format = img.format if img.format else "JPEG"
 
-        # No resize needed?
         if max(img.size) <= max_size:
             uploaded_file.seek(0)
             return uploaded_file
 
-        # Calculate new size preserving aspect ratio
+        # keep aspect ratio
         ratio = max_size / max(img.size)
         new_size = tuple(int(dim * ratio) for dim in img.size)
-
-        # Resize with high-quality downsampling
         resized_img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-        # Save to BytesIO
         buffer = io.BytesIO()
-        # Preserve transparency for PNG, otherwise use JPEG
         if original_format.upper() == "PNG" and img.mode in ("RGBA", "LA"):
             resized_img.save(buffer, format="PNG")
         else:
-            # Convert to RGB if saving as JPEG (removes alpha channel)
-            if resized_img.mode != "RGB":
-                resized_img = resized_img.convert("RGB")
-            resized_img.save(buffer, format="JPEG", quality=95, optimize=True)
+            rgb_img = resized_img.convert("RGB")
+            rgb_img.save(buffer, format="JPEG", quality=95, optimize=True)
 
         buffer.seek(0)
-        buffer.name = uploaded_file.name  # keep original filename for GitHub
+        buffer.name = uploaded_file.name
         return buffer
 
-    # Check for duplicate match IDs
+    # ---------- Duplicate match_id warning ----------
     if st.session_state.matches_df['match_id'].duplicated().any():
         st.warning("Duplicate match IDs detected in the database. Please remove duplicates in Supabase to enable editing.")
-        duplicate_ids = st.session_state.matches_df[st.session_state.matches_df['match_id'].duplicated(keep=False)]['match_id'].tolist()
-        st.write(f"Duplicate match IDs: {duplicate_ids}")
+        dupes = st.session_state.matches_df[st.session_state.matches_df['match_id'].duplicated(keep=False)]['match_id'].tolist()
+        st.write(f"Duplicate IDs: {dupes}")
 
-    # ────────────────────── POST NEW MATCH ──────────────────────
+    # ==================== POST NEW MATCH ====================
     with st.expander("Post New Match Result", expanded=False, icon="plus"):
+        # ---- Players list ----
         if "players_df" not in st.session_state or st.session_state.players_df.empty:
-            st.warning("No players available. Please add players in the Player Profile tab.")
+            st.warning("No players available. Add players in the Player Profile tab.")
             available_players = []
         else:
-            available_players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"])
+            available_players = sorted(
+                [p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]
+            )
 
         if not available_players:
             st.stop()
 
         match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
 
+        # ---- Player selection ----
         if match_type == "Doubles":
             col1, col2 = st.columns(2)
             with col1:
@@ -3538,28 +3536,34 @@ with tabs[1]:
         date = st.date_input("Match Date *", value=datetime.today())
 
         set1 = st.selectbox("Set 1 Score *", [""] + tennis_scores(), key="set1_new")
-        set2 = st.selectbox("Set 2 Score (optional for Singles)", [""] + tennis_scores(), key="set2_new")
-        set3 = st.selectbox("Set  ("Set 3 Score (optional)", [""] + tennis_scores(), key="set3_new")
+        set2 = st.selectbox("Set 2 Score (optional for Singles)", [""] + tennis_scores(), key="set2")
+        set3 = st.selectbox("Set 3 Score (optional)", [""] + tennis_scores(), key="set3")   # <-- fixed line
 
         winner = st.selectbox("Winner *", ["Team 1", "Team 2", "Tie"], key="winner_new")
 
-        match_image = st.file_uploader("Upload Match Photo *", type=["jpg","jpeg","png","webp"], key="new_match_img")
+        match_image = st.file_uploader(
+            "Upload Match Photo * (will be resized to max 1200 px)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key="new_match_img"
+        )
 
         if st.button("Post Match", key=f"post_match_{st.session_state.form_key_suffix}"):
-            current_time = time.time()
-            if current_time - st.session_state.last_match_submit_time < 8:
+            # debounce
+            if time.time() - st.session_state.last_match_submit_time < 8:
                 st.warning("Please wait a few seconds before posting another match.")
                 st.stop()
 
-            # --- Validation ---
+            st.session_state.last_match_submit_time = time.time()
+
+            # ---- Basic validation ----
             if not match_image:
                 st.error("Match photo is required.")
                 st.stop()
 
             if match_type == "Doubles":
-                required_players = [t1p1, t1p2, t2p1, t2p2]
-                if not all(required_players) or len(set(required_players)) != 4:
-                    st.error("All four players must be selected and unique for doubles.")
+                players = [t1p1, t1p2, t2p1, t2p2]
+                if not all(players) or len(set(players)) != 4:
+                    st.error("All 4 players must be selected and unique for doubles.")
                     st.stop()
             else:
                 if not t1p1 or not t2p1 or t1p1 == t2p1:
@@ -3570,20 +3574,17 @@ with tabs[1]:
                 st.error("Set 1 score is required.")
                 st.stop()
 
-            # --- Resize image before upload ---
+            # ---- Resize image before upload ----
             with st.spinner("Resizing & uploading image…"):
-                resized_file = resize_image_if_needed(match_image, max_size=1200)
-                if not resized_file:
-                    st.error("Image processing failed.")
-                    st.stop()
+                file_to_upload = resize_image_if_needed(match_image, max_size=1200)
 
-            # --- Upload to GitHub ---
+            # ---- Generate match_id & upload image ----
             match_datetime = pd.to_datetime(date)
             new_match_id = generate_match_id(st.session_state.matches_df, match_datetime)
 
-            image_url = upload_image_to_github(resized_file, new_match_id, image_type="match")
+            image_url = upload_image_to_github(file_to_upload, new_match_id, image_type="match")
 
-            # --- Build match record ---
+            # ---- Build record ----
             new_match = {
                 "match_id": new_match_id,
                 "date": date.isoformat(),
@@ -3599,27 +3600,31 @@ with tabs[1]:
                 "match_image_url": image_url
             }
 
-            # --- Duplicate check ---
-            check_dict = {k: v for k, v in new_match.items() if k not in ["match_id", "date", "winner", "match_image_url"]}
+            # ---- Duplicate check ----
+            check_dict = {k: v for k, v in new_match.items()
+                         if k not in ["match_id", "date", "winner", "match_image_url"]}
             if is_duplicate_match(check_dict, st.session_state.matches_df):
                 st.session_state.pending_match = new_match
                 st.session_state.duplicate_flag = True
                 st.rerun()
             else:
-                st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                st.session_state.matches_df = pd.concat(
+                    [st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True
+                )
                 save_matches(st.session_state.matches_df)
                 st.success(f"Match {new_match_id} posted!")
-                st.session_state.last_match_submit_time = time.time()
                 st.session_state.form_key_suffix += 1
                 st.rerun()
 
-        # Duplicate handling
+        # ---- Duplicate handling ----
         if st.session_state.get("duplicate_flag", False):
             st.warning("This exact player + score combination already exists.")
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("Add as 2nd match anyway"):
-                    st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([st.session_state.pending_match])], ignore_index=True)
+                    st.session_state.matches_df = pd.concat(
+                        [st.session_state.matches_df, pd.DataFrame([st.session_state.pending_match])], ignore_index=True
+                    )
                     save_matches(st.session_state.matches_df)
                     st.success("Added as second entry.")
                     st.session_state.duplicate_flag = False
@@ -3631,13 +3636,13 @@ with tabs[1]:
                     st.session_state.pending_match = None
                     st.rerun()
 
-    # ────────────────────── MATCH HISTORY (unchanged) ──────────────────────
+    # ==================== MATCH HISTORY (unchanged) ====================
     st.markdown("---")
     st.subheader("Match History")
-    # ... (your existing match history display code remains exactly the same) ...
-    # (the long block with filters, serial numbers, WhatsApp sharing etc.)
+    # ... (your entire existing match-history code – filters, serial numbers, WhatsApp share, etc.) ...
+    # It is exactly the same as before – no changes needed here.
 
-    # ────────────────────── EDIT / DELETE MATCH ──────────────────────
+    # ==================== EDIT / DELETE MATCH (with resize) ====================
     st.markdown("---")
     st.subheader("Manage Existing Matches")
 
@@ -3654,11 +3659,15 @@ with tabs[1]:
         match_options = []
         for _, row in matches_df.iterrows():
             d = row['date'].strftime('%a, %d %b %Y') if pd.notnull(row['date']) else "No date"
-            p = ", ".join([p for p in [row['team1_player1'], row['team1_player2'], row['team2_player1'], row['team2_player2']] if p])
+            p = ", ".join([p for p in [row['team1_player1'], row['team1_player2'],
+                                      row['team2_player1'], row['team2_player2']] if p])
             match_options.append(f"{d} | {row['match_type']} | {p} | ID: {row['match_id']}")
 
-        selected = st.selectbox("Select match to edit/delete", [""] + match_options,
-                                key=f"edit_sel_{st.session_state.edit_match_key}")
+        selected = st.selectbox(
+            "Select match to edit/delete",
+            [""] + match_options,
+            key=f"edit_sel_{st.session_state.edit_match_key}"
+        )
 
         if selected:
             match_id = selected.split("ID: ")[-1]
@@ -3668,23 +3677,25 @@ with tabs[1]:
             with st.expander("Edit Match Details", expanded=True):
                 # (all your existing edit inputs – date, type, players, sets, winner – stay unchanged)
 
-                uploaded_image_edit = st.file_uploader("Update Match Image (optional)",
-                                                      type=["jpg","jpeg","png","webp"],
-                                                      key=f"edit_img_{match_id}")
+                uploaded_image_edit = st.file_uploader(
+                    "Update Match Image (optional – will be resized)",
+                    type=["jpg","jpeg","png","webp"],
+                    key=f"edit_img_{match_id}"
+                )
 
                 col_save, col_del = st.columns(2)
                 with col_save:
                     if st.button("Save Changes", key=f"save_{match_id}"):
-                        # ... your existing validation logic ...
+                        # your existing validation logic here ...
 
-                        # --- Handle image update with resize ---
-                        final_image_url = row["match_image_url"]  # keep old if no new upload
+                        # ---- Image handling with resize ----
+                        final_image_url = row["match_image_url"]
                         if uploaded_image_edit:
                             with st.spinner("Resizing & uploading new image…"):
                                 resized = resize_image_if_needed(uploaded_image_edit, max_size=1200)
                                 final_image_url = upload_image_to_github(resized, match_id, image_type="match")
 
-                        # Update row
+                        # update the row
                         updated = {
                             "match_id": match_id,
                             "date": pd.to_datetime(date_edit).isoformat(),
