@@ -3319,83 +3319,83 @@ with tabs[0]:
                 st.error(f"Error generating PDF: {str(e)}")
     #else:  # Combined view
     else:  # Combined view
-    rank_df, partner_stats = calculate_rankings(matches_df)
-    if not rank_df.empty and len(rank_df) >= 3:
-        top_3_players = rank_df.head(3)
-        st.markdown("""
-        <style>
-        .podium-container {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            align-items: flex-end;
-            width: 100%;
-            margin: 20px 0;
-            padding: 10px 0;
-            height: 220px;
-            border-bottom: 2px solid #fff500;
-        }
-        .podium-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            color: white;
-            width: 32%;
-        }
-        .podium-item img {
-            width: 90px;
-            height: 90px;
-            border-radius: 10%;
-            border: 1px solid #fff500;
-            transition: transform 0.2s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 245, 0, 0.6);
-            margin-bottom: 10px;
-            object-fit: cover;
-        }
-        .podium-name {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #fff500;
-        }
-        .podium-rank {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: white;
-        }
-        .podium-item.rank-1 { order: 2; align-self: flex-start; }
-        .podium-item.rank-2 { order: 1; }
-        .podium-item.rank-3 { order: 3; }
-        </style>
-        """, unsafe_allow_html=True)
-        p1 = top_3_players.iloc[0]
-        p2 = top_3_players.iloc[1]
-        p3 = top_3_players.iloc[2]
-        podium_html = f"""
-        <div class="podium-container">
-            <div class="podium-item rank-2">
-                <img src="{p2['Profile']}" alt="{p2['Player']}">
-                <div class="podium-rank">🥈 {p2['Rank'].replace('🏆 ', '')}</div>
-                <div class="podium-name">{p2['Player']}</div>
-            </div>
-            <div class="podium-item rank-1">
-                <img src="{p1['Profile']}" alt="{p1['Player']}">
-                <div class="podium-rank">🥇 {p1['Rank'].replace('🏆 ', '')}</div>
-                <div class="podium-name">{p1['Player']}</div>
-            </div>
-            <div class="podium-item rank-3">
-                <img src="{p3['Profile']}" alt="{p3['Player']}">
-                <div class="podium-rank">🥉 {p3['Rank'].replace('🏆 ', '')}</div>
-                <div class="podium-name">{p3['Player']}</div>
-            </div>
-        </div>
-        """
-        st.markdown(podium_html, unsafe_allow_html=True)
-    if rank_df.empty:
-        st.info("No ranking data available for this view.")
-    else:
-        for index, row in rank_df.iterrows():
-            display_ranking_card(row, players_df, matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=f"combined_{index}")
+      rank_df, partner_stats = calculate_rankings(matches_df)
+      if not rank_df.empty and len(rank_df) >= 3:
+          top_3_players = rank_df.head(3)
+          st.markdown("""
+          <style>
+          .podium-container {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-around;
+              align-items: flex-end;
+              width: 100%;
+              margin: 20px 0;
+              padding: 10px 0;
+              height: 220px;
+              border-bottom: 2px solid #fff500;
+          }
+          .podium-item {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              text-align: center;
+              color: white;
+              width: 32%;
+          }
+          .podium-item img {
+              width: 90px;
+              height: 90px;
+              border-radius: 10%;
+              border: 1px solid #fff500;
+              transition: transform 0.2s;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 245, 0, 0.6);
+              margin-bottom: 10px;
+              object-fit: cover;
+          }
+          .podium-name {
+              font-weight: bold;
+              font-size: 1.1em;
+              color: #fff500;
+          }
+          .podium-rank {
+              font-size: 1.5em;
+              font-weight: bold;
+              color: white;
+          }
+          .podium-item.rank-1 { order: 2; align-self: flex-start; }
+          .podium-item.rank-2 { order: 1; }
+          .podium-item.rank-3 { order: 3; }
+          </style>
+          """, unsafe_allow_html=True)
+          p1 = top_3_players.iloc[0]
+          p2 = top_3_players.iloc[1]
+          p3 = top_3_players.iloc[2]
+          podium_html = f"""
+          <div class="podium-container">
+              <div class="podium-item rank-2">
+                  <img src="{p2['Profile']}" alt="{p2['Player']}">
+                  <div class="podium-rank">🥈 {p2['Rank'].replace('🏆 ', '')}</div>
+                  <div class="podium-name">{p2['Player']}</div>
+              </div>
+              <div class="podium-item rank-1">
+                  <img src="{p1['Profile']}" alt="{p1['Player']}">
+                  <div class="podium-rank">🥇 {p1['Rank'].replace('🏆 ', '')}</div>
+                  <div class="podium-name">{p1['Player']}</div>
+              </div>
+              <div class="podium-item rank-3">
+                  <img src="{p3['Profile']}" alt="{p3['Player']}">
+                  <div class="podium-rank">🥉 {p3['Rank'].replace('🏆 ', '')}</div>
+                  <div class="podium-name">{p3['Player']}</div>
+              </div>
+          </div>
+          """
+          st.markdown(podium_html, unsafe_allow_html=True)
+      if rank_df.empty:
+          st.info("No ranking data available for this view.")
+      else:
+          for index, row in rank_df.iterrows():
+              display_ranking_card(row, players_df, matches_df, partner_stats, doubles_rank_df, singles_rank_df, key_prefix=f"combined_{index}")
 
 
 
