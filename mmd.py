@@ -2845,7 +2845,7 @@ tabs = st.tabs(tab_names)
 
 
 
-update this tab[0 from anotehr script to incldue the player activity as well : with tabs[0]:
+with tabs[0]:
     load_players()
     load_matches()
     available_players = sorted([name for name in st.session_state.players_df["name"].values if name]) if not st.session_state.players_df.empty else []
