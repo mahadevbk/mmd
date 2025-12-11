@@ -2775,6 +2775,47 @@ def is_duplicate_match(new_match, matches_df):
     return False
 
 
+
+
+
+#-------------------------Resize Match image -------------------------------------------------
+
+
+def resize_image(file, max_size=1200):
+    """
+    Resizes the image proportionally if larger than max_size in width or height.
+    Returns a BytesIO object with the resized image or the original if no resize needed.
+    """
+    # Read the file bytes
+    file.seek(0)  # Ensure at start
+    img = Image.open(file)
+    width, height = img.size
+    original_format = img.format or "JPEG"  # Default to JPEG if unknown
+
+    if width <= max_size and height <= max_size:
+        # No resize needed, return original
+        file.seek(0)
+        return file
+
+    # Calculate new dimensions
+    if width > height:
+        new_width = max_size
+        new_height = int((height / width) * max_size)
+    else:
+        new_height = max_size
+        new_width = int((width / height) * max_size)
+
+    # Resize with antialiasing
+    resized_img = img.resize((new_width, new_height), Image.ANTIALIAS)
+
+    # Save to BytesIO
+    resized_buffer = io.BytesIO()
+    resized_img.save(resized_buffer, format=original_format)
+    resized_buffer.seek(0)
+    return resized_buffer
+
+
+
     
 
 
