@@ -3501,7 +3501,7 @@ with tabs[1]:
         st.write(f"Duplicate IDs: {dupes}")
 
     # ==================== POST NEW MATCH ====================
-    with st.expander("Post New Match Result", expanded=False, icon="plus"):
+    with st.expander("Post New Match Result", expanded=False):
         # ---- Players list ----
         if "players_df" not in st.session_state or st.session_state.players_df.empty:
             st.warning("No players available. Add players in the Player Profile tab.")
