@@ -5482,9 +5482,9 @@ with tabs[6]:
 with tabs[7]:
     st.header("Grok Chat")
     st.markdown("""
-    Chat with Grok about the tennis league! Ask questions like:
+    Chat with Grok about the MMD tennis league! Ask questions like:
     - "Who is the top-ranked player?"
-    - "Summarize the last 5 matches."
+    - "Why do you keep picking on The Famous Mr. Adam ?"
     - "Suggest pairings for upcoming bookings."
     
     *Powered by xAI's Grok API (free tier with limits on grok.com; API may incur token costs).*
