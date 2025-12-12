@@ -1,5 +1,5 @@
 #streamlit
-streamlit>=1.42.0
+#streamlit>=1.42.0
 tornado==6.4.1  # Stable version
 pandas
 supabase
@@ -10,3 +10,7 @@ fpdf==1.7.2
 PyGithub
 openai==1.28.0
 httpx==0.25.2  # Also pin httpx if needed
+supabase==2.8.1  # Stable release without the gotrue 2.9.1 bug
+gotrue==2.8.1    # Explicitly pin to avoid auto-upgrade to buggy 2.9.1
+httpx==0.27.0    # Compatible with supabase; avoids http2/proxy kwarg issues
+postgrest==0.10.1  # Matching postgrest-py for completeness
