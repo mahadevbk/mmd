@@ -2808,6 +2808,39 @@ def is_duplicate_match(new_match, matches_df):
     return False
 
 
+
+
+
+
+#---------------------GROK stuff ------------------------------------------------------
+
+# Grok client init (with secret key)
+grok_api_key = st.secrets.get("GROK_API_KEY")
+if not grok_api_key:
+    st.error("Grok API key not found in secrets. Get one at https://x.ai/api")
+    st.stop()
+client = Grok(api_key=grok_api_key)
+
+@st.cache_data(ttl=300)  # Cache data fetch for 5 min to avoid hammering DB
+def fetch_match_data():
+    """Fetch and format recent match records as JSON for Grok context."""
+    # Query last 3 months (or all; adjust as needed)
+    three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+    response = supabase.table('matches').select("*").gte('date', three_months_ago).execute()
+    data = response.data
+    
+    if not data:
+        return "No match data available."
+    
+    df = pd.DataFrame(data)
+    # Format as compact JSON (key fields: date, player1, player2, score, winner, type)
+    json_data = df[['date', 'player1', 'player2', 'score', 'winner', 'type']].to_json(orient='records', date_format='iso')
+    return json_data
+
+
+    
+
+
     
 
 
