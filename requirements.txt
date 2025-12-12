@@ -8,4 +8,4 @@ reportlab==4.0.8
 fpdf==1.7.2
 PyGithub
 openai==1.28.0
-grok-python  # Official xAI client (pip install grok-python)
+xai-sdk>=0.1.2
