@@ -46,7 +46,7 @@ import os
 from PIL import Image, ImageOps
 import base64
 from openai import OpenAI
-from grok import Grok
+from xai import Grok
 import json
 
 
