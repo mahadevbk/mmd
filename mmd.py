@@ -2861,7 +2861,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ32025.png", width='stretch')
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Hall of Fame","Mini Tourney"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Hall of Fame","Mini Tourney","MMD AI Agent"]
 
 tabs = st.tabs(tab_names)
 
@@ -5463,7 +5463,104 @@ with tabs[6]:
             file_name=f"{tournament_name or 'tournament'}.pdf",
             mime='application/pdf'
         )
-        #----MINI TOURNEY-------
+#----MINI TOURNEY--------------------------------------------------------------------------------------------
+
+
+
+with tabs[7]:
+    st.header("MMD AI Agent")
+    st.markdown("""
+    Chat with Grok about the tennis league! Ask questions like:
+    - "Who is the top-ranked player?"
+    - "Summarize the last 5 matches."
+    - "Suggest pairings for upcoming bookings."
+    
+    *Powered by xAI's Grok API (may have usage limits/costs).*
+    """)
+
+    # Check for API key
+    if "xai" not in st.secrets or "api_key" not in st.secrets["xai"] or not st.secrets["xai"]["api_key"]:
+        st.warning("No xAI API key found in secrets. Get one at https://x.ai/api and add to secrets.toml.")
+        st.markdown("[Chat with Grok directly on grok.com](https://grok.com) (free with limits).")
+    else:
+        # Initialize xAI client (OpenAI-compatible)
+        client = OpenAI(
+            api_key=st.secrets["xai"]["api_key"],
+            base_url="https://api.x.ai/v1",
+        )
+
+        # Initialize chat history
+        if "grok_messages" not in st.session_state:
+            st.session_state.grok_messages = []
+
+        # Display chat messages
+        for message in st.session_state.grok_messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # User input
+        if prompt := st.chat_input("Ask Grok about the league..."):
+            st.session_state.grok_messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Prepare context with app data (JSON for Grok to analyze)
+            context = """
+            You are Grok, a helpful AI for the MMD Mira Mixed Doubles Tennis League.
+            Respond concisely and helpfully to queries about the data.
+            Data available:
+            - Players: {players_data}
+            - Matches: {matches_data}
+            - Bookings: {bookings_data}
+            Use this data to answer questions accurately. Do not hallucinate.
+            """.format(
+                players_data=st.session_state.players_df.to_json(orient="records") if not st.session_state.players_df.empty else "No players data.",
+                matches_data=st.session_state.matches_df.to_json(orient="records") if not st.session_state.matches_df.empty else "No matches data.",
+                bookings_data=st.session_state.bookings_df.to_json(orient="records") if not st.session_state.bookings_df.empty else "No bookings data."
+            )
+
+            # Stream response from Grok
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_response = ""
+                try:
+                    stream = client.chat.completions.create(
+                        model="grok-beta",  # Use 'grok-beta' or check https://x.ai/api for available models
+                        messages=[
+                            {"role": "system", "content": context},
+                            *st.session_state.grok_messages  # Include history for context
+                        ],
+                        stream=True
+                    )
+                    for chunk in stream:
+                        if chunk.choices[0].delta.content is not None:
+                            full_response += chunk.choices[0].delta.content
+                            message_placeholder.markdown(full_response + "▌")
+                    message_placeholder.markdown(full_response)
+                except Exception as e:
+                    st.error(f"Error calling Grok API: {str(e)}. Check your API key or usage limits at https://x.ai/api.")
+
+            st.session_state.grok_messages.append({"role": "assistant", "content": full_response})
+
+    # Optional: Clear chat history button
+    if st.button("Clear Chat History"):
+        st.session_state.grok_messages = []
+        st.rerun()
+
+
+
+
+
+
+
+
+
+#------------------END OF MMD AI AGENT ------------------------------------------------------------------
+
+
+
+
+
 
 
 #st.markdown("---")
