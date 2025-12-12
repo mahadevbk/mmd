@@ -46,7 +46,8 @@ import os
 from PIL import Image, ImageOps
 import base64
 from openai import OpenAI
-from xai import Grok
+from xai_sdk import Client
+from xai_sdk.chat import user, system
 import json
 
 
