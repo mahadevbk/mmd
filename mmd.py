@@ -4694,7 +4694,7 @@ with tabs[4]:
                         st.html(card_html)
     
     # Manage Existing Availability (optional)
-    with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
+    with st.expander("Manage All Availability", expanded=False):
         if not st.session_state.availability_df.empty:
             st.dataframe(st.session_state.availability_df, width="stretch")
             
