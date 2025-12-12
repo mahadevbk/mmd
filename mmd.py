@@ -620,6 +620,7 @@ def upload_image_to_github(file, file_name, image_type="match"):
     """
     Uploads a file to a specified folder in a GitHub repository and returns its public URL.
     Handles both new uploads and updates by fetching sha if the file exists.
+    Resizes match images proportionally to a maximum dimension of 1200 pixels before uploading.
     """
     if not file:
         return ""
@@ -643,6 +644,34 @@ def upload_image_to_github(file, file_name, image_type="match"):
     else:
         path_in_repo = f"assets/others/{file_name}.jpg"
 
+    # --- Prepare the file content ---
+    content_bytes = file.getvalue()
+
+    # Resize if it's a match image and exceeds 1200px on the longer side
+    if image_type == "match":
+        try:
+            img = Image.open(io.BytesIO(content_bytes))
+            if img.width > 1200 or img.height > 1200:
+                if img.width > img.height:
+                    new_width = 1200
+                    new_height = int((1200 / img.width) * img.height)
+                else:
+                    new_height = 1200
+                    new_width = int((1200 / img.height) * img.width)
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+                
+                buffer = io.BytesIO()
+                # Preserve original format if possible, default to JPEG
+                format = img.format or "JPEG"
+                save_kwargs = {"quality": 85} if format.upper() in ["JPEG", "JPG"] else {}
+                img.save(buffer, format=format, **save_kwargs)
+                content_bytes = buffer.getvalue()
+        except Exception as e:
+            st.warning(f"Failed to resize match image '{file_name}': {str(e)}. Uploading original.")
+
+    # --- Base64 encode the (possibly resized) content ---
+    content_base64 = base64.b64encode(content_bytes).decode("utf-8")
+
     # --- Prepare the API URL and headers ---
     api_url = f"https://api.github.com/repos/{repo_full_name}/contents/{path_in_repo}"
 
@@ -662,10 +691,6 @@ def upload_image_to_github(file, file_name, image_type="match"):
     else:
         st.error(f"GitHub GET Error: Status {get_response.status_code}. Response: {get_response.text}")
         return ""
-
-    # --- Prepare the file content ---
-    content_bytes = file.getvalue()
-    content_base64 = base64.b64encode(content_bytes).decode("utf-8")
 
     payload = {
         "message": f"feat: Upload {image_type} image {file_name}",
