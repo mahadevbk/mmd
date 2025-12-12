@@ -4542,7 +4542,7 @@ with tabs[4]:
             st.error(f"Error deleting availability: {str(e)}")
     
     # Add/Update Availability Form (simplified: one day at a time)
-    with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
+    with st.expander("Add/Update Your Availability", expanded=False):
         selected_player = st.selectbox("Select Player", [""] + available_players, key="avail_player")
         selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
         if selected_player and selected_day_label:
