@@ -2861,7 +2861,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ32025.png", width='stretch')
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Hall of Fame","Mini Tourney","MMD AI Agent"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Hall of Fame","Mini Tourney","Grok Uncle"]
 
 tabs = st.tabs(tab_names)
 
@@ -5480,9 +5480,9 @@ with tabs[6]:
 
 
 with tabs[7]:
-    st.header("Grok Chat")
+    st.header("Grok Uncle")
     st.markdown("""
-    Chat with Grok about the MMD tennis league! Ask questions like:
+    Chat with Grok Uncle about the MMD tennis league! Ask him questions like:
     - "Who is the top-ranked player?"
     - "Why do you keep picking on The Famous Mr. Adam ?"
     - "Suggest pairings for upcoming bookings."
