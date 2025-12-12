@@ -8,3 +8,4 @@ plotly
 reportlab==4.0.8
 fpdf==1.7.2
 PyGithub
+openai==1.12.0  # or latest
