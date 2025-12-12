@@ -33,7 +33,7 @@ import random
 from fpdf import FPDF
 import zipfile
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 import urllib.parse
 import requests
 import random
@@ -46,6 +46,10 @@ import os
 from PIL import Image, ImageOps
 import base64
 from openai import OpenAI
+from grok import Grok
+import json
+
+
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 
