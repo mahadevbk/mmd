@@ -5496,25 +5496,52 @@ with tabs[7]:
         st.warning("No valid xAI API key found in secrets.toml. Get one at https://console.x.ai (free tier available). Add as: `[xai] api_key = 'xai-your_key_here'`")
         st.markdown("[Chat with Grok directly on grok.com](https://grok.com) (free with limits—no API key needed).")
     else:
-        # Initialize xAI client (OpenAI-compatible) with error handling
+        # Workaround for 'proxies' error: Temporarily unset proxy env vars and force sync client
+        import os
+        original_proxy_env = {k: os.environ.get(k) for k in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']}
+        for key in original_proxy_env:
+            os.environ.pop(key, None)
+
+        client = None
         try:
+            from openai import OpenAI  # Ensure import is here for retry
+            # Minimal init to avoid proxy kwarg issues
             client = OpenAI(
                 api_key=api_key,
                 base_url="https://api.x.ai/v1",
+                # Explicitly set http_client to suppress proxies
+                http_client=httpx.Client(proxies=None, timeout=30.0)
             )
-            # Test the client with a quick ping (optional, but helps catch issues early)
-            test_response = client.chat.completions.create(
-                model="grok-beta",
-                messages=[{"role": "user", "content": "Say 'ready'."}],
-                max_tokens=10
-            )
-            if "ready" not in test_response.choices[0].message.content.lower():
-                raise ValueError("API test failed—check key or quotas.")
+            # Quick test without full API call (just validate structure)
+            _ = client.models.list()  # Light test; catches auth without heavy load
             st.success("Grok connected! Start chatting.")
+        except TypeError as te:
+            if "proxies" in str(te).lower():
+                st.warning("Detected 'proxies' init error (common in Streamlit Cloud). Retrying with fallback config...")
+                try:
+                    # Fallback: Use even more minimal init
+                    import httpx
+                    transport = httpx.HTTPTransport(local_address="0.0.0.0")  # Bypass proxy resolution
+                    client = OpenAI(
+                        api_key=api_key,
+                        base_url="https://api.x.ai/v1",
+                        http_client=httpx.Client(transport=transport, timeout=30.0)
+                    )
+                    _ = client.models.list()
+                    st.success("Grok connected via fallback! Start chatting.")
+                except Exception as fb_error:
+                    st.error(f"Fallback failed: {str(fb_error)}. Try pinning `openai==1.28.0` in requirements.txt.")
+                    client = None
+            else:
+                raise te  # Re-raise non-proxies TypeErrors
         except Exception as init_error:
-            st.error(f"Failed to initialize Grok client: {str(init_error)}. Check your API key at https://console.x.ai. Falling back to grok.com.")
-            st.markdown("[Chat with Grok directly on grok.com](https://grok.com)")
+            st.error(f"Failed to initialize Grok client: {str(init_error)}. Check your API key/env at https://console.x.ai. Falling back to grok.com.")
             client = None
+        finally:
+            # Restore original env vars
+            for key, value in original_proxy_env.items():
+                if value:
+                    os.environ[key] = value
 
         if client:
             # Initialize chat history
@@ -5584,7 +5611,6 @@ with tabs[7]:
     if st.button("Clear Chat History"):
         st.session_state.grok_messages = []
         st.rerun()
-
 
 
 
