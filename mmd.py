@@ -3810,49 +3810,42 @@ with tabs[1]:
                 return f"{p3_styled} & {p4_styled} {verb} {p1_styled} & {p2_styled}"
 
     
+   
     def format_match_scores_and_date(row):
-        score_parts_plain = []
-        winner = row['winner']
+        score_parts = []
         
         for s in [row['set1'], row['set2'], row['set3']]:
             if not s or str(s).strip() == "":
                 continue
             
-            # Handle tie-break scores
+            # Handle Tie Breaks properly: convert "Tie Break 10-7" → "7-6(10:7)"
             if "Tie Break" in str(s):
-                # Extract the two numbers, e.g. "Tie Break 10-7" → 10 and 7
-                tie_break_scores = re.findall(r'\d+', str(s))
-                if len(tie_break_scores) == 2:
-                    t1_games, t2_games = int(tie_break_scores[0]), int(tie_break_scores[1])
-                    # Standard tennis display: winner first, then tie-break in parentheses
-                    if t1_games > t2_games:
-                        score_parts_plain.append(f"7-6({t1_games}:{t2_games})")
+                # Extract the two tie-break points
+                numbers = re.findall(r'\d+', str(s))
+                if len(numbers) == 2:
+                    tb1, tb2 = int(numbers[0]), int(numbers[1])
+                    # Always show 7-6 with tie-break points in parentheses, higher first in TB
+                    if tb1 > tb2:
+                        score_parts.append(f"7-6({tb1}:{tb2})")
                     else:
-                        score_parts_plain.append(f"7-6({t2_games}:{t1_games})")
+                        score_parts.append(f"7-6({tb2}:{tb1})")
                 else:
-                    score_parts_plain.append(str(s))  # fallback
+                    score_parts.append(str(s).strip())  # fallback
                 continue
             
-            # Handle regular sets, e.g. "4-6"
-            if '-' not in str(s):
-                score_parts_plain.append(str(s))
-                continue
-                
-            try:
-                t1_games, t2_games = map(int, str(s).split('-'))
-            except ValueError:
-                score_parts_plain.append(str(s))
-                continue
-            
-            # Flip the set score so the winner's games are shown first
-            if t2_games > t1_games:
-                score_parts_plain.append(f"{t2_games}-{t1_games}")
+            # Regular set: keep exactly as stored (Team 1 - Team 2)
+            if '-' in str(s):
+                try:
+                    t1, t2 = map(int, str(s).split('-'))
+                    score_parts.append(f"{t1}-{t2}")
+                except ValueError:
+                    score_parts.append(str(s).strip())
             else:
-                score_parts_plain.append(f"{t1_games}-{t2_games}")
+                score_parts.append(str(s).strip())
         
-        score_text = ", ".join(score_parts_plain)
+        score_text = ", ".join(score_parts)
         
-        # GDA (Game Difference Average)
+        # GDA calculation
         gda = calculate_gda(row) if 'calculate_gda' in globals() else None
         gda_html = f"GDA: {gda:.2f}" if gda is not None else ""
         
@@ -3862,11 +3855,12 @@ with tabs[1]:
         except:
             date_str = "Unknown Date"
         
-        # HTML version for styled display
-        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{part}</span>" for part in score_parts_plain]
-        score_html = ", ".join(score_parts_html)
-        
-        return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
+        # Styled HTML output
+        if score_text:
+            score_html = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{part}</span>" for part in score_parts])
+            return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
+        else:
+            return f"<div style='font-family: monospace; white-space: pre;'>No score recorded<br>{date_str}</div>"
 
     def create_whatsapp_share_link(row):
         verb, gda = get_match_verb_and_gda(row)
