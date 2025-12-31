@@ -3809,34 +3809,63 @@ with tabs[1]:
             else:  # Team 2
                 return f"{p3_styled} & {p4_styled} {verb} {p1_styled} & {p2_styled}"
 
+    
     def format_match_scores_and_date(row):
         score_parts_plain = []
-        for s in [row['set1'], row['set2'], row['set3']]:
-            if s:
-                if "Tie Break" in s:
-                    tie_break_scores = s.replace("Tie Break", "").strip().split('-')
-                    if len(tie_break_scores) == 2 and tie_break_scores[0].isdigit() and tie_break_scores[1].isdigit():
-                        if int(tie_break_scores[0]) > int(tie_break_scores[1]):
-                            score_parts_plain.append(f"7-6({s})")
-                        else:
-                            score_parts_plain.append(f"6-7({s})")
-                    else:
-                        score_parts_plain.append(s)
-                else:
-                    score_parts_plain.append(s)
-
-        score_text = ", ".join(score_parts_plain)
-        _, gda = get_match_verb_and_gda(row)
-        gda_text = f"GDA: {gda:.2f}"
-        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
-        score_html = ", ".join(score_parts_html)
-        gda_html = f"<span style='font-weight:bold; color:#fff500;'>{gda_text}</span>"
+        winner = row['winner']
         
-        if pd.notna(row['date']):
-            date_str = row['date'].strftime('%A, %d %b')
-        else:
-            date_str = "Invalid Date"
+        for s in [row['set1'], row['set2'], row['set3']]:
+            if not s or str(s).strip() == "":
+                continue
             
+            # Handle tie-break scores
+            if "Tie Break" in str(s):
+                # Extract the two numbers, e.g. "Tie Break 10-7" → 10 and 7
+                tie_break_scores = re.findall(r'\d+', str(s))
+                if len(tie_break_scores) == 2:
+                    t1_games, t2_games = int(tie_break_scores[0]), int(tie_break_scores[1])
+                    # Standard tennis display: winner first, then tie-break in parentheses
+                    if t1_games > t2_games:
+                        score_parts_plain.append(f"7-6({t1_games}:{t2_games})")
+                    else:
+                        score_parts_plain.append(f"7-6({t2_games}:{t1_games})")
+                else:
+                    score_parts_plain.append(str(s))  # fallback
+                continue
+            
+            # Handle regular sets, e.g. "4-6"
+            if '-' not in str(s):
+                score_parts_plain.append(str(s))
+                continue
+                
+            try:
+                t1_games, t2_games = map(int, str(s).split('-'))
+            except ValueError:
+                score_parts_plain.append(str(s))
+                continue
+            
+            # Flip the set score so the winner's games are shown first
+            if t2_games > t1_games:
+                score_parts_plain.append(f"{t2_games}-{t1_games}")
+            else:
+                score_parts_plain.append(f"{t1_games}-{t2_games}")
+        
+        score_text = ", ".join(score_parts_plain)
+        
+        # GDA (Game Difference Average)
+        gda = calculate_gda(row) if 'calculate_gda' in globals() else None
+        gda_html = f"GDA: {gda:.2f}" if gda is not None else ""
+        
+        # Date formatting
+        try:
+            date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+        except:
+            date_str = "Unknown Date"
+        
+        # HTML version for styled display
+        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{part}</span>" for part in score_parts_plain]
+        score_html = ", ".join(score_parts_html)
+        
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
 
     def create_whatsapp_share_link(row):
