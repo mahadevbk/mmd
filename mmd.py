@@ -2322,154 +2322,201 @@ END:VCALENDAR"""
 
 
 
+
 def generate_match_card(row, image_url):
     # Download the image
     response = requests.get(image_url)
     if response.status_code != 200:
         raise ValueError("Failed to download match image")
     img = Image.open(io.BytesIO(response.content))
-    
+   
     # Handle EXIF orientation to prevent unintended rotation
     img = ImageOps.exif_transpose(img)
-    
+   
     # Resize proportionally to height 1200
     base_height = 1200
     h_percent = base_height / float(img.size[1])
     new_width = int(float(img.size[0]) * float(h_percent))
     img = img.resize((new_width, base_height), Image.LANCZOS)
-    
+   
     # Apply rounded corners to the image
     radius = 20  # Corner radius
     mask = Image.new('L', (new_width, base_height), 0)
     draw_mask = ImageDraw.Draw(mask)
     draw_mask.rounded_rectangle((0, 0, new_width, base_height), radius=radius, fill=255)
-    
+   
     img_rgba = img.convert('RGBA')
     rounded_img = Image.new('RGBA', (new_width, base_height), (0, 0, 0, 0))
     rounded_img.paste(img_rgba, (0, 0), mask)
-    
-    # --- MODIFICATION: Create Polaroid canvas with gradient background ---
+   
+    # --- Create Polaroid canvas with gradient background ---
     border_sides = 30
     border_bottom = 150  # Space for text
     new_img_width = new_width + 2 * border_sides
     new_img_height = base_height + border_sides + border_bottom
-    
-    # Gradient colors (from your app's CSS)
+   
+    # Gradient colors
     top_color = (7, 49, 79)    # #07314f
     bottom_color = (3, 24, 39) # #031827
-    
-    # Create the gradient background
+   
     gradient_background = Image.new('RGBA', (new_img_width, new_img_height))
-    draw = ImageDraw.Draw(gradient_background)
+    draw_bg = ImageDraw.Draw(gradient_background)
     for y in range(new_img_height):
-        # Interpolate color
         r = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / new_img_height)
         g = int(top_color[1] + (bottom_color[1] - top_color[1]) * y / new_img_height)
         b = int(top_color[2] + (bottom_color[2] - top_color[2]) * y / new_img_height)
-        draw.line([(0, y), (new_img_width, y)], fill=(r, g, b, 255))
-
+        draw_bg.line([(0, y), (new_img_width, y)], fill=(r, g, b, 255))
     polaroid_img = gradient_background
-
-    # --- MODIFICATION: Create optic yellow shadow for the image ---
+   
+    # --- Optic yellow shadow ---
     shadow_offset_img = 5
     shadow_size = (new_width + 10, base_height + 10)
     shadow = Image.new('RGBA', shadow_size, (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow)
-    # Use optic yellow for the fill color
     optic_yellow_color = (204, 255, 0, 128)
     shadow_draw.rounded_rectangle((0, 0, new_width, base_height), radius=radius, fill=optic_yellow_color)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(8)) # Increased blur for better effect
+    shadow = shadow.filter(ImageFilter.GaussianBlur(8))
     polaroid_img.paste(shadow, (border_sides + shadow_offset_img, border_sides + shadow_offset_img), shadow)
-    
+   
     # Paste the rounded image
     polaroid_img.paste(rounded_img, (border_sides, border_sides), rounded_img)
-    
-    # --- (Rest of the function remains the same for logic) ---
+   
+    # =========================================================================
+    # --- PREPARE TEAMS AND SCORES (WINNER-FIRST LOGIC) ---
+    # =========================================================================
+    winner = row['winner']
+    is_team2_winner = (winner == "Team 2")
 
-    # Prepare teams
-    match_type = row['match_type']
-    if match_type == 'Doubles':
+    # Build team names
+    if row['match_type'] == 'Doubles':
         team1 = f"{row['team1_player1']} & {row['team1_player2']}"
         team2 = f"{row['team2_player1']} & {row['team2_player2']}"
     else:
         team1 = row['team1_player1']
         team2 = row['team2_player1']
-    
-    # Compute sets and GDA
-    sets = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-    set_text = ", ".join(sets)
-    
+
+    # Winner-first team order
+    if winner == 'Tie':
+        winner_team = team1
+        loser_team = team2
+    elif is_team2_winner:
+        winner_team = team2
+        loser_team = team1
+    else:
+        winner_team = team1
+        loser_team = team2
+
+    # Format individual sets with winner-first games
+    def format_set_for_card(set_score):
+        if not set_score or str(set_score).strip() == "":
+            return ""
+        s = str(set_score).strip()
+        
+        if "Tie Break" in s:
+            import re
+            numbers = re.findall(r'\d+', s)
+            if len(numbers) == 2:
+                tb1, tb2 = int(numbers[0]), int(numbers[1])
+                if is_team2_winner:
+                    return f"7-6({tb2}:{tb1})"
+                else:
+                    return f"7-6({tb1}:{tb2})"
+            return s
+        
+        if '-' in s:
+            try:
+                g1, g2 = map(int, s.split('-'))
+                if is_team2_winner:
+                    return f"{g2}-{g1}"
+                else:
+                    return f"{g1}-{g2}"
+            except:
+                return s
+        return s
+
+    set1_disp = format_set_for_card(row['set1'])
+    set2_disp = format_set_for_card(row['set2'])
+    set3_disp = format_set_for_card(row['set3'])
+    displayed_sets = [s for s in [set1_disp, set2_disp, set3_disp] if s]
+    set_text = ", ".join(displayed_sets) if displayed_sets else "No score"
+
+    # =========================================================================
+    # --- GDA CALCULATION (ORIGINAL LOGIC PRESERVED) ---
+    # =========================================================================
     match_gd_sum = 0
     num_sets = 0
-    for set_score in sets:
+    for set_score in [row['set1'], row['set2'], row['set3']]:
         if not set_score:
             continue
-        is_tie_break = "Tie Break" in str(set_score)
-        if is_tie_break:
-            tie_break_scores = [int(s) for s in re.findall(r'\d+', str(set_score))]
-            if len(tie_break_scores) != 2:
-                continue
-            team1_games, team2_games = tie_break_scores
-            team1_set_diff = team1_games - team2_games
-        else:
+        s = str(set_score)
+        if "Tie Break" in s:
+            numbers = re.findall(r'\d+', s)
+            if len(numbers) == 2:
+                team1_games, team2_games = int(numbers[0]), int(numbers[1])
+        elif '-' in s:
             try:
-                team1_games, team2_games = map(int, str(set_score).split('-'))
-                team1_set_diff = team1_games - team2_games
-            except ValueError:
+                team1_games, team2_games = map(int, s.split('-'))
+            except:
                 continue
+        else:
+            continue
+        
+        team1_set_diff = team1_games - team2_games
         match_gd_sum += team1_set_diff
         num_sets += 1
-    
+
     gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
-    
+
     # Adjust GDA sign based on winner
-    winner = row['winner']
     if winner == 'Team 2':
         gda = -gda
     elif winner == 'Tie':
         gda = 0.0
-    
+
     abs_gda = abs(gda)
-    
-    # Define verb lists
-    strong_verbs = ["obliterated", "crushed", "smashed", "annihilated", "destroyed","beat the hell out of","deadpooled"]
+
+    # Verb selection
+    strong_verbs = ["obliterated", "crushed", "smashed", "annihilated", "destroyed", "beat the hell out of", "deadpooled"]
     solid_verbs = ["dominated", "overpowered", "outplayed", "thrashed"]
     decent_verbs = ["defeated", "beat", "conquered", "toppled"]
     close_verbs = ["overcame", "outlasted", "surpassed", "bested"]
     tight_verbs = ["edged out", "nipped", "pipped", "squeaked by"]
     tie_verbs = ["tied with", "matched", "drew with"]
-    
-    # Select random verb
+
     if winner == 'Tie':
         verb = random.choice(tie_verbs)
+    elif abs_gda > 4.0:
+        verb = random.choice(strong_verbs)
+    elif abs_gda > 3.0:
+        verb = random.choice(solid_verbs)
+    elif abs_gda > 2.0:
+        verb = random.choice(decent_verbs)
+    elif abs_gda > 1.0:
+        verb = random.choice(close_verbs)
     else:
-        if abs_gda > 4.0: verb = random.choice(strong_verbs)
-        elif abs_gda > 3.0: verb = random.choice(solid_verbs)
-        elif abs_gda > 2.0: verb = random.choice(decent_verbs)
-        elif abs_gda > 1.0: verb = random.choice(close_verbs)
-        else: verb = random.choice(tight_verbs)
-        
-    # This string is now only used for length calculation, not for drawing
-    if winner == 'Tie': players_text = f"{team1} {verb} {team2}"
-    elif winner == 'Team 1': players_text = f"{team1} {verb} {team2}"
-    else: players_text = f"{team2} {verb} {team1}"
-        
+        verb = random.choice(tight_verbs)
+
+    # Headline text (winner first)
+    if winner == 'Tie':
+        players_text = f"{team1} {verb} {team2}"
+    else:
+        players_text = f"{winner_team} {verb} {loser_team}"
+
     if len(players_text) > 50:
         players_text = players_text[:47] + "..."
-    
+
     date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-    
+
     # =========================================================================
-    # --- START: MODIFIED TEXT DRAWING SECTION ---
+    # --- TEXT DRAWING (UNCHANGED STYLE, NOW WITH CORRECT DATA) ---
     # =========================================================================
-    
     draw = ImageDraw.Draw(polaroid_img)
     try:
         font = ImageFont.truetype("CoveredByYourGrace-Regular.ttf", 50)
     except IOError:
-        font = ImageFont.load_default() # Simplified fallback
-    
-    # Font scaling logic...
+        font = ImageFont.load_default()
+
+    # Font scaling
     max_text_width = new_width * 0.8
     players_bbox = draw.textbbox((0, 0), players_text, font=font)
     if (players_bbox[2] - players_bbox[0]) > max_text_width:
@@ -2478,66 +2525,59 @@ def generate_match_card(row, image_url):
         try:
             font = ImageFont.truetype("CoveredByYourGrace-Regular.ttf", font_size)
         except IOError:
-            font = ImageFont.truetype("arial.ttf", font_size)
+            try:
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
 
-    # Text positions
     text_area_top = base_height + border_sides
     x_center = new_img_width / 2
     y_positions = [text_area_top + 30, text_area_top + 80, text_area_top + 130]
-    
-    # --- Define text and shadow colors ---
+
     optic_yellow = (204, 255, 0, 255)
     medium_grey = (128, 128, 128, 255)
     shadow_fill = (53, 66, 0, 255)
     shadow_offset = 2
-    
-    # Helper function for drawing text with shadow
+
     def draw_text_with_shadow(draw_surface, pos, text, font, fill_color, anchor="lm"):
         x, y = pos
-        # Draw shadow
         draw_surface.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_fill, anchor=anchor)
-        # Draw main text
         draw_surface.text((x, y), text, font=font, fill=fill_color, anchor=anchor)
 
-    # --- Draw Line 1: Player Names (Yellow) and Verb (Grey) ---
+    # Line 1: Players + Verb
     y1 = y_positions[0]
     if winner == 'Tie':
         part1, part2, part3 = team1, f' {verb} ', team2
-    elif winner == 'Team 1':
-        part1, part2, part3 = team1, f' {verb} ', team2
-    else: # Team 2 won
-        part1, part2, part3 = team2, f' {verb} ', team1
+    else:
+        part1, part2, part3 = winner_team, f' {verb} ', loser_team
 
     width1 = draw.textlength(part1, font=font)
     width2 = draw.textlength(part2, font=font)
     total_width = width1 + width2 + draw.textlength(part3, font=font)
-    
-    current_x = x_center - (total_width / 2)
 
+    current_x = x_center - (total_width / 2)
     draw_text_with_shadow(draw, (current_x, y1), part1, font, optic_yellow, anchor="lm")
     current_x += width1
     draw_text_with_shadow(draw, (current_x, y1), part2, font, medium_grey, anchor="lm")
     current_x += width2
     draw_text_with_shadow(draw, (current_x, y1), part3, font, optic_yellow, anchor="lm")
 
-    # --- Draw Line 2: Set Scores (Yellow) ---
+    # Line 2: Scores (now correct!)
     y2 = y_positions[1]
-    # For single-color lines, we can still center it directly
     draw.text((x_center + shadow_offset, y2 + shadow_offset), set_text, font=font, fill=shadow_fill, anchor="mm")
     draw.text((x_center, y2), set_text, font=font, fill=optic_yellow, anchor="mm")
 
-    # --- Draw Line 3: GDA & Date (Labels Grey, Values Yellow) ---
+    # Line 3: GDA & Date
     y3 = y_positions[2]
     gda_label, gda_value = "GDA: ", f"{gda:.2f}"
     date_label, date_value = " | Date: ", date_str
-    
+
     gda_label_w = draw.textlength(gda_label, font=font)
     gda_value_w = draw.textlength(gda_value, font=font)
     date_label_w = draw.textlength(date_label, font=font)
     total_width_line3 = gda_label_w + gda_value_w + date_label_w + draw.textlength(date_value, font=font)
 
     current_x = x_center - (total_width_line3 / 2)
-
     draw_text_with_shadow(draw, (current_x, y3), gda_label, font, medium_grey, anchor="lm")
     current_x += gda_label_w
     draw_text_with_shadow(draw, (current_x, y3), gda_value, font, optic_yellow, anchor="lm")
@@ -2545,18 +2585,14 @@ def generate_match_card(row, image_url):
     draw_text_with_shadow(draw, (current_x, y3), date_label, font, medium_grey, anchor="lm")
     current_x += date_label_w
     draw_text_with_shadow(draw, (current_x, y3), date_value, font, optic_yellow, anchor="lm")
-    
-    # =========================================================================
-    # --- END: MODIFIED TEXT DRAWING SECTION ---
-    # =========================================================================
-    
+
+    # Convert to RGB and return
     polaroid_img = polaroid_img.convert('RGB')
-    
     buf = io.BytesIO()
-    polaroid_img.save(buf, format='JPEG')
+    polaroid_img.save(buf, format='JPEG', quality=95)
     buf.seek(0)
     return buf.getvalue()
-
+    
 
 
 
