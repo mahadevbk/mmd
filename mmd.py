@@ -3811,33 +3811,39 @@ with tabs[1]:
 
     
    
+    
     def format_match_scores_and_date(row):
         score_parts = []
-        
+        winner = row.get('winner', '')
+        is_team2_winner = (winner == "Team 2")
+
         for s in [row['set1'], row['set2'], row['set3']]:
             if not s or str(s).strip() == "":
                 continue
             
-            # Handle Tie Breaks properly: convert "Tie Break 10-7" → "7-6(10:7)"
+            # Handle Tie Breaks → convert to proper format
             if "Tie Break" in str(s):
-                # Extract the two tie-break points
                 numbers = re.findall(r'\d+', str(s))
                 if len(numbers) == 2:
                     tb1, tb2 = int(numbers[0]), int(numbers[1])
-                    # Always show 7-6 with tie-break points in parentheses, higher first in TB
-                    if tb1 > tb2:
-                        score_parts.append(f"7-6({tb1}:{tb2})")
-                    else:
+                    # Flip if Team 2 won the tie-break
+                    if (tb2 > tb1) == is_team2_winner:
                         score_parts.append(f"7-6({tb2}:{tb1})")
+                    else:
+                        score_parts.append(f"7-6({tb1}:{tb2})")
                 else:
-                    score_parts.append(str(s).strip())  # fallback
+                    score_parts.append(str(s).strip())
                 continue
             
-            # Regular set: keep exactly as stored (Team 1 - Team 2)
+            # Regular set scores
             if '-' in str(s):
                 try:
-                    t1, t2 = map(int, str(s).split('-'))
-                    score_parts.append(f"{t1}-{t2}")
+                    t1_games, t2_games = map(int, str(s).split('-'))
+                    # If Team 2 is the match winner, flip the display order
+                    if is_team2_winner:
+                        score_parts.append(f"{t2_games}-{t1_games}")
+                    else:
+                        score_parts.append(f"{t1_games}-{t2_games}")
                 except ValueError:
                     score_parts.append(str(s).strip())
             else:
@@ -3845,19 +3851,20 @@ with tabs[1]:
         
         score_text = ", ".join(score_parts)
         
-        # GDA calculation
+        # GDA
         gda = calculate_gda(row) if 'calculate_gda' in globals() else None
         gda_html = f"GDA: {gda:.2f}" if gda is not None else ""
         
-        # Date formatting
+        # Date
         try:
             date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
         except:
             date_str = "Unknown Date"
         
-        # Styled HTML output
+        # Styled output
         if score_text:
-            score_html = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{part}</span>" for part in score_parts])
+            score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{part}</span>" for part in score_parts]
+            score_html = ", ".join(score_parts_html)
             return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
         else:
             return f"<div style='font-family: monospace; white-space: pre;'>No score recorded<br>{date_str}</div>"
