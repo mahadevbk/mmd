@@ -3700,6 +3700,8 @@ with tabs[1]:
         st.markdown("---")
     
     st.markdown("---")
+    
+
     st.subheader("Match History")
 
     # Create columns for the filters
@@ -3728,25 +3730,21 @@ with tabs[1]:
 
     # Robust Date Handling and Sorting
     if not filtered_matches.empty:
-        # Convert date column, turning errors into NaT (Not a Time)
         filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
-
-        # Keep only the rows with valid dates
         valid_matches = filtered_matches.dropna(subset=['date']).copy()
-        
-        # If some rows were dropped, inform the user
+       
         if len(valid_matches) < len(filtered_matches):
             st.warning("Some match records were hidden due to missing or invalid date formats in the database.")
-        
+       
         if not valid_matches.empty:
             # Sort ascending to assign serial numbers correctly (oldest = #1)
             valid_matches = valid_matches.sort_values(by='date', ascending=True).reset_index(drop=True)
             valid_matches['serial_number'] = valid_matches.index + 1
-            
+           
             # Re-sort descending for display (newest first)
             display_matches = valid_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
-            
-            # Add Match Type column
+           
+            # Add Match Type column with Mixed Doubles detection
             players_df = st.session_state.get('players_df', pd.DataFrame())
             display_matches['Match Type'] = ''
             for idx, row in display_matches.iterrows():
@@ -3758,26 +3756,13 @@ with tabs[1]:
                     is_mixed_doubles = False
                     if len(t1) == 2 and len(t2) == 2:
                         try:
-                            t1_genders = []
-                            t2_genders = []
-                            for p in t1:
-                                if p in players_df['name'].values:
-                                    gender = players_df[players_df['name'] == p]['gender'].iloc[0]
-                                    t1_genders.append(gender if pd.notna(gender) else None)
-                                else:
-                                    t1_genders.append(None)
-                            for p in t2:
-                                if p in players_df['name'].values:
-                                    gender = players_df[players_df['name'] == p]['gender'].iloc[0]
-                                    t2_genders.append(gender if pd.notna(gender) else None)
-                                else:
-                                    t2_genders.append(None)
-                            if (None not in t1_genders and None not in t2_genders and 
+                            t1_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t1]
+                            t2_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t2]
+                            if (None not in t1_genders and None not in t2_genders and
                                 sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
                                 is_mixed_doubles = True
-                        except KeyError as e:
-                            st.warning(f"Gender column missing for match {row.get('match_id', 'unknown')}. Treating as regular doubles.")
-                            is_mixed_doubles = False
+                        except:
+                            pass
                         display_matches.at[idx, 'Match Type'] = 'Mixed Doubles Match' if is_mixed_doubles else 'Doubles Match'
                     else:
                         display_matches.at[idx, 'Match Type'] = 'Doubles Match'
@@ -3785,6 +3770,119 @@ with tabs[1]:
             display_matches = pd.DataFrame()
     else:
         display_matches = pd.DataFrame()
+
+    # Display the matches
+    if display_matches.empty:
+        st.info("No matches to display with the current filters.")
+    else:
+        for _, row in display_matches.iterrows():
+            # Determine winner and teams
+            winner = row['winner']
+            is_team2_winner = (winner == "Team 2")
+
+            # Build team names (winner first)
+            if row['match_type'] == 'Singles':
+                team1_player = row['team1_player1'] or "Unknown"
+                team2_player = row['team2_player1'] or "Unknown"
+                if is_team2_winner:
+                    winner_team = team2_player
+                    loser_team = team1_player
+                else:
+                    winner_team = team1_player
+                    loser_team = team2_player
+                headline = f"{winner_team} def. {loser_team}"
+            else:  # Doubles
+                t1_p1 = row['team1_player1'] or ""
+                t1_p2 = row['team1_player2'] or ""
+                t2_p1 = row['team2_player1'] or ""
+                t2_p2 = row['team2_player2'] or ""
+                team1 = " & ".join([p for p in [t1_p1, t1_p2] if p and p != "Visitor"])
+                team2 = " & ".join([p for p in [t2_p1, t2_p2] if p and p != "Visitor"])
+                if is_team2_winner:
+                    winner_team = team2 or "Team 2"
+                    loser_team = team1 or "Team 1"
+                else:
+                    winner_team = team1 or "Team 1"
+                    loser_team = team2 or "Team 2"
+                headline = f"{winner_team} def. {loser_team}"
+
+            # Format scores with winner's games first
+            def format_set(set_score):
+                if not set_score or str(set_score).strip() == "":
+                    return ""
+                s = str(set_score).strip()
+                if "Tie Break" in s:
+                    import re
+                    nums = re.findall(r'\d+', s)
+                    if len(nums) == 2:
+                        tb1, tb2 = int(nums[0]), int(nums[1])
+                        if is_team2_winner:
+                            return f"7-6({tb2}:{tb1})"
+                        else:
+                            return f"7-6({tb1}:{tb2})"
+                    return s
+                if '-' in s:
+                    try:
+                        g1, g2 = map(int, s.split('-'))
+                        if is_team2_winner:
+                            return f"{g2}-{g1}"
+                        else:
+                            return f"{g1}-{g2}"
+                    except:
+                        return s
+                return s
+
+            set1_disp = format_set(row['set1'])
+            set2_disp = format_set(row['set2'])
+            set3_disp = format_set(row['set3'])
+            score_parts = [s for s in [set1_disp, set2_disp, set3_disp] if s]
+            score_line = ", ".join(score_parts) if score_parts else "No score"
+
+            # Date and other info
+            date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+            match_type_str = row['Match Type']
+            serial_num = row['serial_number']
+
+            # Main match row
+            st.markdown(f"""
+            <div style="background: linear-gradient(to bottom, #031827, #07314f); padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #fff500; box-shadow: 0 4px 8px rgba(255,245,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 0.9em; color: #bbbbbb;">#{serial_num}</span>
+                        <span style="font-weight: bold; color: #fff500; font-size: 1.4em; margin-left: 10px;">{headline}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: bold; color: #fff500; font-size: 1.2em;">{score_line}</div>
+                        <div style="color: #bbbbbb; font-size: 0.9em;">{date_str}</div>
+                        <div style="color: #fff500; font-size: 0.9em;">{match_type_str}</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Expander for details
+            with st.expander(f"View Details • {row.get('match_id', 'Unknown ID')}"):
+                col_left, col_right = st.columns([2, 1])
+
+                with col_left:
+                    st.markdown(f"<h3 style='color:#fff500; text-align:center; margin:20px 0;'>{score_line or 'No score recorded'}</h3>", unsafe_allow_html=True)
+                    
+                    st.markdown(f"<div style='font-size:1.1em; margin:8px 0;'><strong>Set 1:</strong> <span style='font-weight:bold; color:#fff500;'>{set1_disp or 'Not played'}</span></div>", unsafe_allow_html=True)
+                    if set2_disp:
+                        st.markdown(f"<div style='font-size:1.1em; margin:8px 0;'><strong>Set 2:</strong> <span style='font-weight:bold; color:#fff500;'>{set2_disp}</span></div>", unsafe_allow_html=True)
+                    if set3_disp:
+                        st.markdown(f"<div style='font-size:1.1em; margin:8px 0;'><strong>Set 3:</strong> <span style='font-weight:bold; color:#fff500;'>{set3_disp}</span></div>", unsafe_allow_html=True)
+
+                    st.markdown(f"<div style='margin-top: 15px; color:#bbbbbb;'><strong>Date:</strong> {date_str}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:#bbbbbb;'><strong>Match Type:</strong> {match_type_str}</div>", unsafe_allow_html=True)
+
+                with col_right:
+                    if row.get('match_image_url'):
+                        st.image(row['match_image_url'], use_column_width=True)
+                    else:
+                        st.info("No match image uploaded.")
+
+    st.markdown("---")
 
     def format_match_players(row):
         verb, _ = get_match_verb_and_gda(row)
@@ -3868,6 +3966,41 @@ with tabs[1]:
             return f"<div style='font-family: monospace; white-space: pre;'>{score_html} | {gda_html}<br>{date_str}</div>"
         else:
             return f"<div style='font-family: monospace; white-space: pre;'>No score recorded<br>{date_str}</div>"
+
+    def format_set_for_display(set_score, is_team2_winner):
+    """
+    Returns a properly formatted set score string with winner's games first.
+    Only used for display — does not change stored data.
+    """
+    if not set_score or str(set_score).strip() == "":
+        return ""
+    
+    set_str = str(set_score).strip()
+    
+    # Handle Tie Breaks: convert "Tie Break 10-7" → "7-6(10:7)" with winner first
+    if "Tie Break" in set_str:
+        import re
+        numbers = re.findall(r'\d+', set_str)
+        if len(numbers) == 2:
+            tb1, tb2 = int(numbers[0]), int(numbers[1])
+            if is_team2_winner:
+                return f"7-6({tb2}:{tb1})"
+            else:
+                return f"7-6({tb1}:{tb2})"
+        return set_str  # fallback
+    
+    # Regular set: e.g., "4-6"
+    if '-' in set_str:
+        try:
+            t1, t2 = map(int, set_str.split('-'))
+            if is_team2_winner:
+                return f"{t2}-{t1}"
+            else:
+                return f"{t1}-{t2}"
+        except:
+            pass
+    
+    return set_str
 
     def create_whatsapp_share_link(row):
         verb, gda = get_match_verb_and_gda(row)
