@@ -5565,136 +5565,53 @@ with tabs[6]:
 with tabs[7]:
     st.header("MMD AI")
     st.markdown("""
-    Chat with MMD AI about the MMD tennis league! Ask questions like:
-    - "Who is the top-ranked player?"
-    - "Why do you keep picking on The Famous Mr. Adam ?"
-    - "Suggest pairings for upcoming bookings."
+    st.subheader("🤖 Analyze Data with Grok")
     
-    *Powered by xAI's Grok API (free tier with limits on grok.com; API may incur token costs).*
-    """)
-
-    # Check for API key with better handling
-    api_key = st.secrets["xai"].get("api_key", "") if "xai" in st.secrets else ""
-    if not api_key or api_key == "your_xai_api_key_here":  # Avoid placeholder keys
-        st.warning("No valid xAI API key found in secrets.toml. Get one at https://console.x.ai (free tier available). Add as: `[xai] api_key = 'xai-your_key_here'`")
-        st.markdown("[Chat with Grok directly on grok.com](https://grok.com) (free with limits—no API key needed).")
+    # Choose which CSV to send (e.g., matches + players)
+    csv_list = []
+    if not st.session_state.matches_df.empty:
+        matches_csv_bytes = st.session_state.matches_df.to_csv(index=False).encode()
+        csv_list.append(("matches.csv", matches_csv_bytes))
+    if not st.session_state.players_df.empty:
+        players_csv_bytes = st.session_state.players_df.to_csv(index=False).encode()
+        csv_list.append(("players.csv", players_csv_bytes))
+    
+    if csv_list:
+        # Create multiple file data URIs
+        file_parts = []
+        for filename, csv_bytes in csv_list:
+            b64 = base64.b64encode(csv_bytes).decode()
+            file_parts.append(f"data:text/csv;base64,{b64}|{filename}")
+    
+        files_param = urllib.parse.quote(",".join(file_parts))
+    
+        # Starter prompt
+        prompt = "Here is the latest data from the MMD Mira Mixed Doubles Tennis League. Analyze it and answer my questions:"
+        encoded_prompt = urllib.parse.quote(prompt)
+    
+        grok_url = f"https://grok.com/chat?files={files_param}&q={encoded_prompt}"
+    
+        grok_button = f'''
+        <a href="{grok_url}" target="_blank">
+            <button style="
+                background-color: #fff500; 
+                color: #031827; 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 8px; 
+                font-size: 16px; 
+                font-weight: bold; 
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            ">
+                🚀 Open in Grok.com & Ask Questions
+            </button>
+        </a>
+        '''
+        st.markdown(grok_button, unsafe_allow_html=True)
+        st.info("Click the button → Grok opens with your data already uploaded → just type your question!")
     else:
-        # Workaround for 'proxies' error: Temporarily unset proxy env vars and force sync client
-        import os
-        original_proxy_env = {k: os.environ.get(k) for k in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']}
-        for key in original_proxy_env:
-            os.environ.pop(key, None)
-
-        client = None
-        try:
-            from openai import OpenAI  # Ensure import is here for retry
-            # Minimal init to avoid proxy kwarg issues
-            client = OpenAI(
-                api_key=api_key,
-                base_url="https://api.x.ai/v1",
-                # Explicitly set http_client to suppress proxies
-                http_client=httpx.Client(proxies=None, timeout=30.0)
-            )
-            # Quick test without full API call (just validate structure)
-            _ = client.models.list()  # Light test; catches auth without heavy load
-            st.success("Grok connected! Start chatting.")
-        except TypeError as te:
-            if "proxies" in str(te).lower():
-                st.warning("Detected 'proxies' init error (common in Streamlit Cloud). Retrying with fallback config...")
-                try:
-                    # Fallback: Use even more minimal init
-                    import httpx
-                    transport = httpx.HTTPTransport(local_address="0.0.0.0")  # Bypass proxy resolution
-                    client = OpenAI(
-                        api_key=api_key,
-                        base_url="https://api.x.ai/v1",
-                        http_client=httpx.Client(transport=transport, timeout=30.0)
-                    )
-                    _ = client.models.list()
-                    st.success("Grok connected via fallback! Start chatting.")
-                except Exception as fb_error:
-                    st.error(f"Fallback failed: {str(fb_error)}. Try pinning `openai==1.28.0` in requirements.txt.")
-                    client = None
-            else:
-                raise te  # Re-raise non-proxies TypeErrors
-        except Exception as init_error:
-            st.error(f"Failed to initialize Grok client: {str(init_error)}. Check your API key/env at https://console.x.ai. Falling back to grok.com.")
-            client = None
-        finally:
-            # Restore original env vars
-            for key, value in original_proxy_env.items():
-                if value:
-                    os.environ[key] = value
-
-        if client:
-            # Initialize chat history
-            if "grok_messages" not in st.session_state:
-                st.session_state.grok_messages = []
-
-            # Display chat messages
-            for message in st.session_state.grok_messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-
-            # User input
-            if prompt := st.chat_input("Ask Grok about the league..."):
-                st.session_state.grok_messages.append({"role": "user", "content": prompt})
-                with st.chat_message("user"):
-                    st.markdown(prompt)
-
-                # Prepare context with app data (JSON for Grok to analyze; limit size if needed)
-                def safe_to_json(df):
-                    if df.empty:
-                        return "No data available."
-                    try:
-                        # Limit to last 100 rows to avoid token limits
-                        limited_df = df.tail(100).copy()
-                        return limited_df.to_json(orient="records", lines=True)
-                    except:
-                        return "Error serializing data."
-
-                context = f"""
-                You are Grok, a helpful AI for the MMD Mira Mixed Doubles Tennis League.
-                Respond concisely and engagingly to queries about the data. Use tables or lists for clarity.
-                Current data snapshot (as JSON arrays of records):
-                - Players: {safe_to_json(st.session_state.players_df)}
-                - Matches (recent): {safe_to_json(st.session_state.matches_df)}
-                - Bookings (upcoming): {safe_to_json(st.session_state.bookings_df)}
-                Analyze this to answer accurately. Do not add external info unless asked. Keep responses under 500 words.
-                """
-
-                # Stream response from Grok
-                with st.chat_message("assistant"):
-                    message_placeholder = st.empty()
-                    full_response = ""
-                    try:
-                        stream = client.chat.completions.create(
-                            model="grok-beta",  # Stable model; swap to "grok-2-latest" if available
-                            messages=[
-                                {"role": "system", "content": context},
-                                *[{"role": msg["role"], "content": msg["content"]} for msg in st.session_state.grok_messages]
-                            ],
-                            stream=True,
-                            temperature=0.7,  # Balanced creativity
-                            max_tokens=1000
-                        )
-                        for chunk in stream:
-                            if chunk.choices[0].delta.content is not None:
-                                full_response += chunk.choices[0].delta.content
-                                message_placeholder.markdown(full_response + "▌")
-                        message_placeholder.markdown(full_response)
-                    except Exception as api_error:
-                        error_msg = f"API Error: {str(api_error)}. Check quotas at https://console.x.ai or try again."
-                        st.error(error_msg)
-                        message_placeholder.markdown(error_msg)
-
-                st.session_state.grok_messages.append({"role": "assistant", "content": full_response})
-
-    # Optional: Clear chat history button (always available)
-    if st.button("Clear Chat History"):
-        st.session_state.grok_messages = []
-        st.rerun()
-
+        st.info("No data available to analyze yet.")
 
 
 
