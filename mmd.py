@@ -5563,16 +5563,69 @@ with tabs[6]:
 
 
 with tabs[7]:
-    st.header("MMD AI")
+    st.header("📊 Analyze League Data with Google Gemini")
     st.markdown("""
-    Chat with MMD AI about the MMD tennis league! Ask questions like:
-    - "Who is the top-ranked player?"
-    - "Why do you keep picking on The Famous Mr. Adam ?"
-    - "Suggest pairings for upcoming bookings."
-    
-    *Powered by xAI's Grok API (free tier with limits on grok.com; API may incur token costs).*
+    Get instant insights, charts, and answers about your tennis league — **completely free**!
+
+    Click below to:
+    1. Download the latest `matches.csv`
+    2. Open **Google Gemini** in a new tab
+    3. Upload the CSV and ask questions like:
+       - "Who has the most wins?"
+       - "Show a chart of player points over time"
+       - "Which players have the best win percentage?"
+       - "Suggest balanced teams for next week"
     """)
 
+    if not st.session_state.matches_df.empty:
+        # Prepare CSV data
+        matches_csv_bytes = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
+        current_time = datetime.now().strftime("%Y%m%d-%H%M")
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            st.download_button(
+                label="📥 Download matches.csv",
+                data=matches_csv_bytes,
+                file_name=f"mmd-matches-{current_time}.csv",
+                mime="text/csv",
+                key=f"gemini_csv_download_{uuid.uuid4().hex}",
+                help="Download the latest match data to upload to Gemini"
+            )
+
+        with col2:
+            st.markdown("""
+            <a href="https://gemini.google.com/app" target="_blank">
+                <button style="
+                    background-color: #fff500;
+                    color: #031827;
+                    padding: 14px 20px;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    width: 100%;
+                    margin-top: 0;
+                ">
+                    🚀 Open Google Gemini (Free)
+                </button>
+            </a>
+            """, unsafe_allow_html=True)
+
+        st.info("""
+        **How to use:**
+        1. Click **Download matches.csv**
+        2. Click **Open Google Gemini**
+        3. In Gemini, click the 📎 (paperclip) icon → Upload the CSV
+        4. Ask any question about the league!
+        """)
+
+        st.success("Gemini is excellent at tennis stats — it will even generate beautiful charts automatically! 🎾📈")
+    else:
+        st.warning("No match data available yet. Add some matches first!")
 
 
 
