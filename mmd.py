@@ -5567,51 +5567,6 @@ with tabs[7]:
     st.markdown("""
     st.subheader("🤖 Analyze Data with Grok")
     
-    # Choose which CSV to send (e.g., matches + players)
-    csv_list = []
-    if not st.session_state.matches_df.empty:
-        matches_csv_bytes = st.session_state.matches_df.to_csv(index=False).encode()
-        csv_list.append(("matches.csv", matches_csv_bytes))
-    if not st.session_state.players_df.empty:
-        players_csv_bytes = st.session_state.players_df.to_csv(index=False).encode()
-        csv_list.append(("players.csv", players_csv_bytes))
-    
-    if csv_list:
-        # Create multiple file data URIs
-        file_parts = []
-        for filename, csv_bytes in csv_list:
-            b64 = base64.b64encode(csv_bytes).decode()
-            file_parts.append(f"data:text/csv;base64,{b64}|{filename}")
-    
-        files_param = urllib.parse.quote(",".join(file_parts))
-    
-        # Starter prompt
-        prompt = "Here is the latest data from the MMD Mira Mixed Doubles Tennis League. Analyze it and answer my questions:"
-        encoded_prompt = urllib.parse.quote(prompt)
-    
-        grok_url = f"https://grok.com/chat?files={files_param}&q={encoded_prompt}"
-    
-        grok_button = f'''
-        <a href="{grok_url}" target="_blank">
-            <button style="
-                background-color: #fff500; 
-                color: #031827; 
-                padding: 12px 24px; 
-                border: none; 
-                border-radius: 8px; 
-                font-size: 16px; 
-                font-weight: bold; 
-                cursor: pointer;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            ">
-                🚀 Open in Grok.com & Ask Questions
-            </button>
-        </a>
-        '''
-        st.markdown(grok_button, unsafe_allow_html=True)
-        st.info("Click the button → Grok opens with your data already uploaded → just type your question!")
-    else:
-        st.info("No data available to analyze yet.")
 
 
 
