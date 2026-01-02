@@ -5565,7 +5565,7 @@ with tabs[6]:
 with tabs[7]:
     st.header("📊 Analyze League Data with Google Gemini")
     st.markdown("""
-    Get instant insights, charts, and answers about your tennis league — **completely free**!
+    Get instant insights, charts, and answers about your tennis league.
 
     Click below to:
     1. Download the latest `matches.csv`
@@ -5610,7 +5610,7 @@ with tabs[7]:
                     width: 100%;
                     margin-top: 0;
                 ">
-                    🚀 Open Google Gemini (Free)
+                    🚀 Open Google Gemini 
                 </button>
             </a>
             """, unsafe_allow_html=True)
