@@ -5776,7 +5776,8 @@ try:
     current_time = datetime.now().strftime("%Y%m%d-%H%M")
     
     # Use a unique key to prevent caching issues
-    backup_key = f"backup_download_{current_time}_{random.randint(1, 1000)}"
+    #backup_key = f"backup_download_{current_time}_{random.randint(1, 1000)}"
+    backup_key = f"backup_download_{current_time}_{uuid.uuid4().hex}"
     st.download_button(
         label="Download Backup ZIP",
         data=zip_buffer.getvalue(),  # Use getvalue() to avoid buffer issues
