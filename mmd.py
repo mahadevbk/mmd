@@ -627,6 +627,7 @@ def upload_image_to_github(file, file_name, image_type="match"):
     Uploads a file to a specified folder in a GitHub repository and returns its public URL.
     Handles both new uploads and updates by fetching sha if the file exists.
     Resizes match images proportionally to a maximum dimension of 1200 pixels before uploading.
+    Corrects image orientation based on EXIF data to fix upside-down issues (e.g., from iPhones).
     """
     if not file:
         return ""
@@ -653,7 +654,20 @@ def upload_image_to_github(file, file_name, image_type="match"):
     # --- Prepare the file content ---
     content_bytes = file.getvalue()
 
-    # Resize if it's a match image and exceeds 1200px on the longer side
+    # --- Fix orientation based on EXIF data ---
+    try:
+        img = Image.open(io.BytesIO(content_bytes))
+        img = ImageOps.exif_transpose(img)  # Automatically rotates/flips based on EXIF
+        buffer = io.BytesIO()
+        # Preserve original format if possible, default to JPEG
+        format = img.format or "JPEG"
+        save_kwargs = {"quality": 85} if format.upper() in ["JPEG", "JPG"] else {}
+        img.save(buffer, format=format, **save_kwargs)
+        content_bytes = buffer.getvalue()
+    except Exception as e:
+        st.warning(f"Failed to correct orientation for image '{file_name}': {str(e)}. Uploading original.")
+
+    # --- Resize if it's a match image and exceeds 1200px on the longer side ---
     if image_type == "match":
         try:
             img = Image.open(io.BytesIO(content_bytes))
@@ -675,7 +689,7 @@ def upload_image_to_github(file, file_name, image_type="match"):
         except Exception as e:
             st.warning(f"Failed to resize match image '{file_name}': {str(e)}. Uploading original.")
 
-    # --- Base64 encode the (possibly resized) content ---
+    # --- Base64 encode the (possibly resized and oriented) content ---
     content_base64 = base64.b64encode(content_bytes).decode("utf-8")
 
     # --- Prepare the API URL and headers ---
@@ -719,7 +733,6 @@ def upload_image_to_github(file, file_name, image_type="match"):
     except Exception as e:
         st.error(f"An unexpected error occurred during image upload: {str(e)}")
         return ""
-
 
 
 
