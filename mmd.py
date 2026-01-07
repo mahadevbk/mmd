@@ -2040,53 +2040,54 @@ def display_match_table(df, title):
     table_df = df.copy()
 
     def format_match_info(row):
-        # 1. Format Player Names
+        # 1. Format Players and Scores
+        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        scores_str = ", ".join(scores)
+        
         if row['match_type'] == 'Doubles':
             players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
 
-        # 2. Format Set Scores
-        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s and str(s).strip()]
-        scores_str = ", ".join(scores)
-
-        # 3. Calculate GDA for this specific match (Logic used in Polaroid cards)
+        # 2. GDA Calculation Logic
         match_gd_sum = 0
         num_sets = 0
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if not set_score: continue
             s = str(set_score).strip()
             try:
+                # Handle Tie Break format: "Tie Break 7-5"
                 if "Tie Break" in s:
-                    # Extracts digits from strings like "Tie Break 10-7"
                     numbers = re.findall(r'\d+', s)
                     if len(numbers) == 2:
                         t1_g, t2_g = int(numbers[0]), int(numbers[1])
+                # Handle standard format: "6-4"
                 elif '-' in s:
                     t1_g, t2_g = map(int, s.split('-'))
                 else: continue
+                
                 match_gd_sum += (t1_g - t2_g)
                 num_sets += 1
             except: continue
         
-        gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
+        # Calculate Average
+        raw_gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
         
-        # Adjust sign based on winner to match league ranking logic
+        # Adjust sign based on winner
         if row['winner'] == 'Team 2':
-            gda = -abs(gda)
+            gda = -abs(raw_gda)
         elif row['winner'] == 'Team 1':
-            gda = abs(gda)
+            gda = abs(raw_gda)
         else:
             gda = 0.0
 
-        # 4. Return combined string: Players (Scores) | GDA: +X.XX
+        # 3. Return the string with GDA at the end of the line
         return f"{players} ({scores_str}) | GDA: {gda:+.2f}"
 
-    # Apply the new formatting to the Match Details column
+    # Apply the logic and select columns for display
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
-    
-    # Display the table with selected columns
     display_cols = ['date', 'match_type', 'Match Details']
+    
     st.subheader(f"{title} Records")
     st.dataframe(table_df[display_cols], hide_index=True, use_container_width=True)
 
