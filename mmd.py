@@ -2361,7 +2361,7 @@ END:VCALENDAR"""
         
         return ics_content, None
     except Exception as e:
-        return None, f"Error generating ICS: {str(e)}")
+        return None, f"Error generating ICS: {str(e)}"
 
 
 
