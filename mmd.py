@@ -2031,6 +2031,7 @@ def display_rankings_table(rank_df, title):
 
 
 
+
 def display_match_table(df, title):
     if df.empty:
         st.info(f"No {title} match data available.")
@@ -2049,7 +2050,7 @@ def display_match_table(df, title):
         scores = [s for s in [row['set1'], row['set2'], row['set3']] if s and str(s).strip()]
         scores_str = ", ".join(scores)
 
-        # 3. Calculate GDA for this specific row
+        # 3. Calculate GDA for this specific match (Logic used in Polaroid cards)
         match_gd_sum = 0
         num_sets = 0
         for set_score in [row['set1'], row['set2'], row['set3']]:
@@ -2057,7 +2058,7 @@ def display_match_table(df, title):
             s = str(set_score).strip()
             try:
                 if "Tie Break" in s:
-                    # Using existing re logic to find numbers
+                    # Extracts digits from strings like "Tie Break 10-7"
                     numbers = re.findall(r'\d+', s)
                     if len(numbers) == 2:
                         t1_g, t2_g = int(numbers[0]), int(numbers[1])
@@ -2070,7 +2071,7 @@ def display_match_table(df, title):
         
         gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
         
-        # Adjust sign based on winner to match league logic
+        # Adjust sign based on winner to match league ranking logic
         if row['winner'] == 'Team 2':
             gda = -abs(gda)
         elif row['winner'] == 'Team 1':
@@ -2078,7 +2079,7 @@ def display_match_table(df, title):
         else:
             gda = 0.0
 
-        # 4. Combine everything into one line: Players (Scores) | GDA: +X.XX
+        # 4. Return combined string: Players (Scores) | GDA: +X.XX
         return f"{players} ({scores_str}) | GDA: {gda:+.2f}"
 
     # Apply the new formatting to the Match Details column
@@ -2088,6 +2089,7 @@ def display_match_table(df, title):
     display_cols = ['date', 'match_type', 'Match Details']
     st.subheader(f"{title} Records")
     st.dataframe(table_df[display_cols], hide_index=True, use_container_width=True)
+
 
 
 
