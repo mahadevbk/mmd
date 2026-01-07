@@ -2028,6 +2028,9 @@ def display_rankings_table(rank_df, title):
     st.subheader(f"{title} Rankings")
     st.dataframe(display_df, hide_index=True, height=300)
 
+
+
+
 def display_match_table(df, title):
     if df.empty:
         st.info(f"No {title} match data available.")
@@ -2036,23 +2039,25 @@ def display_match_table(df, title):
     table_df = df.copy()
 
     def format_match_info(row):
-        # --- Existing Score/Player Logic ---
-        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-        scores_str = ", ".join(scores)
+        # 1. Existing player formatting
         if row['match_type'] == 'Doubles':
             players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
 
-        # --- GDA Calculation Logic (Re-used from your Polaroid logic) ---
+        # 2. Existing score formatting
+        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s and str(s).strip()]
+        scores_str = ", ".join(scores)
+
+        # 3. GDA Calculation (Logic used in your Polaroid cards)
         match_gd_sum = 0
         num_sets = 0
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if not set_score: continue
-            s = str(set_score)
+            s = str(set_score).strip()
             try:
                 if "Tie Break" in s:
-                    import re
+                    # Using re to find numbers as per your existing code
                     numbers = re.findall(r'\d+', s)
                     if len(numbers) == 2:
                         t1_g, t2_g = int(numbers[0]), int(numbers[1])
@@ -2064,26 +2069,22 @@ def display_match_table(df, title):
             except: continue
         
         gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
-        # Adjust sign based on winner (Team 2 wins result in negative relative diff)
-        if row['winner'] == 'Team 2': gda = -abs(gda)
-        elif row['winner'] == 'Team 1': gda = abs(gda)
-        else: gda = 0.0
-
-        # --- Format Final String ---
-        winner_text = ""
-        if row['winner'] == "Tie":
-            winner_text = "tied with"
-        elif row['winner'] == "Team 1":
-            winner_text = "def."
+        
+        # Adjust sign based on winner to match your league logic
+        if row['winner'] == 'Team 2':
+            gda = -abs(gda)
+        elif row['winner'] == 'Team 1':
+            gda = abs(gda)
         else:
-            winner_text = "lost to"
+            gda = 0.0
 
-        # Append GDA to the display string
+        # 4. Return combined string with GDA included
         return f"{players} ({scores_str}) | GDA: {gda:+.2f}"
 
+    # Apply the formatting
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
     
-    # Select columns to display
+    # Display the final table
     display_cols = ['date', 'match_type', 'Match Details']
     st.subheader(f"{title} Records")
     st.dataframe(table_df[display_cols], hide_index=True, use_container_width=True)
