@@ -2032,46 +2032,61 @@ def display_match_table(df, title):
     if df.empty:
         st.info(f"No {title} match data available.")
         return
-
+    
     table_df = df.copy()
 
-    # Create a formatted Match column
     def format_match_info(row):
+        # --- Existing Score/Player Logic ---
         scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
         scores_str = ", ".join(scores)
-
         if row['match_type'] == 'Doubles':
             players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
 
-        # Handle tie and winner cases with "tied with" for ties
+        # --- GDA Calculation Logic (Re-used from your Polaroid logic) ---
+        match_gd_sum = 0
+        num_sets = 0
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if not set_score: continue
+            s = str(set_score)
+            try:
+                if "Tie Break" in s:
+                    import re
+                    numbers = re.findall(r'\d+', s)
+                    if len(numbers) == 2:
+                        t1_g, t2_g = int(numbers[0]), int(numbers[1])
+                elif '-' in s:
+                    t1_g, t2_g = map(int, s.split('-'))
+                else: continue
+                match_gd_sum += (t1_g - t2_g)
+                num_sets += 1
+            except: continue
+        
+        gda = match_gd_sum / num_sets if num_sets > 0 else 0.0
+        # Adjust sign based on winner (Team 2 wins result in negative relative diff)
+        if row['winner'] == 'Team 2': gda = -abs(gda)
+        elif row['winner'] == 'Team 1': gda = abs(gda)
+        else: gda = 0.0
+
+        # --- Format Final String ---
+        winner_text = ""
         if row['winner'] == "Tie":
-            if row['match_type'] == 'Doubles':
-                return f"{row['team1_player1']} & {row['team1_player2']} tied with {row['team2_player1']} & {row['team2_player2']} ({scores_str})"
-            else:
-                return f"{row['team1_player1']} tied with {row['team2_player1']} ({scores_str})"
+            winner_text = "tied with"
         elif row['winner'] == "Team 1":
-            return f"{row['team1_player1']} {'& ' + row['team1_player2'] if row['match_type']=='Doubles' else ''} def. {row['team2_player1']} {'& ' + row['team2_player2'] if row['match_type']=='Doubles' else ''} ({scores_str})"
-        elif row['winner'] == "Team 2":
-            return f"{row['team2_player1']} {'& ' + row['team2_player2'] if row['match_type']=='Doubles' else ''} def. {row['team1_player1']} {'& ' + row['team1_player2'] if row['match_type']=='Doubles' else ''} ({scores_str})"
+            winner_text = "def."
         else:
-            return f"{players} ({scores_str})"
+            winner_text = "lost to"
+
+        # Append GDA to the display string
+        return f"{players} ({scores_str}) | GDA: {gda:+.2f}"
 
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
-
-    # Select and rename columns for display
-    display_df = table_df[['date', 'Match Details', 'match_image_url']].copy()
-    display_df.rename(columns={
-        'date': 'Date',
-        'match_image_url': 'Image URL'
-    }, inplace=True)
-
-    # Format the date column as dd MMM yy
-    display_df['Date'] = pd.to_datetime(display_df['Date']).dt.strftime('%d %b %y')
-
-    st.dataframe(display_df, height=300)
-
+    
+    # Select columns to display
+    display_cols = ['date', 'match_type', 'Match Details']
+    st.subheader(f"{title} Records")
+    st.dataframe(table_df[display_cols], hide_index=True, use_container_width=True)
 
 # --- Updated generate_whatsapp_link Function ---
 def generate_whatsapp_link(row):
