@@ -1197,6 +1197,7 @@ def create_trend_chart(trend):
 
 
 
+
 def display_player_insights(selected_players, players_df, matches_df, doubles_rank_df, singles_rank_df, key_prefix=""):
     import pandas as pd
     from collections import defaultdict
@@ -1497,6 +1498,12 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                         st.metric(f"Overall vs {opponent}", f"{overall_wins_player}-{overall_wins_opponent}-{overall_ties}")
                 else:
                     st.info("Select an opponent to view head-to-head stats.")
+
+
+
+
+
+
 
 
 
