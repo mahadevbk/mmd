@@ -1440,9 +1440,9 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
 
             st.markdown(f"""
             <div style="line-height: 2;">
-                <span class="games-won-col" style="display: block;">Games Won: {int(player_data['Games Won'])}</span>
-                <span class="game-diff-avg-col" style="display: block;">Game Diff Avg: {player_data['Game Diff Avg']:.2f}</span>
-                <span class="cumulative-game-diff-col" style="display: block;">Cumulative Game Diff: {int(player_data['Cumulative Game Diff'])}</span>
+                <span class="games-won-col" style="display: block;"> {int(player_data['Games Won'])}</span>
+                <span class="game-diff-avg-col" style="display: block;"> {player_data['Game Diff Avg']:.2f}</span>
+                <span class="cumulative-game-diff-col" style="display: block;"> {int(player_data['Cumulative Game Diff'])}</span>
                 <span class="performance-score-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Performance Score: </span>
                     <span style='font-weight:bold; color:#fff500;'>Doubles: {doubles_perf_score:.1f} ({int(player_data["Doubles Matches"])}), Singles: {singles_perf_score:.1f} ({int(player_data["Singles Matches"])})</span>
@@ -1497,6 +1497,13 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                         st.metric(f"Overall vs {opponent}", f"{overall_wins_player}-{overall_wins_opponent}-{overall_ties}")
                 else:
                     st.info("Select an opponent to view head-to-head stats.")
+
+
+
+
+
+
+
 
 
 
