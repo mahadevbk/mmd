@@ -57,7 +57,6 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 # Set the page title
 st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 
-
 # Custom CSS for a scenic background
 st.markdown("""
 <style>
@@ -122,7 +121,6 @@ st.markdown("""
     justify-content: center;
     align-items: center;
 }
-
 .whatsapp-share img {
     width: 24px;
     vertical-align: middle;
@@ -189,10 +187,16 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
 }
 
-/* Header & subheader resize */
-h1 { font-size: 24px !important; }
-h2 { font-size: 22px !important; }
-h3 { font-size: 16px !important; }
+/* ✅ Header & subheader resize to ~125% of tab font size (14px → 17–18px) */
+h1 {
+    font-size: 24px !important;
+}
+h2 {
+    font-size: 22px !important;
+}
+h3 {
+    font-size: 16px !important;
+}
 
 /* Rankings table container */
 .rankings-table-container {
@@ -208,8 +212,9 @@ h3 { font-size: 16px !important; }
     overflow-y: auto;
 }
 
-.ranking-header-row { display: none; }
-
+.ranking-header-row {
+    display: none;
+}
 .ranking-row {
     display: block;
     padding: 10px;
@@ -224,9 +229,7 @@ h3 { font-size: 16px !important; }
     margin-bottom: 0;
 }
 
-.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, 
-.wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, 
-.trend-col, .birthday-col, .partners-col, .best-partner-col, .points-breakdown-col {
+.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     width: 100%;
     text-align: left;
     padding: 2px 0;
@@ -234,7 +237,6 @@ h3 { font-size: 16px !important; }
     margin-bottom: 5px;
     word-break: break-word;
 }
-
 .rank-col {
     display: inline-block;
     white-space: nowrap;
@@ -243,14 +245,12 @@ h3 { font-size: 16px !important; }
     margin-right: 5px;
     color: #fff500;
 }
-
 .profile-col {
     text-align: left;
     margin-bottom: 10px;
     display: inline-block;
     vertical-align: middle;
 }
-
 .player-col {
     font-size: 1.3em;
     font-weight: bold;
@@ -269,29 +269,22 @@ h3 { font-size: 16px !important; }
     margin-right: 10px;
 }
 .rank-profile-player-group .profile-col {
-    width: auto;
-    margin-right: 10px;
+     width: auto;
+     margin-right: 10px;
 }
 
-/* Column labels */
-.points-col::before           { content: "Points: "; font-weight: bold; color: #bbbbbb; }
-.win-percent-col::before      { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
-.matches-col::before          { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
-.wins-col::before             { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
-.losses-col::before           { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
-.games-won-col::before        { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
-.game-diff-avg-col::before    { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
+.points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
+.win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
+.matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
+.wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
+.losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
+.games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+.game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
 .cumulative-game-diff-col::before { content: "Cumulative Game Diff.: "; font-weight: bold; color: #bbbbbb; }
-.trend-col::before            { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
-.birthday-col::before         { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
-.partners-col::before         { content: "Partners: "; font-weight: bold; color: #bbbbbb; }
-.best-partner-col::before     { content: "Most Effective Partner (All Time): "; font-weight: bold; color: #bbbbbb; }
-.points-breakdown-col::before { content: "Points Breakdown: "; font-weight: bold; color: #bbbbbb; }
+.trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
+.birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
 
-/* All value colors */
-.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, 
-.game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, 
-.partners-col, .best-partner-col, .points-breakdown-col {
+.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     color: #fff500;
 }
 
@@ -305,7 +298,10 @@ div.st-emotion-cache-1jm692n h3 {
     line-height: 1 !important;
 }
 
-.rankings-table-container > div,
+.rankings-table-container > div {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
 .rankings-table-container > .rankings-table-scroll {
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -324,13 +320,11 @@ div.st-emotion-cache-1jm692n h3 {
     text-align: center;
     margin: 2px;
 }
-
-/* Metric value color */
+/* Style the value inside the st.metric component */
 [data-testid="stMetric"] > div:nth-of-type(1) {
     color: #FF7518 !important; /* Optic Yellow #fff500 */
 }
-
-/* Responsive columns */
+/* Prevent columns from stacking vertically on small screens */
 .block-container {
     display: flex;
     flex-wrap: wrap;
@@ -338,14 +332,13 @@ div.st-emotion-cache-1jm692n h3 {
 }
 
 [data-testid="stHorizontalBlock"] {
-    flex: 1 1 45% !important;
-    min-width: 400px;
-    max-width: 700px;
+    flex: 1 1 45% !important; /* Each column ~45% width */
+    min-width: 400px;          /* Prevent too narrow columns */
+    max-width: 700px;          /* Keep nice size */
     margin: 10px;
 }
-
 .calendar-share {
-    background-color: #4285F4;
+    background-color: #4285F4; /* Blue for calendar */
     color: white !important;
     padding: 5px 10px;
     border-radius: 5px;
@@ -366,6 +359,9 @@ div.st-emotion-cache-1jm692n h3 {
     font-family: 'Material Icons' !important;
 }
 </style>
+
+
+
 """, unsafe_allow_html=True)
 
 # Supabase setup
@@ -1189,75 +1185,6 @@ def create_trend_chart(trend):
 
 
 
-#---------------------------Poinst Break down explanation New function -------------------------------------------------------
-
-
-def get_points_breakdown(player, matches_df, players_df):
-    mixed_wins = 0
-    mixed_points = 0
-    other_wins = 0
-    other_win_points = 0
-    losses_count = 0
-    loss_points = 0
-    ties = 0
-    tie_points = 0
-
-    for _, row in matches_df.iterrows():
-        match_type = row['match_type']
-        if match_type == 'Doubles':
-            t1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
-            t2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
-        else:
-            t1 = [p for p in [row['team1_player1']] if p and p != "Visitor"]
-            t2 = [p for p in [row['team2_player1']] if p and p != "Visitor"]
-
-        if player not in t1 + t2:
-            continue  # Player not in this match
-
-        # Check if mixed doubles
-        is_mixed_doubles = False
-        if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
-            try:
-                t1_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t1]
-                t2_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t2]
-                if (None not in t1_genders and None not in t2_genders and 
-                    sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
-                    is_mixed_doubles = True
-            except:
-                pass  # Treat as non-mixed if error
-
-        # Determine outcome for the player
-        if row["winner"] == "Tie":
-            ties += 1
-            tie_points += 1.5
-        elif (player in t1 and row["winner"] == "Team 1") or (player in t2 and row["winner"] == "Team 2"):
-            if match_type == 'Doubles' and is_mixed_doubles:
-                mixed_wins += 1
-                mixed_points += 3
-            else:
-                other_wins += 1
-                other_win_points += 2
-        else:
-            losses_count += 1
-            loss_points += 1
-
-    total_points = mixed_points + other_win_points + loss_points + tie_points
-
-    # Format the explanation string (omit ties if 0)
-    explanation = f"Mixed Doubles ({mixed_wins} wins x 3) + Doubles/Singles ({other_wins} wins x 2) + Losses ({losses_count} x 1)"
-    if ties > 0:
-        explanation += f" + Ties ({ties} x 1.5)"
-    explanation += f" = {total_points:.1f}"
-
-    return explanation
-
-
-
-
-
-
-
-
 
 
 
@@ -1422,11 +1349,12 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
             ]
             partners_list_str = f"<ul>{''.join(partners_list_items)}</ul>"
 
+            
             sorted_partners = sorted(
                 [(p, item) for p, item in partner_stats[player].items() if p != "Visitor" and item['matches'] > 0],
                 key=lambda x: (
                     x[1]['wins'] / x[1]['matches'],                                              # 1. Win rate
-                    x[1]['matches'],                                                             # 2. Sample size
+                    x[1]['matches'],                                                             # 2. Sample size (more matches = better)
                     x[1]['game_diff_sum'] / x[1]['matches'] if x[1]['matches'] > 0 else 0,      # 3. Avg game diff
                     x[1]['wins']                                                                 # 4. Raw wins
                 ),
@@ -1530,16 +1458,6 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                 <span class="best-partner-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Most Effective Partner (All Time): </span>{best_partner_str}
                 </span>
-
-                <div class="points-breakdown-box" style="background-color: rgba(255, 255, 255, 0.05); border: 1px solid #696969; border-radius: 8px; padding: 12px; margin: 10px 0; line-height: 1.4;">
-                    <h5 style="margin-top:0; color:#fff500; font-size: 0.9em; margin-bottom: 8px;">Points Earned Explanation</h5>
-                    <ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 0.85em;">
-                        <li style="margin-bottom: 3px; color: #ffffff;">🎾 <b>Mixed Doubles Win:</b> 3 Points</li>
-                        <li style="margin-bottom: 3px; color: #ffffff;">🎾 <b>Standard Win:</b> 2 Points</li>
-                        <li style="margin-bottom: 3px; color: #ffffff;">🎾 <b>Match Tie:</b> 1.5 Points</li>
-                        <li style="margin-bottom: 3px; color: #ffffff;">🎾 <b>Match Loss:</b> 1 Point</li>
-                    </ul>
-                </div>
                 {badges_html}
             </div>
             """, unsafe_allow_html=True)
@@ -1547,11 +1465,16 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
             with st.expander("View Partner Stats", expanded=False, icon="➡️"):
                 st.markdown(partners_list_str, unsafe_allow_html=True)
 
+
+          # New head to head stats  block in player insights
+
             with st.expander("Head-to-Head vs Other Players", expanded=False, icon="➡️"):
                 other_players = [p for p in available_players if p != player]
                 opponent = st.selectbox("Select Opponent", [""] + other_players, key=f"h2h_opponent_{player}_{idx}")
                 if opponent:
                     h2h_stats = calculate_head_to_head(player, opponent, matches_df)
+                    
+                    # Display stats in a table
                     stats_data = []
                     for match_type, stats in h2h_stats.items():
                         stats_data.append({
@@ -1561,8 +1484,11 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                             f"{opponent} Wins": stats["wins_b"],
                             "Ties": stats["ties"]
                         })
+                    
                     h2h_df = pd.DataFrame(stats_data)
                     st.table(h2h_df)
+                    
+                    # Overall summary
                     total_matches = sum(stats["matches"] for stats in h2h_stats.values())
                     if total_matches > 0:
                         overall_wins_player = sum(stats["wins_a"] for stats in h2h_stats.values())
