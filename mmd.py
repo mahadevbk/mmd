@@ -57,6 +57,7 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 # Set the page title
 st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 
+
 # Custom CSS for a scenic background
 st.markdown("""
 <style>
@@ -121,6 +122,7 @@ st.markdown("""
     justify-content: center;
     align-items: center;
 }
+
 .whatsapp-share img {
     width: 24px;
     vertical-align: middle;
@@ -187,16 +189,10 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
 }
 
-/* ✅ Header & subheader resize to ~125% of tab font size (14px → 17–18px) */
-h1 {
-    font-size: 24px !important;
-}
-h2 {
-    font-size: 22px !important;
-}
-h3 {
-    font-size: 16px !important;
-}
+/* Header & subheader resize */
+h1 { font-size: 24px !important; }
+h2 { font-size: 22px !important; }
+h3 { font-size: 16px !important; }
 
 /* Rankings table container */
 .rankings-table-container {
@@ -212,9 +208,8 @@ h3 {
     overflow-y: auto;
 }
 
-.ranking-header-row {
-    display: none;
-}
+.ranking-header-row { display: none; }
+
 .ranking-row {
     display: block;
     padding: 10px;
@@ -229,7 +224,9 @@ h3 {
     margin-bottom: 0;
 }
 
-.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
+.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, 
+.wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, 
+.trend-col, .birthday-col, .partners-col, .best-partner-col, .points-breakdown-col {
     width: 100%;
     text-align: left;
     padding: 2px 0;
@@ -237,6 +234,7 @@ h3 {
     margin-bottom: 5px;
     word-break: break-word;
 }
+
 .rank-col {
     display: inline-block;
     white-space: nowrap;
@@ -245,12 +243,14 @@ h3 {
     margin-right: 5px;
     color: #fff500;
 }
+
 .profile-col {
     text-align: left;
     margin-bottom: 10px;
     display: inline-block;
     vertical-align: middle;
 }
+
 .player-col {
     font-size: 1.3em;
     font-weight: bold;
@@ -269,22 +269,29 @@ h3 {
     margin-right: 10px;
 }
 .rank-profile-player-group .profile-col {
-     width: auto;
-     margin-right: 10px;
+    width: auto;
+    margin-right: 10px;
 }
 
-.points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
-.win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
-.matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
-.wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
-.losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
-.games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
-.game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
+/* Column labels */
+.points-col::before           { content: "Points: "; font-weight: bold; color: #bbbbbb; }
+.win-percent-col::before      { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
+.matches-col::before          { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
+.wins-col::before             { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
+.losses-col::before           { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
+.games-won-col::before        { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+.game-diff-avg-col::before    { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
 .cumulative-game-diff-col::before { content: "Cumulative Game Diff.: "; font-weight: bold; color: #bbbbbb; }
-.trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
-.birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
+.trend-col::before            { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
+.birthday-col::before         { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
+.partners-col::before         { content: "Partners: "; font-weight: bold; color: #bbbbbb; }
+.best-partner-col::before     { content: "Most Effective Partner (All Time): "; font-weight: bold; color: #bbbbbb; }
+.points-breakdown-col::before { content: "Points Breakdown: "; font-weight: bold; color: #bbbbbb; }
 
-.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
+/* All value colors */
+.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, 
+.game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, 
+.partners-col, .best-partner-col, .points-breakdown-col {
     color: #fff500;
 }
 
@@ -298,10 +305,7 @@ div.st-emotion-cache-1jm692n h3 {
     line-height: 1 !important;
 }
 
-.rankings-table-container > div {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
+.rankings-table-container > div,
 .rankings-table-container > .rankings-table-scroll {
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -320,11 +324,13 @@ div.st-emotion-cache-1jm692n h3 {
     text-align: center;
     margin: 2px;
 }
-/* Style the value inside the st.metric component */
+
+/* Metric value color */
 [data-testid="stMetric"] > div:nth-of-type(1) {
     color: #FF7518 !important; /* Optic Yellow #fff500 */
 }
-/* Prevent columns from stacking vertically on small screens */
+
+/* Responsive columns */
 .block-container {
     display: flex;
     flex-wrap: wrap;
@@ -332,13 +338,14 @@ div.st-emotion-cache-1jm692n h3 {
 }
 
 [data-testid="stHorizontalBlock"] {
-    flex: 1 1 45% !important; /* Each column ~45% width */
-    min-width: 400px;          /* Prevent too narrow columns */
-    max-width: 700px;          /* Keep nice size */
+    flex: 1 1 45% !important;
+    min-width: 400px;
+    max-width: 700px;
     margin: 10px;
 }
+
 .calendar-share {
-    background-color: #4285F4; /* Blue for calendar */
+    background-color: #4285F4;
     color: white !important;
     padding: 5px 10px;
     border-radius: 5px;
@@ -359,9 +366,6 @@ div.st-emotion-cache-1jm692n h3 {
     font-family: 'Material Icons' !important;
 }
 </style>
-
-
-
 """, unsafe_allow_html=True)
 
 # Supabase setup
