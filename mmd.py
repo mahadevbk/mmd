@@ -1185,6 +1185,75 @@ def create_trend_chart(trend):
 
 
 
+#---------------------------Poinst Break down explanation New function -------------------------------------------------------
+
+
+def get_points_breakdown(player, matches_df, players_df):
+    mixed_wins = 0
+    mixed_points = 0
+    other_wins = 0
+    other_win_points = 0
+    losses_count = 0
+    loss_points = 0
+    ties = 0
+    tie_points = 0
+
+    for _, row in matches_df.iterrows():
+        match_type = row['match_type']
+        if match_type == 'Doubles':
+            t1 = [p for p in [row['team1_player1'], row['team1_player2']] if p and p != "Visitor"]
+            t2 = [p for p in [row['team2_player1'], row['team2_player2']] if p and p != "Visitor"]
+        else:
+            t1 = [p for p in [row['team1_player1']] if p and p != "Visitor"]
+            t2 = [p for p in [row['team2_player1']] if p and p != "Visitor"]
+
+        if player not in t1 + t2:
+            continue  # Player not in this match
+
+        # Check if mixed doubles
+        is_mixed_doubles = False
+        if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
+            try:
+                t1_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t1]
+                t2_genders = [players_df[players_df['name'] == p]['gender'].iloc[0] if p in players_df['name'].values else None for p in t2]
+                if (None not in t1_genders and None not in t2_genders and 
+                    sorted(t1_genders) == ['F', 'M'] and sorted(t2_genders) == ['F', 'M']):
+                    is_mixed_doubles = True
+            except:
+                pass  # Treat as non-mixed if error
+
+        # Determine outcome for the player
+        if row["winner"] == "Tie":
+            ties += 1
+            tie_points += 1.5
+        elif (player in t1 and row["winner"] == "Team 1") or (player in t2 and row["winner"] == "Team 2"):
+            if match_type == 'Doubles' and is_mixed_doubles:
+                mixed_wins += 1
+                mixed_points += 3
+            else:
+                other_wins += 1
+                other_win_points += 2
+        else:
+            losses_count += 1
+            loss_points += 1
+
+    total_points = mixed_points + other_win_points + loss_points + tie_points
+
+    # Format the explanation string (omit ties if 0)
+    explanation = f"Mixed Doubles ({mixed_wins} wins x 3) + Doubles/Singles ({other_wins} wins x 2) + Losses ({losses_count} x 1)"
+    if ties > 0:
+        explanation += f" + Ties ({ties} x 1.5)"
+    explanation += f" = {total_points:.1f}"
+
+    return explanation
+
+
+
+
+
+
+
+
 
 
 
