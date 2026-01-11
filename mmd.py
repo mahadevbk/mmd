@@ -1273,18 +1273,15 @@ def get_points_breakdown(player, matches_df, players_df):
 def display_player_insights(selected_players, players_df, matches_df, doubles_rank_df, singles_rank_df, key_prefix=""):
     import pandas as pd
     from collections import defaultdict
-    
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
     selected_players = [p for p in selected_players if p != "Visitor"]
-    
     if not selected_players:
         st.info("No players selected or available for insights.")
         return
 
     # --- Birthday View ---
     view_option = st.radio("Select View", ["Player Insights", "Birthdays"], horizontal=True, key=f"{key_prefix}view_selector")
-    
     if view_option == "Birthdays":
         birthday_data = []
         for player in selected_players:
@@ -1306,13 +1303,10 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                     })
                 except ValueError:
                     continue  # Skip invalid dates like Feb 29
-        
         if not birthday_data:
             st.info("No valid birthday data available for selected players.")
             return
-        
         birthday_df = pd.DataFrame(birthday_data).sort_values(by="SortDate").reset_index(drop=True)
-        
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
             profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
@@ -1330,12 +1324,10 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
     # --- Player Insights View ---
     # Use rank_df_combined for filtering active players
     rank_df_combined, partner_stats = calculate_rankings(matches_df)
-    
     active_players = [
         p for p in selected_players
         if p in rank_df_combined["Player"].values and rank_df_combined[rank_df_combined["Player"] == p].iloc[0]["Matches"] > 0
     ]
-    
     if not active_players:
         st.info("No players with matches played are available for insights.")
         return
@@ -1414,6 +1406,7 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
         if raw_birthday and isinstance(raw_birthday, str) and re.match(r'^\d{2}-\d{2}$', raw_birthday):
             try:
                 day, month = map(int, raw_birthday.split("-"))
+                # Use non-leap year (2001) to avoid Feb 29 ambiguity
                 bday_obj = datetime(year=2001, month=month, day=day)
                 birthday_str = bday_obj.strftime("%d %b")
             except ValueError:
@@ -1429,13 +1422,14 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
             ]
             partners_list_str = f"<ul>{''.join(partners_list_items)}</ul>"
 
+            
             sorted_partners = sorted(
                 [(p, item) for p, item in partner_stats[player].items() if p != "Visitor" and item['matches'] > 0],
                 key=lambda x: (
-                    x[1]['wins'] / x[1]['matches'],
-                    x[1]['matches'],
-                    x[1]['game_diff_sum'] / x[1]['matches'] if x[1]['matches'] > 0 else 0,
-                    x[1]['wins']
+                    x[1]['wins'] / x[1]['matches'],                                              # 1. Win rate
+                    x[1]['matches'],                                                             # 2. Sample size (more matches = better)
+                    x[1]['game_diff_sum'] / x[1]['matches'] if x[1]['matches'] > 0 else 0,      # 3. Avg game diff
+                    x[1]['wins']                                                                 # 4. Raw wins
                 ),
                 reverse=True
             )
@@ -1444,9 +1438,6 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
                 best_stats = sorted_partners[0][1]
                 best_win_percent = (best_stats['wins'] / best_stats['matches'] * 100) if best_stats['matches'] > 0 else 0
                 best_partner_str = f"{best_partner_name} ({best_win_percent:.1f}% Win Rate)"
-
-        # ── NEW: Points Breakdown ───────────────────────────────────────────────
-        points_explanation = get_points_breakdown(player, matches_df, players_df)
 
         # --- Badges HTML with Hover Tooltips ---
         badge_explanations = {
@@ -1522,33 +1513,24 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
 
             st.markdown(f"""
             <div style="line-height: 2;">
-                <span class="games-won-col" style="display: block;">{int(player_data['Games Won'])}</span>
-                <span class="game-diff-avg-col" style="display: block;">{player_data['Game Diff Avg']:.2f}</span>
-                <span class="cumulative-game-diff-col" style="display: block;">{int(player_data['Cumulative Game Diff'])}</span>
-                
+                <span class="games-won-col" style="display: block;"> {int(player_data['Games Won'])}</span>
+                <span class="game-diff-avg-col" style="display: block;"> {player_data['Game Diff Avg']:.2f}</span>
+                <span class="cumulative-game-diff-col" style="display: block;"> {int(player_data['Cumulative Game Diff'])}</span>
                 <span class="performance-score-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Performance Score: </span>
                     <span style='font-weight:bold; color:#fff500;'>Doubles: {doubles_perf_score:.1f} ({int(player_data["Doubles Matches"])}), Singles: {singles_perf_score:.1f} ({int(player_data["Singles Matches"])})</span>
                 </span>
-                
                 <span class="clutch-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Clutch Factor: </span>
                     <span style='font-weight:bold; color:#fff500;'>{clutch_factor:.1f}%</span>
                 </span>
-                
                 <span class="consistency-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Consistency Index: </span>
                     <span style='font-weight:bold; color:#fff500;'>{consistency_index:.2f}</span>
                 </span>
-                
                 <span class="best-partner-col" style="display: block;">
                     <span style='font-weight:bold; color:#bbbbbb;'>Most Effective Partner (All Time): </span>{best_partner_str}
                 </span>
-                
-                <span class="points-breakdown-col" style="display: block; margin-top: 8px; word-wrap: break-word;">
-                    {points_explanation}
-                </span>
-                
                 {badges_html}
             </div>
             """, unsafe_allow_html=True)
@@ -1556,11 +1538,12 @@ def display_player_insights(selected_players, players_df, matches_df, doubles_ra
             with st.expander("View Partner Stats", expanded=False, icon="➡️"):
                 st.markdown(partners_list_str, unsafe_allow_html=True)
 
-            # New head to head stats block in player insights
+
+          # New head to head stats  block in player insights
+
             with st.expander("Head-to-Head vs Other Players", expanded=False, icon="➡️"):
-                other_players = [p for p in available_players if p != player and p != "Visitor"]
+                other_players = [p for p in available_players if p != player]
                 opponent = st.selectbox("Select Opponent", [""] + other_players, key=f"h2h_opponent_{player}_{idx}")
-                
                 if opponent:
                     h2h_stats = calculate_head_to_head(player, opponent, matches_df)
                     
