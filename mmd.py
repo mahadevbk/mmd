@@ -3720,6 +3720,7 @@ with tabs[1]:
                                         st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
                                         save_matches(st.session_state.matches_df)
                                         st.success(f"Match {match_id} posted successfully!")
+                                        st.balloons()
                                         st.session_state.form_key_suffix += 1
                                         st.rerun()
                             except Exception as e:
