@@ -440,13 +440,6 @@ if 'image_urls' not in st.session_state:
     st.session_state.image_urls = {}  
 
 
-
-# --- Session state initialization ---
-if 'players_df' not in st.session_state:
-    st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday"])
-if 'matches_df' not in st.session_state:
-    st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
-
 #-----functions ------
 load_players()
 load_matches()
