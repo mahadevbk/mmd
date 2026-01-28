@@ -534,7 +534,7 @@ def generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles):
     buffer.close()
     return pdf_data
   
-
+@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
 def load_matches():
     try:
         response = supabase.table(matches_table_name).select("*").execute()
