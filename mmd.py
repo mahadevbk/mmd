@@ -399,6 +399,36 @@ def load_players():
         st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
 
 
+@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
+def load_matches():
+    try:
+        response = supabase.table(matches_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
+                           "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", 
+                           "match_image_url"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+
+        # Store raw date for display
+        df['raw_date'] = df['date']
+
+        # Convert dates, use far-past fallback for invalid/NaT
+        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
+        
+        # Log invalid dates for debugging
+        invalid_dates = df[df['date'].isna()]['raw_date'].unique()
+        if len(invalid_dates) > 0:
+            st.warning(f"Found {len(invalid_dates)} matches with invalid or missing dates: {invalid_dates.tolist()}. Using fallback date.")
+        
+        # Set fallback date (e.g., 1970-01-01) for NaT to keep records
+        df['date'] = df['date'].fillna(pd.Timestamp('1970-01-01'))
+        
+        st.session_state.matches_df = df
+    except Exception as e:
+        st.error(f"Error loading matches: {str(e)}")
+        st.session_state.matches_df = pd.DataFrame(columns=expected_columns + ["raw_date"])
 
 
 # Updated save_players function
@@ -446,36 +476,7 @@ load_matches()
 
 
 
-@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
-def load_matches():
-    try:
-        response = supabase.table(matches_table_name).select("*").execute()
-        df = pd.DataFrame(response.data)
-        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
-                           "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", 
-                           "match_image_url"]
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = ""
 
-        # Store raw date for display
-        df['raw_date'] = df['date']
-
-        # Convert dates, use far-past fallback for invalid/NaT
-        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
-        
-        # Log invalid dates for debugging
-        invalid_dates = df[df['date'].isna()]['raw_date'].unique()
-        if len(invalid_dates) > 0:
-            st.warning(f"Found {len(invalid_dates)} matches with invalid or missing dates: {invalid_dates.tolist()}. Using fallback date.")
-        
-        # Set fallback date (e.g., 1970-01-01) for NaT to keep records
-        df['date'] = df['date'].fillna(pd.Timestamp('1970-01-01'))
-        
-        st.session_state.matches_df = df
-    except Exception as e:
-        st.error(f"Error loading matches: {str(e)}")
-        st.session_state.matches_df = pd.DataFrame(columns=expected_columns + ["raw_date"])
       
 # Updated load_players function
 # Addi caching function to make it faster
