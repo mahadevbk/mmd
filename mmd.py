@@ -604,6 +604,7 @@ def save_matches(matches_df):
         
         # Upsert to Supabase
         supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
+        st.cache_data.clear()
         st.success("Match saved successfully. Refreshing page...")
         return True
     except Exception as e:
