@@ -51,11 +51,6 @@ from xai_sdk.chat import user, system
 import json
 
 
-
-
-
-
-
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 
@@ -374,83 +369,11 @@ supabase_url = st.secrets["supabase"]["supabase_url"]
 supabase_key = st.secrets["supabase"]["supabase_key"]
 supabase: Client = create_client(supabase_url, supabase_key)
 
-
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
 bookings_table_name = "bookings"
 hall_of_fame_table_name="hall_of_fame"
-
-
-@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
-def load_players():
-    try:
-        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
-        df = pd.DataFrame(response.data)
-        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = ""  # Default to empty string for missing columns
-        # Normalize names to uppercase and strip whitespace
-        df['name'] = df['name'].str.upper().str.strip()
-        st.session_state.players_df = df
-    except Exception as e:
-        st.error(f"Error loading players: {str(e)}")
-        st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
-
-
-@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
-def load_matches():
-    try:
-        response = supabase.table(matches_table_name).select("*").execute()
-        df = pd.DataFrame(response.data)
-        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
-                           "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", 
-                           "match_image_url"]
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = ""
-
-        # Store raw date for display
-        df['raw_date'] = df['date']
-
-        # Convert dates, use far-past fallback for invalid/NaT
-        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
-        
-        # Log invalid dates for debugging
-        invalid_dates = df[df['date'].isna()]['raw_date'].unique()
-        if len(invalid_dates) > 0:
-            st.warning(f"Found {len(invalid_dates)} matches with invalid or missing dates: {invalid_dates.tolist()}. Using fallback date.")
-        
-        # Set fallback date (e.g., 1970-01-01) for NaT to keep records
-        df['date'] = df['date'].fillna(pd.Timestamp('1970-01-01'))
-        
-        st.session_state.matches_df = df
-    except Exception as e:
-        st.error(f"Error loading matches: {str(e)}")
-        st.session_state.matches_df = pd.DataFrame(columns=expected_columns + ["raw_date"])
-
-
-# Updated save_players function
-def save_players(players_df):
-    try:
-        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
-        players_df_to_save = players_df[expected_columns].copy()
-        
-        # Normalize names to uppercase and strip whitespace before saving
-        players_df_to_save['name'] = players_df_to_save['name'].str.upper().str.strip()
-        
-        # Replace NaN with None for JSON compliance before saving
-        players_df_to_save = players_df_to_save.where(pd.notna(players_df_to_save), None)
-        
-        # Remove duplicates based on 'name', keeping the last entry
-        players_df_to_save = players_df_to_save.drop_duplicates(subset=['name'], keep='last')
-        
-        supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
-        st.cache_data.clear()
-    except Exception as e:
-        st.error(f"Error saving players: {str(e)}")
-
 
 # --- Session state initialization ---
 if 'players_df' not in st.session_state:
@@ -470,17 +393,46 @@ if 'image_urls' not in st.session_state:
     st.session_state.image_urls = {}  
 
 
-#-----functions ------
-load_players()
-load_matches()
 
+# --- Functions ---
 
-
-
-      
 # Updated load_players function
-# Addi caching function to make it faster
+def load_players():
+    try:
+        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""  # Default to empty string for missing columns
+        # Normalize names to uppercase and strip whitespace
+        df['name'] = df['name'].str.upper().str.strip()
+        st.session_state.players_df = df
+    except Exception as e:
+        st.error(f"Error loading players: {str(e)}")
+        st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
 
+
+
+
+# Updated save_players function
+def save_players(players_df):
+    try:
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
+        players_df_to_save = players_df[expected_columns].copy()
+        
+        # Normalize names to uppercase and strip whitespace before saving
+        players_df_to_save['name'] = players_df_to_save['name'].str.upper().str.strip()
+        
+        # Replace NaN with None for JSON compliance before saving
+        players_df_to_save = players_df_to_save.where(pd.notna(players_df_to_save), None)
+        
+        # Remove duplicates based on 'name', keeping the last entry
+        players_df_to_save = players_df_to_save.drop_duplicates(subset=['name'], keep='last')
+        
+        supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
+    except Exception as e:
+        st.error(f"Error saving players: {str(e)}")
 
 
 
@@ -581,6 +533,35 @@ def generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles):
     return pdf_data
   
 
+def load_matches():
+    try:
+        response = supabase.table(matches_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", 
+                           "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", 
+                           "match_image_url"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+
+        # Store raw date for display
+        df['raw_date'] = df['date']
+
+        # Convert dates, use far-past fallback for invalid/NaT
+        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
+        
+        # Log invalid dates for debugging
+        invalid_dates = df[df['date'].isna()]['raw_date'].unique()
+        if len(invalid_dates) > 0:
+            st.warning(f"Found {len(invalid_dates)} matches with invalid or missing dates: {invalid_dates.tolist()}. Using fallback date.")
+        
+        # Set fallback date (e.g., 1970-01-01) for NaT to keep records
+        df['date'] = df['date'].fillna(pd.Timestamp('1970-01-01'))
+        
+        st.session_state.matches_df = df
+    except Exception as e:
+        st.error(f"Error loading matches: {str(e)}")
+        st.session_state.matches_df = pd.DataFrame(columns=expected_columns + ["raw_date"])
 
 
 
@@ -621,7 +602,6 @@ def save_matches(matches_df):
         
         # Upsert to Supabase
         supabase.table(matches_table_name).upsert(matches_df_to_save.to_dict("records")).execute()
-        st.cache_data.clear()
         st.success("Match saved successfully. Refreshing page...")
         return True
     except Exception as e:
