@@ -51,44 +51,7 @@ from xai_sdk.chat import user, system
 import json
 
 
-@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
-def load_players():
-    try:
-        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
-        df = pd.DataFrame(response.data)
-        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = ""  # Default to empty string for missing columns
-        # Normalize names to uppercase and strip whitespace
-        df['name'] = df['name'].str.upper().str.strip()
-        st.session_state.players_df = df
-    except Exception as e:
-        st.error(f"Error loading players: {str(e)}")
-        st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
 
-
-
-
-# Updated save_players function
-def save_players(players_df):
-    try:
-        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
-        players_df_to_save = players_df[expected_columns].copy()
-        
-        # Normalize names to uppercase and strip whitespace before saving
-        players_df_to_save['name'] = players_df_to_save['name'].str.upper().str.strip()
-        
-        # Replace NaN with None for JSON compliance before saving
-        players_df_to_save = players_df_to_save.where(pd.notna(players_df_to_save), None)
-        
-        # Remove duplicates based on 'name', keeping the last entry
-        players_df_to_save = players_df_to_save.drop_duplicates(subset=['name'], keep='last')
-        
-        supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
-        st.cache_data.clear()
-    except Exception as e:
-        st.error(f"Error saving players: {str(e)}")
 
 
 
@@ -411,11 +374,53 @@ supabase_url = st.secrets["supabase"]["supabase_url"]
 supabase_key = st.secrets["supabase"]["supabase_key"]
 supabase: Client = create_client(supabase_url, supabase_key)
 
+
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
 bookings_table_name = "bookings"
 hall_of_fame_table_name="hall_of_fame"
+
+
+@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
+def load_players():
+    try:
+        response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""  # Default to empty string for missing columns
+        # Normalize names to uppercase and strip whitespace
+        df['name'] = df['name'].str.upper().str.strip()
+        st.session_state.players_df = df
+    except Exception as e:
+        st.error(f"Error loading players: {str(e)}")
+        st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
+
+
+
+
+# Updated save_players function
+def save_players(players_df):
+    try:
+        expected_columns = ["name", "profile_image_url", "birthday", "gender"]
+        players_df_to_save = players_df[expected_columns].copy()
+        
+        # Normalize names to uppercase and strip whitespace before saving
+        players_df_to_save['name'] = players_df_to_save['name'].str.upper().str.strip()
+        
+        # Replace NaN with None for JSON compliance before saving
+        players_df_to_save = players_df_to_save.where(pd.notna(players_df_to_save), None)
+        
+        # Remove duplicates based on 'name', keeping the last entry
+        players_df_to_save = players_df_to_save.drop_duplicates(subset=['name'], keep='last')
+        
+        supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
+        st.cache_data.clear()
+    except Exception as e:
+        st.error(f"Error saving players: {str(e)}")
+
 
 # --- Session state initialization ---
 if 'players_df' not in st.session_state:
