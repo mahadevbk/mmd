@@ -397,6 +397,8 @@ if 'image_urls' not in st.session_state:
 # --- Functions ---
 
 # Updated load_players function
+# Addi caching function to make it faster
+@st.cache_data(ttl=600)  # Add this line (caches for 10 minutes)
 def load_players():
     try:
         response = supabase.table(players_table_name).select("name, profile_image_url, birthday, gender").execute()
