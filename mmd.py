@@ -433,6 +433,7 @@ def save_players(players_df):
         players_df_to_save = players_df_to_save.drop_duplicates(subset=['name'], keep='last')
         
         supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
+        st.cache_data.clear()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
 
