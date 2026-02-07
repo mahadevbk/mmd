@@ -2962,7 +2962,7 @@ with tabs[0]:
 
     
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
-    with st.expander("MMD Points Awards System", expanded=False, icon="➡️"):
+    with st.expander("MMD Points Award System", expanded=False, icon="➡️"):
       st.info("3 Points for a Mixed Doubles win, 2 Points for a Doubles game win, 2 Points for a Singles game win, 1 Point for a loss(of any kind of game) & 1.5 Points for a Tie in any kind of game.")
     ranking_type = st.radio(
         "Select Ranking View",
