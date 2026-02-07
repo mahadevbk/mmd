@@ -3524,6 +3524,247 @@ with tabs[0]:
 
 
 with tabs[1]:
+    st.header("Matches")
+    # Check for duplicate match IDs
+    if st.session_state.matches_df['match_id'].duplicated().any():
+        st.warning("Duplicate match IDs detected in the database. Please remove duplicates in Supabase to enable editing.")
+        duplicate_ids = st.session_state.matches_df[st.session_state.matches_df['match_id'].duplicated(keep=False)]['match_id'].tolist()
+        st.write(f"Duplicate match IDs: {duplicate_ids}")
+    
+    
+    with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
+        # Define available_players
+        if "players_df" not in st.session_state or st.session_state.players_df.empty:
+            st.warning("No players available. Please add players in the Player Profile tab.")
+            available_players = []
+        else:
+            available_players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"])
+        
+        # Stop if no players are available
+        if not available_players:
+            st.stop()
+        
+        match_type = st.radio("Match Type", ["Doubles", "Singles"])
+        
+        # Players selection based on type
+        if match_type == "Doubles":
+            col1, col2 = st.columns(2)
+            with col1:
+                t1p1 = st.selectbox("Team 1 - Player 1 *", [""] + available_players, key="t1p1_doubles")
+                t1p2 = st.selectbox("Team 1 - Player 2 *", [""] + available_players, key="t1p2_doubles")
+            with col2:
+                t2p1 = st.selectbox("Team 2 - Player 1 *", [""] + available_players, key="t2p1_doubles")
+                t2p2 = st.selectbox("Team 2 - Player 2 *", [""] + available_players, key="t2p2_doubles")
+            p1, p2 = "", ""
+        else:  # Singles
+            col1, col2 = st.columns(2)
+            with col1:
+                p1 = st.selectbox("Player 1 *", [""] + available_players, key="p1_singles")
+            with col2:
+                p2 = st.selectbox("Player 2 *", [""] + available_players, key="p2_singles")
+            t1p1, t1p2, t2p1, t2p2 = p1, "", p2, ""
+        
+        # Date input
+        date = st.date_input("Match Date *")
+        
+        # Score inputs
+        set1 = st.selectbox("Set 1 Score *", [""] + tennis_scores(), key="set1")
+        set2 = st.selectbox("Set 2 Score (optional for Singles, required for Doubles)", [""] + tennis_scores(), key="set2")
+        set3 = st.selectbox("Set 3 Score (optional)", [""] + tennis_scores(), key="set3")
+        if set2 == "":
+            set2 = None
+        if set3 == "":
+            set3 = None
+        
+        # Winner selection
+        if match_type == "Doubles":
+            selected_players = [t1p1, t1p2, t2p1, t2p2]
+            winner_options = ["Team 1", "Team 2", "Tie"]
+        else:
+            selected_players = [p1, p2]
+            winner_options = ["Player 1", "Player 2", "Tie"]
+        
+        winner = st.selectbox("Winner *", winner_options, key="winner")
+        
+        # Map singles winner to team format for DB consistency
+        if match_type == "Singles":
+            if winner == "Player 1":
+                winner = "Team 1"
+            elif winner == "Player 2":
+                winner = "Team 2"
+        
+        # Image upload (now mandatory)
+        match_image = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"], key="match_image")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            with st.form(key=f"add_match_form_{st.session_state.form_key_suffix}"):
+                submit = st.form_submit_button("Post Match")
+                if submit:
+                    current_time = time.time()
+                    debounce_seconds = 10  # Adjust as needed based on typical upload time
+                    
+                    if current_time - st.session_state.last_match_submit_time < debounce_seconds:
+                        st.warning("Please wait—your previous submission is still processing. Duplicates are prevented.")
+                    else:
+                        st.session_state.last_match_submit_time = current_time
+                        
+                        # Basic validation
+                        if not match_image:
+                            st.error("A match photo is required.")
+                            valid = False
+                        elif match_type == "Doubles":
+                            if not all(selected_players) or not set1 or not set2:
+                                st.error("For Doubles: All players, Set 1, Set 2, and a match photo are required. Set 3 is optional.")
+                                valid = False
+                            elif len(set([p for p in selected_players if p != ""])) != len([p for p in selected_players if p != ""]):
+                                st.error("Please select different players for each position.")
+                                valid = False
+                            else:
+                                valid = True
+                        else:  # Singles
+                            if not all(selected_players) or not set1:
+                                st.error("For Singles: Both players, Set 1, and a match photo are required. Set 2 and Set 3 are optional.")
+                                valid = False
+                            elif p1 == p2:
+                                st.error("Please select different players for singles.")
+                                valid = False
+                            else:
+                                valid = True
+                        
+                        # Score-winner consistency validation
+                        if valid:
+                            team1_sets_won = 0
+                            team2_sets_won = 0
+                            sets = [set1, set2, set3]
+                            valid_sets = [s for s in sets if s and s != ""]
+                            for score in valid_sets:
+                                try:
+                                    if "Tie Break" in score:
+                                        scores = [int(s) for s in re.findall(r'\d+', score)]
+                                        if len(scores) != 2:
+                                            st.error(f"Invalid tie break score: {score}. Please use formats like 'Tie Break 10-7'.")
+                                            valid = False
+                                            break
+                                        t1, t2 = scores
+                                    else:
+                                        t1, t2 = map(int, score.split("-"))
+                                    if t1 > t2:
+                                        team1_sets_won += 1
+                                    elif t2 > t1:
+                                        team2_sets_won += 1
+                                except (ValueError, TypeError) as e:
+                                    st.error(f"Invalid score: {score}. Please use formats like '6-4' or 'Tie Break 10-7'.")
+                                    valid = False
+                                    break
+                            
+                            if valid:
+                                if len(valid_sets) < 1:
+                                    st.error("At least one set is required for all matches.")
+                                    valid = False
+                                elif match_type == "Doubles" and len(valid_sets) < 2:
+                                    st.error("For Doubles: At least two sets are required (Set 1 and Set 2).")
+                                    valid = False
+                                elif len(valid_sets) >= 1:
+                                    if team1_sets_won > team2_sets_won and winner != "Team 1":
+                                        st.error(f"{'Team 1' if match_type == 'Doubles' else 'Player 1'} won more sets based on scores. Please select {'Team 1' if match_type == 'Doubles' else 'Player 1'} as the winner or correct the scores.")
+                                        valid = False
+                                    elif team2_sets_won > team1_sets_won and winner != "Team 2":
+                                        st.error(f"{'Team 2' if match_type == 'Doubles' else 'Player 2'} won more sets based on scores. Please select {'Team 2' if match_type == 'Doubles' else 'Player 2'} as the winner or correct the scores.")
+                                        valid = False
+                                    elif team1_sets_won == team2_sets_won and winner != "Tie":
+                                        st.error("Teams won an equal number of sets. Please select 'Tie' as the winner or correct the scores.")
+                                        valid = False
+                        
+                        # Save match if valid
+                        if valid:
+                            try:
+                                with st.spinner("Checking for duplicates and uploading match to Supabase..."):
+                                    match_datetime = pd.to_datetime(date)
+                                    match_id = generate_match_id(st.session_state.matches_df, match_datetime)
+                                    image_url = upload_image_to_github(match_image, match_id, image_type="match")
+                                    
+                                    new_match = {
+                                        "match_id": match_id,
+                                        "date": date,
+                                        "match_type": match_type,
+                                        "team1_player1": t1p1,
+                                        "team1_player2": t1p2 if match_type == "Doubles" else "",
+                                        "team2_player1": t2p1,
+                                        "team2_player2": t2p2 if match_type == "Doubles" else "",
+                                        "set1": set1,
+                                        "set2": set2,
+                                        "set3": set3,
+                                        "winner": winner,
+                                        "match_image_url": image_url
+                                    }
+                                    
+                                    # Check for duplicate (exclude match_id, date, winner, match_image_url from check)
+                                    check_dict = {
+                                        "match_type": match_type,
+                                        "team1_player1": t1p1,
+                                        "team1_player2": t1p2 if match_type == "Doubles" else "",
+                                        "team2_player1": t2p1,
+                                        "team2_player2": t2p2 if match_type == "Doubles" else "",
+                                        "set1": set1,
+                                        "set2": set2,
+                                        "set3": set3
+                                    }
+                                    
+                                    if is_duplicate_match(check_dict, st.session_state.matches_df):
+                                        st.session_state.pending_match = new_match
+                                        st.session_state.duplicate_flag = True
+                                        st.rerun()
+                                    else:
+                                        # No duplicate: add and save
+                                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                                        save_matches(st.session_state.matches_df)
+                                        st.success(f"Match {match_id} posted successfully!")
+                                        st.balloons()
+                                        st.session_state.form_key_suffix += 1
+                                        st.rerun()
+                            except Exception as e:
+                                st.error(f"Failed to add match: {str(e)}")
+                                if 'match_id' in locals() and match_id in st.session_state.matches_df["match_id"].values:
+                                    st.session_state.matches_df = st.session_state.matches_df.drop(
+                                        st.session_state.matches_df[st.session_state.matches_df["match_id"] == match_id].index
+                                    )
+                                st.rerun()
+        
+        # Handle duplicate resolution
+        if st.session_state.get('duplicate_flag', False):
+            st.warning("⚠️ This match (combination of players and scores) is already posted in the system.")
+            
+            col_choice1, col_choice2 = st.columns(2)
+            with col_choice1:
+                if st.button("Add as 2nd Match", key="add_duplicate"):
+                    if st.session_state.get('pending_match'):
+                        # Add the pending match
+                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([st.session_state.pending_match])], ignore_index=True)
+                        save_matches(st.session_state.matches_df)
+                        st.success("Match added as second entry!")
+                    st.session_state.duplicate_flag = False
+                    st.session_state.pending_match = None
+                    st.session_state.form_key_suffix += 1
+                    st.rerun()
+            
+            with col_choice2:
+                if st.button("Ignore", key="ignore_duplicate"):
+                    st.info("Match entry ignored.")
+                    st.session_state.duplicate_flag = False
+                    st.session_state.pending_match = None
+                    st.rerun()
+            
+            # Show details of the potential duplicate for reference
+            if st.session_state.get('pending_match'):
+                st.markdown("**Pending Match Details:**")
+                st.json({k: v for k, v in st.session_state.pending_match.items() if k != "match_id"})
+        
+        st.markdown("*Required fields", unsafe_allow_html=True)
+        
+        st.markdown("---")
+    
+    st.markdown("---")
     st.subheader("Match History")
 
     # Create columns for the filters
