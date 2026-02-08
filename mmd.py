@@ -347,6 +347,14 @@ def calculate_rankings(matches_to_rank):
         consist = np.std(game_diffs[p]) if game_diffs[p] else 0
         clutch_pct = (clutch_wins[p]/clutch_matches[p]*100) if clutch_matches[p]>0 else 0
         
+        # --- FIX: Retrieve Profile Image URL ---
+        profile_url = ""
+        if not players_df.empty and "profile_image_url" in players_df.columns:
+            player_row = players_df[players_df["name"] == p]
+            if not player_row.empty:
+                profile_url = player_row.iloc[0]["profile_image_url"]
+        # ---------------------------------------
+
         badges = []
         if clutch_pct > 70 and clutch_matches[p] >= 3: badges.append("🎯 Tie-break Monster")
         if wins[p] >= 5 and trend.startswith("W W W W W"): badges.append("🔥 Hot Streak")
@@ -354,7 +362,11 @@ def calculate_rankings(matches_to_rank):
         if games_won[p] == max(games_won.values()): badges.append("🥇 Game Hog")
         
         rank_data.append({
-            "Rank": 0, "Player": p, "Points": scores[p], "Win %": (wins[p]/m)*100,
+            "Rank": 0, 
+            "Player": p, 
+            "Profile": profile_url,  # <--- This Key was missing!
+            "Points": scores[p], 
+            "Win %": (wins[p]/m)*100,
             "Matches": m, "Doubles Matches": doubles_matches[p], "Singles Matches": singles_matches[p],
             "Wins": wins[p], "Losses": losses[p], "Games Won": games_won[p],
             "Game Diff Avg": cumulative_game_diff[p]/m, "Cumulative Game Diff": cumulative_game_diff[p],
@@ -366,7 +378,6 @@ def calculate_rankings(matches_to_rank):
         rank_df = rank_df.sort_values(by=["Points", "Win %", "Game Diff Avg"], ascending=False).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df)+1)]
     return rank_df, partner_stats
-
 
 
 def create_trend_chart(trend):
