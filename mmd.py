@@ -599,15 +599,18 @@ with tabs[0]:
                 top3 = rank_df.head(3).to_dict('records')
                 c1, c2, c3 = st.columns([1,1,1])
                 
-                # Visual order: 2nd, 1st, 3rd
-                podium_order = [(c1, top3[1]), (c2, top3[0]), (c3, top3[2])]
+                # Visual order: 2nd, 1st, 3rd. Top3 list indices: 0=#1, 1=#2, 2=#3
+                podium_order = [
+                    (c1, top3[1], "40px"), # Rank 2
+                    (c2, top3[0], "0px"),  # Rank 1
+                    (c3, top3[2], "40px")  # Rank 3
+                ]
                 
-                for col, player in podium_order:
+                for col, player, margin in podium_order:
                     with col:
-                        # Construct badges text if needed or just show summary
                         st.markdown(f"""
-                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                            <div style="font-size: 2.5em; margin-bottom: 10px;">{player['Rank'].split()[0]}</div>
+                        <div style="text-align: center; margin-top: {margin}; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                            <div style="font-size: 2.5em; margin-bottom: 10px; color: #FFD700;">{player['Rank']}</div>
                             <img src="{player['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid gold; box-shadow: 0 0 15px rgba(255,215,0,0.5);">
                             <h3 style="margin: 10px 0; color: #fff500; font-size: 1.2em;">{player['Player']}</h3>
                             <div style="color: white; font-weight: bold; font-size: 1.1em;">{player['Points']} pts</div>
@@ -707,36 +710,31 @@ with tabs[1]:
             # Image HTML if available
             img_html = ""
             if row.match_image_url:
-                img_html = f"""
-                <div style="text-align: center; margin: 10px 0;">
-                    <img src="{row.match_image_url}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
-                </div>
-                """
+                img_html = f'<div style="text-align: center; margin: 10px 0;"><img src="{row.match_image_url}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);"></div>'
 
-            # Match Card HTML
+            # Match Card HTML - flattened to avoid indentation issues that cause code block rendering
             match_html = f"""
-            <div class="ranking-row" style="padding: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                     <span style="font-size:1.1em; color:#fff500; font-weight: bold;">{row.date.strftime('%d %b %Y')}</span>
-                     <span style="color:#aaa; text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px;">{row.match_type}</span>
-                </div>
-                <div style="margin: 15px 0; font-size: 1.3em; text-align: center;">
-                     <span style="color: {'#fff500' if row.winner == 'Team 1' else 'white'}">{row.team1_player1} & {row.team1_player2}</span>
-                     <br><span style="color: #FF7518; font-size: 0.8em;">VS</span><br>
-                     <span style="color: {'#fff500' if row.winner == 'Team 2' else 'white'}">{row.team2_player1} & {row.team2_player2}</span>
-                </div>
-                <div style="text-align: center; margin-bottom:15px; font-weight: bold; font-size: 1.1em; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px;">
-                     {row.set1} {f"| {row.set2}" if row.set2 else ""} {f"| {row.set3}" if row.set3 else ""}
-                </div>
-                {img_html}
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                    <a href="https://wa.me/?text={share_text}" target="_blank" class="whatsapp-share">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" /> Share Result
-                    </a>
-                    {f'<a href="{row.match_image_url}" target="_blank" style="color: #aaa; text-decoration: none; font-size: 0.9em;">View Full Photo 📷</a>' if row.match_image_url else ''}
-                </div>
-            </div>
-            """
+<div class="ranking-row" style="padding: 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+            <span style="font-size:1.1em; color:#fff500; font-weight: bold;">{row.date.strftime('%d %b %Y')}</span>
+            <span style="color:#aaa; text-transform: uppercase; font-size: 0.8em; letter-spacing: 1px;">{row.match_type}</span>
+    </div>
+    <div style="margin: 15px 0; font-size: 1.3em; text-align: center;">
+            <span style="color: {'#fff500' if row.winner == 'Team 1' else 'white'}">{row.team1_player1} & {row.team1_player2}</span>
+            <br><span style="color: #FF7518; font-size: 0.8em;">VS</span><br>
+            <span style="color: {'#fff500' if row.winner == 'Team 2' else 'white'}">{row.team2_player1} & {row.team2_player2}</span>
+    </div>
+    <div style="text-align: center; margin-bottom:15px; font-weight: bold; font-size: 1.1em; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px;">
+            {row.set1} {f"| {row.set2}" if row.set2 else ""} {f"| {row.set3}" if row.set3 else ""}
+    </div>
+    {img_html}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <a href="https://wa.me/?text={share_text}" target="_blank" class="whatsapp-share">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1);" /> Share Result
+        </a>
+        {f'<a href="{row.match_image_url}" target="_blank" style="color: #aaa; text-decoration: none; font-size: 0.9em;">View Full Photo 📷</a>' if row.match_image_url else ''}
+    </div>
+</div>"""
             st.markdown(match_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
