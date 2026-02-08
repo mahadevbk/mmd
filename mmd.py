@@ -1013,6 +1013,8 @@ with tabs[2]:
     else:
         display_players = display_players.sort_values("name")
 
+    
+    
     # --- Render Player List ---
     if not display_players.empty:
         for idx, row in display_players.iterrows():
@@ -1095,7 +1097,10 @@ with tabs[2]:
                 
                 st.divider() 
     else:
-        st.info("No players found in database.")
+        if sort_option == "Birthday" and not st.session_state.players_df.empty:
+            st.info("No players have birthdays listed. Edit player profiles to add birthdays.")
+        else:
+            st.info("No players found in database.")    
 
 # --- Tab 4: Maps ---
 with tabs[3]:
