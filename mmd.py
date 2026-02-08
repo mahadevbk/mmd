@@ -297,6 +297,26 @@ def format_set_score(s):
         return s 
     return s
 
+def flip_score(s):
+    """Reverses the score representation for display when Team 2 wins."""
+    if not s: return ""
+    s = str(s)
+    if "Tie Break" in s:
+        try:
+            parts = s.replace("Tie Break", "").strip().split('-')
+            if len(parts) == 2:
+                return f"Tie Break {parts[1]}-{parts[0]}"
+        except:
+            return s
+    elif '-' in s:
+        try:
+            parts = s.split('-')
+            if len(parts) == 2:
+                return f"{parts[1]}-{parts[0]}"
+        except:
+            return s
+    return s
+
 def generate_match_id(matches_df, match_datetime):
     year = match_datetime.year
     month = match_datetime.month
@@ -800,9 +820,18 @@ with tabs[1]:
                 headline = f"<span style='color:white'>{row.team1_player1}/{row.team1_player2}</span> tied with <span style='color:white'>{row.team2_player1}/{row.team2_player2}</span>"
 
             # Score logic
-            s1_fmt = format_set_score(row.set1)
-            s2_fmt = format_set_score(row.set2)
-            s3_fmt = format_set_score(row.set3)
+            s1 = row.set1
+            s2 = row.set2
+            s3 = row.set3
+            
+            if row.winner == "Team 2":
+                s1 = flip_score(s1)
+                s2 = flip_score(s2)
+                s3 = flip_score(s3)
+
+            s1_fmt = format_set_score(s1)
+            s2_fmt = format_set_score(s2)
+            s3_fmt = format_set_score(s3)
             score_line = f"{s1_fmt} {f'| {s2_fmt}' if s2_fmt else ''} {f'| {s3_fmt}' if s3_fmt else ''}"
 
             # Construct text for sharing
@@ -839,237 +868,3 @@ with tabs[1]:
             st.markdown(match_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
-# --- Tab 3: Player Profile ---
-with tabs[2]:
-    st.header("Player Profile")
-    all_names = sorted(st.session_state.players_df['name'].unique()) if not st.session_state.players_df.empty else []
-    
-    col_sel, col_add = st.columns([2, 1])
-    with col_sel:
-        selected_player = st.selectbox("Select Player", [""] + all_names)
-    
-    if selected_player:
-        # Get Player Data
-        p_row = st.session_state.players_df[st.session_state.players_df['name'] == selected_player].iloc[0]
-        rank_info = rank_df[rank_df['Player'] == selected_player].iloc[0] if 'rank_df' in locals() and not rank_df.empty and selected_player in rank_df['Player'].values else None
-        
-        # Display Header
-        hc1, hc2 = st.columns([1, 3])
-        with hc1:
-            if p_row['profile_image_url']:
-                st.image(p_row['profile_image_url'], width=150, caption=selected_player)
-            else:
-                st.markdown(f"**{selected_player}** (No Image)")
-        
-        with hc2:
-            if rank_info is not None:
-                st.subheader(f"Rank: {rank_info['Rank']}")
-                st.write(f"Points: {rank_info['Points']} | Win Rate: {rank_info['Win %']}%")
-                if rank_info['Badges']:
-                    st.write(f"Badges: {', '.join(rank_info['Badges'])}")
-            
-            if p_row['birthday']:
-                st.caption(f"Birthday: {p_row['birthday']}")
-
-        st.divider()
-        
-        # Partner Stats
-        if 'partner_stats_global' in locals() and selected_player in partner_stats_global:
-            st.subheader("Partner Analysis")
-            my_partners = partner_stats_global[selected_player]
-            if my_partners:
-                best_partner = max(my_partners.items(), key=lambda x: (x[1]['wins']/(x[1]['matches'] or 1), x[1]['matches']))
-                st.write(f"🤝 **Best Partner:** {best_partner[0]} ({best_partner[1]['wins']}W - {best_partner[1]['losses']}L)")
-        
-        # Player History
-        st.subheader("Recent Matches")
-        p_history = st.session_state.matches_df[
-            (st.session_state.matches_df['team1_player1'] == selected_player) | 
-            (st.session_state.matches_df['team1_player2'] == selected_player) |
-            (st.session_state.matches_df['team2_player1'] == selected_player) |
-            (st.session_state.matches_df['team2_player2'] == selected_player)
-        ].sort_values('date', ascending=False).head(5)
-        
-        if not p_history.empty:
-            for r in p_history.itertuples():
-                res = "Won" if (r.winner == "Team 1" and selected_player in [r.team1_player1, r.team1_player2]) or \
-                               (r.winner == "Team 2" and selected_player in [r.team2_player1, r.team2_player2]) else "Lost"
-                if r.winner == "Tie": res = "Tie"
-                color = "green" if res == "Won" else "red"
-                st.markdown(f":{color}[{res}] on {pd.to_datetime(r.date).strftime('%Y-%m-%d')} ({r.match_type})")
-
-    with st.expander("Manage Players (Add/Edit)"):
-        p_name = st.text_input("Name (New or Existing)")
-        gender = st.radio("Gender", ["M", "F"], horizontal=True)
-        p_img_file = st.file_uploader("Profile Photo", type=["jpg", "png"])
-        p_dob = st.date_input("Birthday", value=None)
-        
-        if st.button("Save Player"):
-            img_url = ""
-            if p_img_file:
-                img_url = upload_image_to_github(p_img_file, p_name.upper().strip(), "profile")
-            
-            new_p = {
-                "name": p_name, "gender": gender, 
-                "profile_image_url": img_url if img_url else None,
-                "birthday": p_dob.strftime("%Y-%m-%d") if p_dob else None
-            }
-            # Remove existing if update
-            st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != p_name.upper().strip()]
-            st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_p])], ignore_index=True)
-            save_players(st.session_state.players_df)
-            st.success("Player Saved")
-            st.rerun()
-
-    # Player Roster Section
-    st.divider()
-    st.subheader("Player Roster")
-    
-    sort_order = st.radio("Sort By", ["Alphabetical", "Birthday"], horizontal=True)
-    
-    if not st.session_state.players_df.empty:
-        roster_df = st.session_state.players_df.copy()
-        
-        if sort_order == "Alphabetical":
-            roster_df = roster_df.sort_values("name")
-        else: # Birthday
-            # Handle potential None values for birthday
-            roster_df['b_sort'] = pd.to_datetime(roster_df['birthday'], errors='coerce')
-            # Create a sort key for Month-Day (ignoring year) to show upcoming birthdays or calendar order
-            roster_df['b_md'] = roster_df['b_sort'].apply(lambda x: (x.month, x.day) if pd.notnull(x) else (99, 99))
-            roster_df = roster_df.sort_values('b_md')
-
-        # Generate roster cards
-        for rp in roster_df.itertuples():
-            # Get stats if available
-            p_stats = rank_df[rank_df['Player'] == rp.name].iloc[0] if 'rank_df' in locals() and not rank_df.empty and rp.name in rank_df['Player'].values else None
-            
-            with st.container():
-                rc1, rc2 = st.columns([1, 4])
-                with rc1:
-                    img_src = rp.profile_image_url if rp.profile_image_url else "https://via.placeholder.com/80?text=Player"
-                    st.markdown(f'<img src="{img_src}" class="profile-image" style="width:60px; height:60px;">', unsafe_allow_html=True)
-                with rc2:
-                    st.markdown(f"**{rp.name}**")
-                    if rp.birthday:
-                        st.caption(f"🎂 {rp.birthday}")
-                    if p_stats is not None:
-                         st.markdown(f"<span style='font-size:0.8em; color:#aaa;'>Rank: {p_stats['Rank']} | Pts: {p_stats['Points']} | Win: {p_stats['Win %']}%</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 5px 0; border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-# --- Tab 4: Maps ---
-with tabs[3]:
-    st.header("Locations")
-    courts = [
-        {"name": "Alvorado 1", "url": "https://maps.google.com/?q=25.041792,55.259258"},
-        {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
-        {"name": "Mira 4", "url": "https://maps.google.com/?q=25.035,55.265"},
-        {"name": "Mirador 1", "url": "https://maps.google.com/?q=25.038,55.260"},
-        {"name": "Reem 2", "url": "https://maps.google.com/?q=25.045,55.255"},
-        {"name": "Reem 3", "url": "https://maps.google.com/?q=25.048,55.252"},
-    ]
-    cols = st.columns(3)
-    for i, c in enumerate(courts):
-        with cols[i%3]:
-            st.markdown(f"<div class='court-card'><h4>{c['name']}</h4><a href='{c['url']}' target='_blank'>Map</a></div>", unsafe_allow_html=True)
-
-# --- Tab 5: Bookings ---
-with tabs[4]:
-    st.header("Bookings")
-    
-    # Booking Form
-    with st.expander("🎾 Book a Court", expanded=True):
-        with st.form("booking_form"):
-            bc1, bc2 = st.columns(2)
-            court_opts = [c['name'] for c in courts]
-            b_court = bc1.selectbox("Court", court_opts)
-            b_date = bc1.date_input("Date", min_value=datetime.now())
-            b_time = bc2.selectbox("Time", [f"{h}:00" for h in range(6, 23)])
-            b_type = bc2.radio("Type", ["Singles", "Doubles", "Training"], horizontal=True)
-            
-            p_opts = [""] + sorted(st.session_state.players_df['name'].unique())
-            bp1 = st.selectbox("Player 1", p_opts)
-            bp2 = st.selectbox("Player 2", p_opts)
-            bp3 = st.selectbox("Player 3", p_opts)
-            bp4 = st.selectbox("Player 4", p_opts)
-            
-            b_img = st.file_uploader("Booking Screenshot", type=["jpg", "png"])
-            
-            if st.form_submit_button("Book Court"):
-                # Basic collision check
-                existing = st.session_state.bookings_df
-                is_taken = False
-                if not existing.empty:
-                    conflict = existing[
-                        (existing['date'] == b_date.strftime('%Y-%m-%d')) & 
-                        (existing['time'] == b_time) & 
-                        (existing['court_name'] == b_court)
-                    ]
-                    if not conflict.empty:
-                        is_taken = True
-                
-                if is_taken:
-                    st.error("Court is already booked for this slot!")
-                else:
-                    bid = str(uuid.uuid4())
-                    url = upload_image_to_github(b_img, bid, "booking") if b_img else ""
-                    new_b = {
-                        "booking_id": bid, "date": b_date.strftime('%Y-%m-%d'), "time": b_time,
-                        "court_name": b_court, "match_type": b_type,
-                        "player1": bp1, "player2": bp2, "player3": bp3, "player4": bp4,
-                        "screenshot_url": url
-                    }
-                    st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_b])], ignore_index=True)
-                    save_bookings(st.session_state.bookings_df)
-                    st.success("Booking Confirmed!")
-                    st.rerun()
-
-    # Upcoming Bookings
-    st.subheader("Upcoming Games")
-    if not st.session_state.bookings_df.empty:
-        # Sort by date/time
-        df_b = st.session_state.bookings_df.copy()
-        df_b['dt_sort'] = pd.to_datetime(df_b['date'] + ' ' + df_b['time'])
-        df_b = df_b.sort_values('dt_sort')
-        
-        for row in df_b.itertuples():
-            with st.container():
-                st.info(f"📅 {row.date} @ {row.time} | 🏟️ {row.court_name} | {row.match_type}")
-                players = [p for p in [row.player1, row.player2, row.player3, row.player4] if p]
-                st.write(f"Players: {', '.join(players)}")
-                if row.screenshot_url:
-                    st.image(row.screenshot_url, width=200)
-    else:
-        st.write("No upcoming bookings.")
-
-# --- Tab 6: Hall of Fame ---
-with tabs[5]:
-    st.header("Hall of Fame")
-    hof = fetch_data(HOF_TABLE)
-    if not hof.empty:
-        st.dataframe(hof, use_container_width=True)
-    else:
-        st.write("No Hall of Fame records found.")
-
-# --- Tab 7: Mini Tourney ---
-with tabs[6]:
-    st.info("Tournament Organiser moved to external app.")
-
-# --- Tab 8: AI ---
-with tabs[7]:
-    st.header("AI Analysis")
-    if not st.session_state.matches_df.empty:
-        csv = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download Matches CSV", csv, "matches.csv", "text/csv")
-        st.markdown("[Open Gemini](https://gemini.google.com/app)")
-
-# --- Backup ---
-st.markdown("---")
-if st.button("Generate Backup"):
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w") as z:
-        z.writestr("players.csv", st.session_state.players_df.to_csv(index=False))
-        z.writestr("matches.csv", st.session_state.matches_df.to_csv(index=False))
-        z.writestr("bookings.csv", st.session_state.bookings_df.to_csv(index=False))
-    st.download_button("Download ZIP", buf.getvalue(), "backup.zip", "application/zip")
