@@ -302,13 +302,23 @@ def generate_match_id(matches_df, match_datetime):
             return new_id
         serial += 1
 
+# Helper functions for defaultdict to allow pickling
+def get_player_stats_template():
+    return {'wins': 0, 'losses': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
+            'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': []}
+
+def get_partner_stats_inner_template():
+    return {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}
+
+def get_partner_stats_template():
+    return defaultdict(get_partner_stats_inner_template)
+
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
     # Initialize containers
     scores = defaultdict(float)
-    stats = defaultdict(lambda: {'wins': 0, 'losses': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
-                                 'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': []})
-    partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
+    stats = defaultdict(get_player_stats_template)
+    partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
 
     players_df = st.session_state.players_df
@@ -525,7 +535,7 @@ def load_bookings():
         df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), errors='coerce')
         
         # Safe timezone handling
-        if pd.api.types.is_datetime64tz_dtype(df['dt_combo']):
+        if isinstance(df['dt_combo'].dtype, pd.DatetimeTZDtype):
              df['dt_combo'] = df['dt_combo'].dt.tz_convert('Asia/Dubai')
         else:
              df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
