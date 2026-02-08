@@ -694,6 +694,15 @@ with tabs[1]:
             res_txt = f"{row.team1_player1}/{row.team1_player2} vs {row.team2_player1}/{row.team2_player2} ({row.set1}, {row.set2})"
             share_text = urllib.parse.quote(f"MMD Match Result ({row.date.strftime('%Y-%m-%d')}):\n{res_txt}\nWinner: {row.winner}")
             
+            # Image HTML if available
+            img_html = ""
+            if row.match_image_url:
+                img_html = f"""
+                <div style="text-align: center; margin: 10px 0;">
+                    <img src="{row.match_image_url}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                </div>
+                """
+
             # Match Card HTML
             match_html = f"""
             <div class="ranking-row" style="padding: 20px;">
@@ -709,19 +718,18 @@ with tabs[1]:
                 <div style="text-align: center; margin-bottom:15px; font-weight: bold; font-size: 1.1em; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px;">
                      {row.set1} {f"| {row.set2}" if row.set2 else ""} {f"| {row.set3}" if row.set3 else ""}
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                {img_html}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                     <a href="https://wa.me/?text={share_text}" target="_blank" class="whatsapp-share">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" /> Share Result
                     </a>
-                    {f'<a href="{row.match_image_url}" target="_blank" style="color: #aaa; text-decoration: none; font-size: 0.9em;">View Photo 📷</a>' if row.match_image_url else ''}
+                    {f'<a href="{row.match_image_url}" target="_blank" style="color: #aaa; text-decoration: none; font-size: 0.9em;">View Full Photo 📷</a>' if row.match_image_url else ''}
                 </div>
             </div>
             """
             st.markdown(match_html, unsafe_allow_html=True)
-            
-            # Optional: Show image directly if needed, but the link above is cleaner
-            # if row.match_image_url:
-            #    st.image(row.match_image_url, width=300)
+    else:
+        st.info("No matches recorded yet.")
 
 # --- Tab 3: Player Profile ---
 with tabs[2]:
