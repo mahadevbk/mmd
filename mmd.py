@@ -106,6 +106,7 @@ h3 { font-size: 16px !important; }
 [data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
 .block-container { display: flex; flex-wrap: wrap; justify-content: center; }
 [data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
+[data-testid="stExpander"] i, [data-testid="stExpander"] span.icon { font-family: 'Material Icons' !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -781,7 +782,7 @@ with tabs[1]:
     if not st.session_state.players_df.empty:
         names = sorted([n for n in st.session_state.players_df['name'] if n != 'Visitor'])
         
-        with st.expander("➕ Post Match Result"):
+        with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
             with st.form("match_form"):
                 mtype = st.radio("Type", ["Doubles", "Singles"])
                 c1, c2 = st.columns(2)
@@ -819,7 +820,7 @@ with tabs[1]:
                     st.success("Saved!")
                     st.rerun()
 
-        with st.expander("✏️ Edit Match Result"):
+        with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
             if not st.session_state.matches_df.empty:
                 matches_list = st.session_state.matches_df.sort_values('date', ascending=False)
                 match_options = {}
@@ -930,7 +931,7 @@ with tabs[2]:
     st.header("Player Profile")
 
     # --- Manage Profiles Expander ---
-    with st.expander("⚙️ Manage Player Profiles (Add / Edit)"):
+    with st.expander("⚙️ Manage Player Profiles (Add / Edit)", expanded=False, icon="➡️"):
         mp_action = st.radio("Action", ["Add New Player", "Edit Existing Player"], horizontal=True)
         
         with st.form("manage_player_form"):
@@ -1064,7 +1065,7 @@ with tabs[2]:
                         """, unsafe_allow_html=True)
                         
                         # Data Expander (Graph & Partners)
-                        with st.expander("Show Performance Trends & Partners"):
+                        with st.expander("Show Performance Trends & Partners", expanded=False, icon="➡️"):
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
                                 fig = plot_player_performance(player_name, st.session_state.matches_df)
@@ -1119,7 +1120,7 @@ with tabs[3]:
 with tabs[4]:
     st.header("Court Bookings")
     
-    with st.expander("📅 Book a Court"):
+    with st.expander("📅 Book a Court", expanded=False, icon="➡️"):
         with st.form("booking_form"):
             b_date = st.date_input("Date")
             b_time = st.time_input("Time")
