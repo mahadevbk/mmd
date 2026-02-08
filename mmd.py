@@ -369,7 +369,7 @@ def calculate_rankings(matches_to_rank):
 
 
 
-    def create_trend_chart(trend):
+def create_trend_chart(trend):
     if not trend or trend == 'No recent matches': return None
     res = trend.split()
     colors = ['#00FF00' if r == 'W' else '#FF0000' for r in res]
