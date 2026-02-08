@@ -639,6 +639,7 @@ with tabs[0]:
             )
         
         
+        
         else:
             # Podium for Top 3
             if len(rank_df) >= 3:
@@ -656,31 +657,28 @@ with tabs[0]:
                 cols_html = ""
                 for item in podium_items:
                     p = item['player']
+                    # Important: No indentation inside the HTML string to prevent Markdown code block rendering
                     cols_html += f"""
-                    <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                        <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                            <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{p['Rank']}</div>
-                            <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                                <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 50%; object-fit: cover; border: 2px solid gold; box-shadow: 0 0 8px rgba(255,215,0,0.5);">
-                            </div>
-                            <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{p['Player']}</div>
-                            <div style="color: white; font-weight: bold; font-size: 0.8em;">{p['Points']} pts</div>
-                            <div style="color: #aaa; font-size: 0.7em;">{p['Win %']}% Win</div>
-                        </div>
-                    </div>
-                    """
+<div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
+    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{p['Rank']}</div>
+        <div style="display: flex; justify-content: center; margin-bottom: 5px;">
+            <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 50%; object-fit: cover; border: 2px solid gold; box-shadow: 0 0 8px rgba(255,215,0,0.5);">
+        </div>
+        <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{p['Player']}</div>
+        <div style="color: white; font-weight: bold; font-size: 0.8em;">{p['Points']} pts</div>
+        <div style="color: #aaa; font-size: 0.7em;">{p['Win %']}% Win</div>
+    </div>
+</div>"""
                 
                 st.markdown(f"""
-                <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">
-                    {cols_html}
-                </div>
-                """, unsafe_allow_html=True)
+<div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">
+{cols_html}
+</div>""", unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
 
             # Detailed List (HTML based)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
 
             # Detailed List (HTML based)
             st.markdown("<div class='rankings-table-container'>", unsafe_allow_html=True)
