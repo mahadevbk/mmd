@@ -637,30 +637,43 @@ with tabs[0]:
                     "Profile": st.column_config.ImageColumn("Profile"),
                 }
             )
+        
         else:
             # Podium for Top 3
             if len(rank_df) >= 3:
                 top3 = rank_df.head(3).to_dict('records')
-                c1, c2, c3 = st.columns([1,1,1])
                 
-                # Visual order: 2nd, 1st, 3rd. Top3 list indices: 0=#1, 1=#2, 2=#3
-                podium_order = [
-                    (c1, top3[1], "40px"), # Rank 2
-                    (c2, top3[0], "0px"),  # Rank 1
-                    (c3, top3[2], "40px")  # Rank 3
+                # Prepare data for HTML injection
+                # Order: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
+                # Visual hierarchy achieved via margin-top
+                podium_items = [
+                    {"player": top3[1], "margin": "40px"}, # Rank 2
+                    {"player": top3[0], "margin": "0px"},  # Rank 1
+                    {"player": top3[2], "margin": "40px"}  # Rank 3
                 ]
                 
-                for col, player, margin in podium_order:
-                    with col:
-                        st.markdown(f"""
-                        <div style="text-align: center; margin-top: {margin}; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                            <div style="font-size: 2.5em; margin-bottom: 10px; color: #FFD700;">{player['Rank']}</div>
-                            <img src="{player['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid gold; box-shadow: 0 0 15px rgba(255,215,0,0.5);">
-                            <h3 style="margin: 10px 0; color: #fff500; font-size: 1.2em;">{player['Player']}</h3>
-                            <div style="color: white; font-weight: bold; font-size: 1.1em;">{player['Points']} pts</div>
-                            <div style="color: #aaa; font-size: 0.9em;">{player['Win %']}% Win Rate</div>
+                cols_html = ""
+                for item in podium_items:
+                    p = item['player']
+                    cols_html += f"""
+                    <div style="flex: 1; margin-top: {item['margin']}; min-width: 0;">
+                        <div style="text-align: center; padding: 10px 5px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3); height: 100%;">
+                            <div style="font-size: 1.5em; margin-bottom: 5px; color: #FFD700;">{p['Rank']}</div>
+                            <div style="display: flex; justify-content: center;">
+                                <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(60px, 15vw, 100px); height: clamp(60px, 15vw, 100px); border-radius: 50%; object-fit: cover; border: 3px solid gold; box-shadow: 0 0 10px rgba(255,215,0,0.5);">
+                            </div>
+                            <div style="margin: 8px 0 4px 0; color: #fff500; font-size: 1em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{p['Player']}</div>
+                            <div style="color: white; font-weight: bold; font-size: 0.9em;">{p['Points']} pts</div>
+                            <div style="color: #aaa; font-size: 0.75em;">{p['Win %']}% Win</div>
                         </div>
-                        """, unsafe_allow_html=True)
+                    </div>
+                    """
+                
+                st.markdown(f"""
+                <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
+                    {cols_html}
+                </div>
+                """, unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
 
