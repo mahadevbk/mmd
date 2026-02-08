@@ -379,6 +379,46 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df)+1)]
     return rank_df, partner_stats
 
+def get_match_verb_and_gda(row):
+    """
+    Calculates the game difference and determines the descriptive verb 
+    (e.g., 'crushed', 'edged out') based on the score margin.
+    """
+    t1_games = 0
+    t2_games = 0
+    
+    # Calculate total games from sets
+    for set_col in ['set1', 'set2', 'set3']:
+        s = row.get(set_col)
+        if not s or str(s).strip() == '': continue
+        
+        try:
+            # Extract scores (handling standard "6-4" and "Tie Break 7-5" formats)
+            nums = re.findall(r'\d+', str(s))
+            if len(nums) >= 2:
+                g1, g2 = int(nums[0]), int(nums[1])
+                
+                # Standardize tie-break sets to 7-6 or 6-7 for game diff calculation
+                if "Tie Break" in str(s):
+                    if g1 > g2: g1, g2 = 7, 6
+                    else: g1, g2 = 6, 7
+                
+                t1_games += g1
+                t2_games += g2
+        except:
+            pass
+            
+    diff = abs(t1_games - t2_games)
+    
+    # Select verb based on game difference magnitude
+    if diff >= 10: verb = "annihilated"
+    elif diff >= 7: verb = "crushed"
+    elif diff >= 4: verb = "defeated"
+    elif diff >= 2: verb = "beat"
+    else: verb = "edged out"
+    
+    return verb, diff
+
 
 def create_trend_chart(trend):
     # Fixed indentation and logic
