@@ -621,6 +621,7 @@ def get_birthday_banner(players_df):
             
     if birthdays:
         names = ", ".join(birthdays)
+        st.balloons()
         st.markdown(f"""
         <div class="birthday-banner">
             🎂 Happy Birthday to {names}! 🥳
@@ -999,16 +1000,16 @@ with tabs[2]:
     display_players = st.session_state.players_df.copy()
     
     if sort_option == "Birthday":
-        def get_bday_sort_key(d_str):
-            if not d_str: return (99, 99)
-            try:
-                # FIX: Add errors='coerce' to handle out-of-bounds dates safely
-                d = pd.to_datetime(d_str, errors='coerce')
-                if pd.isna(d): return (99, 99)
-                return (d.month, d.day)
-            except: return (99, 99)
-        display_players['sort_key'] = display_players['birthday'].apply(get_bday_sort_key)
-        display_players = display_players.sort_values('sort_key').drop(columns=['sort_key'])
+        # Create temp column for datetime
+        display_players['dt_birthday'] = pd.to_datetime(display_players['birthday'], errors='coerce')
+        # Filter out invalid birthdays
+        display_players = display_players.dropna(subset=['dt_birthday'])
+        # Sort by Month, Day
+        display_players['month'] = display_players['dt_birthday'].dt.month
+        display_players['day'] = display_players['dt_birthday'].dt.day
+        display_players = display_players.sort_values(['month', 'day'])
+        # Clean up
+        display_players = display_players.drop(columns=['dt_birthday', 'month', 'day'])
     else:
         display_players = display_players.sort_values("name")
 
