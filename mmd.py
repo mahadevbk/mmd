@@ -309,10 +309,15 @@ def calculate_rankings(matches_to_rank):
     stats = defaultdict(lambda: {'wins': 0, 'losses': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
                                  'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': []})
     partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
+    current_streaks = defaultdict(int)
 
     players_df = st.session_state.players_df
     # Pre-fetch genders map for O(1) lookup
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
+
+    # Sort matches by date to ensure accurate streaks
+    if not matches_to_rank.empty:
+        matches_to_rank = matches_to_rank.sort_values('date')
 
     # Optimize iteration
     for row in matches_to_rank.itertuples(index=False):
@@ -385,11 +390,19 @@ def calculate_rankings(matches_to_rank):
                     scores[p] += w_points
                     stats[p]['wins'] += 1
                     if is_clutch: stats[p]['clutch_wins'] += 1
+                    # Streak Logic
+                    if current_streaks[p] < 0: current_streaks[p] = 0
+                    current_streaks[p] += 1
+
                 elif outcome == 'loss':
                     scores[p] += 1
                     stats[p]['losses'] += 1
+                    # Streak Logic
+                    if current_streaks[p] > 0: current_streaks[p] = 0
+                    current_streaks[p] -= 1
                 else: # tie
                     scores[p] += 1.5
+                    current_streaks[p] = 0
 
         if winner_code == "Team 1":
             update_stats(t1, 'win', match_gd)
@@ -422,6 +435,7 @@ def calculate_rankings(matches_to_rank):
     rank_data = []
     # Pre-fetch image urls
     img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
+    max_matches_played = max([s['matches'] for s in stats.values()]) if stats else 0
     
     for p, s in stats.items():
         matches_played = s['matches']
@@ -432,10 +446,13 @@ def calculate_rankings(matches_to_rank):
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
         consistency = np.std(s['gd_list']) if s['gd_list'] else 0
         
-        # Badges (Simplified logic for speed)
+        # Badges
         badges = []
         if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Tie-break Monster")
         if consistency < 2 and matches_played >= 5: badges.append("📈 Consistent Performer")
+        if current_streaks[p] >= 3: badges.append("🔥 On Fire")
+        if win_pct == 100 and matches_played >= 3: badges.append("🦄 Unbeatable")
+        if matches_played == max_matches_played and max_matches_played >= 5: badges.append("🐝 Busy Bee")
         
         rank_data.append({
             "Player": p, "Points": scores[p], "Win %": round(win_pct, 2),
@@ -476,6 +493,27 @@ def get_player_trend(player, matches, max_matches=5):
         trend.append(res)
     return ' '.join(trend) if trend else "No matches"
 
+def get_birthday_banner(players_df):
+    if players_df.empty: return
+    today = datetime.now()
+    birthdays = []
+    
+    for row in players_df.itertuples(index=False):
+        if row.birthday:
+            try:
+                dob = pd.to_datetime(row.birthday)
+                if dob.month == today.month and dob.day == today.day:
+                    birthdays.append(row.name)
+            except: pass
+            
+    if birthdays:
+        names = ", ".join(birthdays)
+        st.markdown(f"""
+        <div class="birthday-banner">
+            🎂 Happy Birthday to {names}! 🥳
+        </div>
+        """, unsafe_allow_html=True)
+
 def load_bookings():
     df = fetch_data(BOOKINGS_TABLE)
     cols = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
@@ -485,7 +523,13 @@ def load_bookings():
     if not df.empty:
         # Cleanup expired
         df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), errors='coerce')
-        df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
+        
+        # Safe timezone handling
+        if pd.api.types.is_datetime64tz_dtype(df['dt_combo']):
+             df['dt_combo'] = df['dt_combo'].dt.tz_convert('Asia/Dubai')
+        else:
+             df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
+             
         cutoff = pd.Timestamp.now(tz='Asia/Dubai') - timedelta(hours=4)
         
         expired = df[df['dt_combo'] < cutoff]
@@ -515,6 +559,7 @@ load_bookings()
 
 # --- Main Layout ---
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", use_container_width=True)
+get_birthday_banner(st.session_state.players_df)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "MMD AI"]
 tabs = st.tabs(tab_names)
@@ -538,16 +583,18 @@ with tabs[0]:
         if ranking_type == "Table View":
             st.dataframe(rank_df, hide_index=True)
         else:
-            # Display Cards
-            for row in rank_df.itertuples():
+            # Display Cards using to_dict for safe iteration
+            for row in rank_df.to_dict('records'):
                 with st.container():
                     c1, c2 = st.columns([1, 4])
                     with c1:
-                        if row.Profile: st.image(row.Profile, width=80)
+                        if row['Profile']: st.image(row['Profile'], width=80)
                     with c2:
-                        st.subheader(f"{row.Rank} {row.Player}")
-                        st.write(f"Points: {row.Points} | Win%: {row._3}%") # _3 is Win % due to naming
-                        trend = get_player_trend(row.Player, matches_df)
+                        st.subheader(f"{row['Rank']} {row['Player']}")
+                        st.write(f"Points: {row['Points']} | Win%: {row['Win %']}%") 
+                        if row['Badges']:
+                            st.write(f"Badges: {', '.join(row['Badges'])}")
+                        trend = get_player_trend(row['Player'], matches_df)
                         st.caption(f"Trend: {trend}")
                     st.divider()
     else:
@@ -606,7 +653,17 @@ with tabs[1]:
         m_hist = m_hist.sort_values('date', ascending=False)
         for row in m_hist.itertuples():
             st.markdown(f"**{row.date.strftime('%Y-%m-%d')}**: {row.match_type} - {row.winner} Won")
-            st.caption(f"{row.team1_player1}/{row.team1_player2} vs {row.team2_player1}/{row.team2_player2} ({row.set1}, {row.set2})")
+            res_txt = f"{row.team1_player1}/{row.team1_player2} vs {row.team2_player1}/{row.team2_player2} ({row.set1}, {row.set2})"
+            st.caption(res_txt)
+            
+            # Share Button
+            share_text = urllib.parse.quote(f"MMD Match Result ({row.date.strftime('%Y-%m-%d')}):\n{res_txt}\nWinner: {row.winner}")
+            st.markdown(f"""
+            <a href="https://wa.me/?text={share_text}" target="_blank" class="whatsapp-share">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" /> Share
+            </a>
+            """, unsafe_allow_html=True)
+            
             if row.match_image_url:
                 st.image(row.match_image_url, width=200)
             st.divider()
