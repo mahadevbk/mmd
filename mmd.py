@@ -51,8 +51,8 @@ st.markdown("""
 [data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
 .profile-image {
     width: 80px; height: 80px; object-fit: cover; border: 2px solid #fff500;
-    border-radius: 50%; margin-right: 15px; vertical-align: middle;
-    transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 245, 0, 0.6);
+    border-radius: 15px; margin-right: 15px; vertical-align: middle;
+    transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 245, 0, 0.6);
 }
 .profile-image:hover { transform: scale(1.1); }
 .birthday-banner {
@@ -730,7 +730,7 @@ with tabs[0]:
     <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
         <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{p['Rank']}</div>
         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-            <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 50%; object-fit: cover; border: 2px solid gold; box-shadow: 0 0 8px rgba(255,215,0,0.5);">
+            <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
         </div>
         <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{p['Player']}</div>
         <div style="color: white; font-weight: bold; font-size: 0.8em;">{p['Points']} pts</div>
@@ -1040,7 +1040,7 @@ with tabs[2]:
                     img_src = row['profile_image_url'] or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="text-align: center;">
-                            <img src="{img_src}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                            <img src="{img_src}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 3px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(255, 245, 0, 0.6);">
                             <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em; color: white;">{player_name}</div>
                             {bday_html}
                         </div>
