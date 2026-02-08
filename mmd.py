@@ -546,8 +546,8 @@ def get_birthday_banner(players_df):
     for row in players_df.itertuples(index=False):
         if row.birthday:
             try:
-                dob = pd.to_datetime(row.birthday)
-                if dob.month == today.month and dob.day == today.day:
+                dob = pd.to_datetime(row.birthday, errors='coerce')
+                if pd.notna(dob) and dob.month == today.month and dob.day == today.day:
                     birthdays.append(row.name)
             except: pass
             
@@ -858,11 +858,7 @@ with tabs[1]:
     else:
         st.info("No matches recorded yet.")
 
-
-
-
-# --- Tab 2: Player Profile ---
-
+# --- Tab 3: Player Profile ---
 with tabs[2]:
     st.header("Player Profile")
 
@@ -1005,7 +1001,9 @@ with tabs[2]:
         def get_bday_sort_key(d_str):
             if not d_str: return (99, 99)
             try:
-                d = pd.to_datetime(d_str)
+                # FIX: Add errors='coerce' to handle out-of-bounds dates safely
+                d = pd.to_datetime(d_str, errors='coerce')
+                if pd.isna(d): return (99, 99)
                 return (d.month, d.day)
             except: return (99, 99)
         display_players['sort_key'] = display_players['birthday'].apply(get_bday_sort_key)
@@ -1023,6 +1021,15 @@ with tabs[2]:
             has_stats = not p_stats.empty
             s = p_stats.iloc[0] if has_stats else None
             
+            # FIX: Safe Birthday Formatting
+            bday_html = ""
+            if row['birthday']:
+                try:
+                    d_obj = pd.to_datetime(row['birthday'], errors='coerce')
+                    if pd.notna(d_obj):
+                        bday_html = f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {d_obj.strftime("%d %b")}</div>'
+                except: pass
+
             # Card Container
             with st.container():
                 c1, c2 = st.columns([1, 3])
@@ -1034,7 +1041,7 @@ with tabs[2]:
                         <div style="text-align: center;">
                             <img src="{img_src}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                             <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em; color: white;">{player_name}</div>
-                            {f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {pd.to_datetime(row["birthday"]).strftime("%d %b")}</div>' if row['birthday'] else ''}
+                            {bday_html}
                         </div>
                     """, unsafe_allow_html=True)
                 
@@ -1087,11 +1094,6 @@ with tabs[2]:
                 st.divider() 
     else:
         st.info("No players found in database.")
-
-
-
-
-
 
 # --- Tab 4: Maps ---
 with tabs[3]:
