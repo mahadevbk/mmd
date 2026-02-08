@@ -1099,22 +1099,87 @@ with tabs[2]:
 # --- Tab 4: Maps ---
 with tabs[3]:
     st.header("Court Locations")
-    courts = [
-        {"name": "Mira 4 Courts", "map": "https://maps.google.com/?q=Mira+4+Community+Dubai", "desc": "Main League Courts"},
-        {"name": "Mira 1 Courts", "map": "https://maps.google.com/?q=Mira+1+Community+Dubai", "desc": "Training Ground"},
-        {"name": "Town Square Courts", "map": "https://maps.google.com/?q=Town+Square+Tennis+Courts", "desc": "Alternative Venue"}
+    court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"
+    
+    known_urls = {
+        "Alvorado 1": "https://maps.google.com/?q=25.041792,55.259258",
+        "Alvorado 2": "https://maps.google.com/?q=25.041792,55.259258",
+        "Palmera 2": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6",
+        "Palmera 4": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6",
+        "Saheel": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8",
+        "Hattan": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7",
+        "MLC Mirador La Colleccion": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6",
+        "Al Mahra": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9",
+        "Mirador": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8",
+        "Reem 1": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7",
+        "Reem 2": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5",
+        "Reem 3": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39",
+        "Alma": "https://maps.app.goo.gl/BZNfScABbzb3osJ18",
+        "Mira 2": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9",
+        "Mira 4": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A",
+        "Mira 5 A": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
+        "Mira 5 B": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
+        "Mira Oasis 1": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8",
+        "Mira Oasis 2": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9",
+        "Mira Oasis 3 A": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
+        "Mira Oasis 3 B": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
+        "Mira Oasis 3 C": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8",
+        "Mudon Main courts": "https://maps.app.goo.gl/AZ8WJ1mnnwMgNxhz7?g_st=aw",
+        "Mudon Arabella": "https://maps.app.goo.gl/iudbB5YqrGKyHNqM6?g_st=aw",
+        "Mudon Arabella 3": "https://maps.app.goo.gl/o46ERJCq8LKg1Cz59?g_st=aw",
+        "AR2 Rosa": "https://maps.app.goo.gl/at1EKgatfMmvAg7g8?g_st=aw",
+        "AR2 Palma": "https://maps.app.goo.gl/oKxXvbXKYe3JgJco8?g_st=aw",
+        "AR 2 Fitness First": "https://maps.app.goo.gl/iZGipHv8KdfW82dW9?g_st=aw",
+        "Dubai Hills Maple": "https://maps.app.goo.gl/rypmwnSGbGeknykv6?g_st=aw",
+    }
+    
+    court_names = [
+        "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
+        "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
+        "Reem 3", "Alma", "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B", "Mira Oasis 1",
+        "Mira Oasis 2", "Mira Oasis 3 A","Mira Oasis 3 B", "Mira Oasis 3 C","Mudon Main courts",
+        "Mudon Arabella","Mudon Arabella 3","AR2 Rosa","AR2 Palma","AR 2 Fitness First","Dubai Hills Maple"
     ]
     
-    cols = st.columns(len(courts))
-    for i, court in enumerate(courts):
-        with cols[i]:
-            st.markdown(f"""
-            <div class="court-card">
-                <h4>{court['name']}</h4>
-                <p style="color:#ccc; font-size:0.9em;">{court['desc']}</p>
-                <a href="{court['map']}" target="_blank">📍 Open in Maps</a>
-            </div>
-            """, unsafe_allow_html=True)
+    ar_courts = []
+    mira_courts = []
+    other_courts = []
+    
+    for name in court_names:
+        url = known_urls.get(name, f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(name + ' tennis court Dubai')}")
+        item = {"name": name, "url": url}
+        if any(x in name for x in ["Mira", "Mira Oasis"]):
+            mira_courts.append(item)
+        elif any(x in name for x in ["Alvorado", "Palmera", "Saheel", "Hattan", "MLC", "Mirador", "Al Mahra", "Reem", "Alma"]):
+            ar_courts.append(item)
+        else:
+            other_courts.append(item)
+    
+    def display_courts(section_title, courts_list):
+        if not courts_list: return
+        # Create responsive grid: 3 cols if plenty of items, else 2 (or just stick to 3 for consistency)
+        num_cols = 3 
+        
+        # Batch items into rows
+        for i in range(0, len(courts_list), num_cols):
+            cols = st.columns(num_cols)
+            batch = courts_list[i:i+num_cols]
+            for j, court in enumerate(batch):
+                with cols[j]:
+                    st.markdown(f"""
+                    <div class="court-card">
+                        <img src="{court_icon_url}" style="width: 40px; margin-bottom: 5px;">
+                        <h4>{court['name']}</h4>
+                        <a href="{court['url']}" target="_blank">View on Map</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", ar_courts)
+    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", mira_courts)
+    with st.expander("Mudon, AR2 & Other Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", other_courts)
 
 # --- Tab 5: Bookings ---
 with tabs[4]:
