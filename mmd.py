@@ -257,7 +257,10 @@ def upload_image_to_github(file, file_name, image_type="match"):
         if sha: payload["sha"] = sha
         
         requests.put(api_url, headers=headers, json=payload).raise_for_status()
-        return f"https://raw.githubusercontent.com/{repo}/{branch}/{path_in_repo}"
+        
+        # URL encode the path to handle spaces safely in the return URL
+        encoded_path = urllib.parse.quote(path_in_repo)
+        return f"https://raw.githubusercontent.com/{repo}/{branch}/{encoded_path}"
     except Exception as e:
         st.error(f"Upload failed: {e}")
         return ""
@@ -582,7 +585,14 @@ with tabs[0]:
             rank_df, partner_stats_global = calculate_rankings(matches_df)
             
         if ranking_type == "Table View":
-            st.dataframe(rank_df, hide_index=True, use_container_width=True)
+            st.dataframe(
+                rank_df, 
+                hide_index=True, 
+                use_container_width=True,
+                column_config={
+                    "Profile": st.column_config.ImageColumn("Profile"),
+                }
+            )
         else:
             # Podium for Top 3
             if len(rank_df) >= 3:
@@ -699,7 +709,7 @@ with tabs[1]:
             if row.match_image_url:
                 img_html = f"""
                 <div style="text-align: center; margin: 10px 0;">
-                    <img src="{row.match_image_url}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="{row.match_image_url}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);" />
                 </div>
                 """
 
