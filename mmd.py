@@ -862,6 +862,7 @@ with tabs[1]:
 
 
 # --- Tab 2: Player Profile ---
+
 with tabs[2]:
     st.header("Player Profile")
 
@@ -893,21 +894,12 @@ with tabs[2]:
                 if not s: continue
                 s_str = str(s)
                 t1_g, t2_g = 0, 0
-                if "Tie Break" in s_str: # Treat tie break as 1 game diff roughly or 0? 
-                    # Simplified: Winner gets +1 game, Loser -1 game in GD logic usually, 
-                    # but here let's parse standard scores.
-                    # If strict games, parse 7-6 etc.
+                if "Tie Break" in s_str: 
                     nums = re.findall(r'\d+', s_str)
                     if len(nums) >= 2:
                         g1, g2 = int(nums[0]), int(nums[1])
-                        # Handle tie break scores in string "Tie Break 7-5"
-                        if "Tie Break" in s_str: 
-                             # usually means the set score was 7-6 or 6-7.
-                             # Let's assume standard set difference
-                             if g1 > g2: t1_g, t2_g = 1, 0
-                             else: t1_g, t2_g = 0, 1
-                        else:
-                             t1_g, t2_g = g1, g2
+                        if g1 > g2: t1_g, t2_g = 1, 0
+                        else: t1_g, t2_g = 0, 1
                 elif '-' in s_str:
                     try:
                         p = s_str.split('-')
@@ -1002,138 +994,105 @@ with tabs[2]:
 
     st.divider()
 
-    # --- Main View Controls ---
-    view_col1, view_col2 = st.columns([1, 3])
-    with view_col1:
-        view_mode = st.radio("View Mode", ["Detailed Stats", "Player Directory"], horizontal=True, label_visibility="collapsed")
+    # --- View Controls ---
+    # Sort Options
+    sort_option = st.radio("Sort Players By", ["Alphabetical", "Birthday"], horizontal=True)
 
-    # --- Detailed Stats View ---
-    if view_mode == "Detailed Stats":
-        if not st.session_state.players_df.empty:
-            pnames = sorted(st.session_state.players_df['name'].unique())
-            selected_player = st.selectbox("Select Player to View", pnames)
+    # --- Prepare Data ---
+    display_players = st.session_state.players_df.copy()
+    
+    if sort_option == "Birthday":
+        def get_bday_sort_key(d_str):
+            if not d_str: return (99, 99)
+            try:
+                d = pd.to_datetime(d_str)
+                return (d.month, d.day)
+            except: return (99, 99)
+        display_players['sort_key'] = display_players['birthday'].apply(get_bday_sort_key)
+        display_players = display_players.sort_values('sort_key').drop(columns=['sort_key'])
+    else:
+        display_players = display_players.sort_values("name")
+
+    # --- Render Player List ---
+    if not display_players.empty:
+        for idx, row in display_players.iterrows():
+            player_name = row['name']
             
-            if selected_player:
-                # Get Stats from Rank DF
-                p_stats = rank_df[rank_df['Player'] == selected_player] if not rank_df.empty else pd.DataFrame()
+            # Get Stats
+            p_stats = rank_df[rank_df['Player'] == player_name] if not rank_df.empty else pd.DataFrame()
+            has_stats = not p_stats.empty
+            s = p_stats.iloc[0] if has_stats else None
+            
+            # Card Container
+            with st.container():
+                c1, c2 = st.columns([1, 3])
                 
-                # Profile Header Card
-                with st.container():
-                    col1, col2 = st.columns([1, 2])
-                    with col1:
-                        # Image
-                        img_url = st.session_state.players_df[st.session_state.players_df['name'] == selected_player]['profile_image_url'].iloc[0]
+                with c1:
+                    # Profile Image
+                    img_src = row['profile_image_url'] or "https://via.placeholder.com/150"
+                    st.markdown(f"""
+                        <div style="text-align: center;">
+                            <img src="{img_src}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                            <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em; color: white;">{player_name}</div>
+                            {f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {pd.to_datetime(row["birthday"]).strftime("%d %b")}</div>' if row['birthday'] else ''}
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                with c2:
+                    if has_stats:
+                        # Stats Header
                         st.markdown(f"""
-                        <div style="display: flex; justify-content: center;">
-                            <img src="{img_url or 'https://via.placeholder.com/150'}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 4px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.3);">
+                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #fff500; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s['Rank']}</span>
+                                <span>{' '.join([f"<span class='badge'>{b}</span>" for b in s['Badges']])}</span>
+                            </div>
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                <div><div style="font-size: 0.7em; color: #aaa;">POINTS</div><div style="font-size: 1.2em; font-weight: bold;">{s['Points']}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.2em; font-weight: bold; color: {'#00ff00' if s['Win %'] > 50 else '#ff4444'};">{s['Win %']}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.2em; font-weight: bold;">{s['Wins']}W - {s['Losses']}L</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF</div><div style="font-size: 1.2em; font-weight: bold;">{s['Game Diff Avg']}</div></div>
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
-                    
-                    with col2:
-                        if not p_stats.empty:
-                            s = p_stats.iloc[0]
-                            st.markdown(f"""
-                            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border-left: 5px solid #fff500;">
-                                <h2 style="margin:0; color: #fff500;">{s['Player']}</h2>
-                                <h4 style="margin:5px 0 15px 0; color: #aaa;">Current Rank: {s['Rank']}</h4>
-                                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                                    <div><span style="font-size: 0.8em; color: #aaa;">POINTS</span><br><span style="font-size: 1.5em; font-weight: bold;">{s['Points']}</span></div>
-                                    <div><span style="font-size: 0.8em; color: #aaa;">WIN RATE</span><br><span style="font-size: 1.5em; font-weight: bold; color: {'#00ff00' if s['Win %'] > 50 else '#ff4444'};">{s['Win %']}%</span></div>
-                                    <div><span style="font-size: 0.8em; color: #aaa;">GAME DIFF</span><br><span style="font-size: 1.5em; font-weight: bold;">{s['Game Diff Avg']}</span></div>
-                                </div>
-                                <div style="margin-top: 15px;">
-                                    {' '.join([f"<span class='badge' style='font-size: 0.9em; padding: 4px 8px;'>{b}</span>" for b in s['Badges']])}
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        else:
-                            st.subheader(selected_player)
-                            st.info("Play matches to unlock stats!")
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-
-                # Tabs for Details
-                d_tab1, d_tab2 = st.tabs(["📈 Trends", "🤝 Partners"])
-                
-                with d_tab1:
-                    st.subheader("Performance Trend")
-                    fig = plot_player_performance(selected_player, st.session_state.matches_df)
-                    if fig:
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.info("Not enough match history for trends.")
                         
-                    if not p_stats.empty:
-                        s = p_stats.iloc[0]
-                        m1, m2, m3 = st.columns(3)
-                        m1.metric("Total Matches", s['Matches'])
-                        m2.metric("Wins", s['Wins'])
-                        m3.metric("Losses", s['Losses'])
-
-                with d_tab2:
-                    if selected_player in partner_stats_global:
-                        partners = partner_stats_global[selected_player]
-                        p_data = []
-                        for p_name, p_data_dict in partners.items():
-                            if p_data_dict['matches'] > 0:
-                                p_data.append({
-                                    "Partner": p_name,
-                                    "Matches": p_data_dict['matches'],
-                                    "Win %": round((p_data_dict['wins'] / p_data_dict['matches']) * 100, 1),
-                                    "Game Diff": p_data_dict['game_diff_sum']
-                                })
-                        if p_data:
-                            st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
-                        else:
-                            st.info("No doubles matches recorded.")
+                        # Data Expander (Graph & Partners)
+                        with st.expander("Show Performance Trends & Partners"):
+                            t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
+                            with t1:
+                                fig = plot_player_performance(player_name, st.session_state.matches_df)
+                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
+                                else: st.info("No match history.")
+                            with t2:
+                                if player_name in partner_stats_global:
+                                    partners = partner_stats_global[player_name]
+                                    p_data = []
+                                    for p_name, p_data_dict in partners.items():
+                                        if p_data_dict['matches'] > 0:
+                                            p_data.append({
+                                                "Partner": p_name,
+                                                "Matches": p_data_dict['matches'],
+                                                "Win %": round((p_data_dict['wins'] / p_data_dict['matches']) * 100, 1),
+                                                "Game Diff": p_data_dict['game_diff_sum']
+                                            })
+                                    if p_data:
+                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
+                                    else:
+                                        st.info("No doubles matches.")
+                                else:
+                                    st.info("No partner data.")
                     else:
-                        st.info("No partner data available.")
-
-    # --- Player Directory View ---
-    elif view_mode == "Player Directory":
-        
-        # Sort Controls
-        sort_by = st.radio("Sort By", ["Alphabetical", "Birthday"], horizontal=True)
-        
-        df_dir = st.session_state.players_df.copy()
-        if not df_dir.empty:
-            if sort_by == "Alphabetical":
-                df_dir = df_dir.sort_values("name")
-            else:
-                # Birthday Logic
-                def get_bday_sort_key(d_str):
-                    if not d_str: return (99, 99) # Put empty at end
-                    try:
-                        d = pd.to_datetime(d_str)
-                        return (d.month, d.day)
-                    except: return (99, 99)
+                        st.info("No stats available (Play some matches!)")
                 
-                df_dir['sort_key'] = df_dir['birthday'].apply(get_bday_sort_key)
-                df_dir = df_dir.sort_values('sort_key').drop(columns=['sort_key'])
+                st.divider() 
+    else:
+        st.info("No players found in database.")
 
-            # Display Grid
-            st.markdown("<br>", unsafe_allow_html=True)
-            cols = st.columns(4) # 4 cards per row
-            
-            for i, row in enumerate(df_dir.to_dict('records')):
-                with cols[i % 4]:
-                    # Birthday Display Text
-                    bday_txt = ""
-                    if row['birthday']:
-                        try:
-                            d = pd.to_datetime(row['birthday'])
-                            bday_txt = f"🎂 {d.strftime('%d %b')}"
-                        except: pass
-                    
-                    st.markdown(f"""
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); height: 100%;">
-                        <img src="{row['profile_image_url'] or 'https://via.placeholder.com/80'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #aaa;">
-                        <div style="font-weight: bold; color: white; font-size: 1.1em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{row['name']}</div>
-                        <div style="font-size: 0.8em; color: #ffd700; margin-top: 5px;">{bday_txt}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-        else:
-            st.info("No players found.")
+
+
+
+
+
 # --- Tab 4: Maps ---
 with tabs[3]:
     st.header("Court Locations")
