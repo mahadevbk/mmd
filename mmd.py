@@ -538,6 +538,74 @@ def get_player_trend(player, matches, max_matches=5):
         trend.append(res)
     return ' '.join(trend) if trend else "No matches"
 
+# --- Helper to plot trend ---
+@st.cache_data(ttl=300)
+def plot_player_performance(player_name, matches_df):
+    if matches_df.empty: return None
+    
+    # Filter matches involving the player
+    mask = (matches_df['team1_player1'] == player_name) | (matches_df['team1_player2'] == player_name) | \
+            (matches_df['team2_player1'] == player_name) | (matches_df['team2_player2'] == player_name)
+    df = matches_df[mask].copy()
+    
+    if df.empty: return None
+    
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date')
+    
+    history = []
+    cum_gd = 0
+    matches_count = 0
+    
+    for row in df.itertuples():
+        # Determine side and sets
+        is_t1 = player_name in [row.team1_player1, row.team1_player2]
+        
+        match_gd = 0
+        sets = [row.set1, row.set2, row.set3]
+        for s in sets:
+            if not s: continue
+            s_str = str(s)
+            t1_g, t2_g = 0, 0
+            if "Tie Break" in s_str: 
+                nums = re.findall(r'\d+', s_str)
+                if len(nums) >= 2:
+                    g1, g2 = int(nums[0]), int(nums[1])
+                    if g1 > g2: t1_g, t2_g = 1, 0
+                    else: t1_g, t2_g = 0, 1
+            elif '-' in s_str:
+                try:
+                    p = s_str.split('-')
+                    t1_g, t2_g = int(p[0]), int(p[1])
+                except: pass
+            
+            if is_t1: match_gd += (t1_g - t2_g)
+            else: match_gd += (t2_g - t1_g)
+        
+        cum_gd += match_gd
+        matches_count += 1
+        
+        # Determine Result label
+        w = row.winner
+        res = "Tie"
+        if w == "Team 1": res = "Win" if is_t1 else "Loss"
+        elif w == "Team 2": res = "Win" if not is_t1 else "Loss"
+        
+        history.append({
+            "Date": row.date,
+            "Match": f"Match {matches_count}",
+            "Cumulative Game Diff": cum_gd,
+            "Result": res,
+            "Opponents": f"{row.team2_player1}/{row.team2_player2}" if is_t1 else f"{row.team1_player1}/{row.team1_player2}"
+        })
+        
+    fig = px.line(history, x="Match", y="Cumulative Game Diff", 
+                    hover_data=["Date", "Result", "Opponents"],
+                    title=f"Performance Trend - {player_name}",
+                    markers=True)
+    fig.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
+    return fig
+
 def get_birthday_banner(players_df):
     if players_df.empty: return
     today = datetime.now()
@@ -613,7 +681,7 @@ if not st.session_state.matches_df.empty:
     rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df)
 
 # --- Main Layout ---
-st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", use_container_width=True)
+st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "MMD AI"]
@@ -638,7 +706,7 @@ with tabs[0]:
             st.dataframe(
                 display_rank_df, 
                 hide_index=True, 
-                use_container_width=True,
+                width="stretch",
                 column_config={
                     "Profile": st.column_config.ImageColumn("Profile"),
                 }
@@ -862,73 +930,6 @@ with tabs[1]:
 with tabs[2]:
     st.header("Player Profile")
 
-    # --- Helper to plot trend ---
-    def plot_player_performance(player_name, matches_df):
-        if matches_df.empty: return None
-        
-        # Filter matches involving the player
-        mask = (matches_df['team1_player1'] == player_name) | (matches_df['team1_player2'] == player_name) | \
-               (matches_df['team2_player1'] == player_name) | (matches_df['team2_player2'] == player_name)
-        df = matches_df[mask].copy()
-        
-        if df.empty: return None
-        
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values('date')
-        
-        history = []
-        cum_gd = 0
-        matches_count = 0
-        
-        for row in df.itertuples():
-            # Determine side and sets
-            is_t1 = player_name in [row.team1_player1, row.team1_player2]
-            
-            match_gd = 0
-            sets = [row.set1, row.set2, row.set3]
-            for s in sets:
-                if not s: continue
-                s_str = str(s)
-                t1_g, t2_g = 0, 0
-                if "Tie Break" in s_str: 
-                    nums = re.findall(r'\d+', s_str)
-                    if len(nums) >= 2:
-                        g1, g2 = int(nums[0]), int(nums[1])
-                        if g1 > g2: t1_g, t2_g = 1, 0
-                        else: t1_g, t2_g = 0, 1
-                elif '-' in s_str:
-                    try:
-                        p = s_str.split('-')
-                        t1_g, t2_g = int(p[0]), int(p[1])
-                    except: pass
-                
-                if is_t1: match_gd += (t1_g - t2_g)
-                else: match_gd += (t2_g - t1_g)
-            
-            cum_gd += match_gd
-            matches_count += 1
-            
-            # Determine Result label
-            w = row.winner
-            res = "Tie"
-            if w == "Team 1": res = "Win" if is_t1 else "Loss"
-            elif w == "Team 2": res = "Win" if not is_t1 else "Loss"
-            
-            history.append({
-                "Date": row.date,
-                "Match": f"Match {matches_count}",
-                "Cumulative Game Diff": cum_gd,
-                "Result": res,
-                "Opponents": f"{row.team2_player1}/{row.team2_player2}" if is_t1 else f"{row.team1_player1}/{row.team1_player2}"
-            })
-            
-        fig = px.line(history, x="Match", y="Cumulative Game Diff", 
-                      hover_data=["Date", "Result", "Opponents"],
-                      title=f"Performance Trend - {player_name}",
-                      markers=True)
-        fig.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
-        return fig
-
     # --- Manage Profiles Expander ---
     with st.expander("⚙️ Manage Player Profiles (Add / Edit)"):
         mp_action = st.radio("Action", ["Add New Player", "Edit Existing Player"], horizontal=True)
@@ -1068,7 +1069,7 @@ with tabs[2]:
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
                                 fig = plot_player_performance(player_name, st.session_state.matches_df)
-                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
+                                if fig: st.plotly_chart(fig, width="stretch", key=f"plot_{player_name}_{idx}")
                                 else: st.info("No match history.")
                             with t2:
                                 if player_name in partner_stats_global:
@@ -1083,7 +1084,7 @@ with tabs[2]:
                                                 "Game Diff": p_data_dict['game_diff_sum']
                                             })
                                     if p_data:
-                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
+                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, width="stretch")
                                     else:
                                         st.info("No doubles matches.")
                                 else:
@@ -1143,7 +1144,7 @@ with tabs[4]:
     
     if not st.session_state.bookings_df.empty:
         st.subheader("Upcoming Bookings")
-        st.dataframe(st.session_state.bookings_df[['date', 'time', 'court_name', 'player1', 'player2', 'match_type']], hide_index=True, use_container_width=True)
+        st.dataframe(st.session_state.bookings_df[['date', 'time', 'court_name', 'player1', 'player2', 'match_type']], hide_index=True, width="stretch")
     else:
         st.info("No upcoming bookings.")
 
