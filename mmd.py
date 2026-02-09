@@ -967,7 +967,16 @@ with tabs[0]:
 
 
 
-# --- Tab 2: Matches ---
+
+
+
+
+
+
+
+
+
+
 # --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
@@ -1129,6 +1138,139 @@ with tabs[1]:
             st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+# --- Tab 3: Player Profile ---
+with tabs[2]:
+    st.header("Player Profile")
+
+    # CSS for badge styling
+    st.markdown("""
+        <style>
+        .badge {
+            background: #fff500; color: black; padding: 2px 8px; 
+            border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
+            border-left: 4px solid #fff500; margin-bottom: 10px;
+        }
+        .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
+        .metric-value { font-size: 1.1em; font-weight: bold; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Birthday Helper
+    def parse_bd(val):
+        if pd.isna(val) or not str(val).strip(): return pd.NaT
+        s = str(val).strip()
+        if len(s) <= 5: s += "-2024"
+        return pd.to_datetime(s, dayfirst=True, errors='coerce')
+
+    # --- Manage Profiles ---
+    with st.expander("⚙️ Manage Player Profiles", expanded=False, icon="➡️"):
+        mp_action = st.radio("Action", ["Add New", "Edit Existing"], horizontal=True)
+        with st.form("player_form"):
+            if mp_action == "Add New":
+                n, img, dob, g = st.text_input("Name"), st.text_input("Img URL"), st.date_input("Bday", value=None), st.selectbox("Gender", ["M", "F"])
+                orig_name = None
+            else:
+                names = sorted(st.session_state.players_df['name'].unique())
+                sel = st.selectbox("Select Player", names)
+                curr = st.session_state.players_df[st.session_state.players_df['name'] == sel].iloc[0] if sel else None
+                n = st.text_input("Name", value=curr['name'] if curr is not None else "")
+                img = st.text_input("Img URL", value=curr['profile_image_url'] if curr is not None else "")
+                dob = st.date_input("Bday", value=parse_bd(curr['birthday']) if curr is not None else None)
+                g = st.selectbox("Gender", ["M", "F"], index=0 if curr is not None and curr['gender'] == "M" else 1)
+                orig_name = sel
+            
+            if st.form_submit_button("Save"):
+                if n:
+                    new_e = {"name": n.upper().strip(), "profile_image_url": img, "birthday": dob.strftime("%d/%m/%Y") if dob else None, "gender": g}
+                    if orig_name: st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != orig_name]
+                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_e])], ignore_index=True)
+                    save_players(st.session_state.players_df)
+                    st.success("Saved!"); st.rerun()
+
+    st.divider()
+    sort_opt = st.radio("Sort By", ["Alphabetical", "Birthday"], horizontal=True)
+
+    # --- Process Display ---
+    disp = st.session_state.players_df.copy()
+    disp['dt_birthday'] = disp['birthday'].apply(parse_bd)
+    if sort_opt == "Birthday":
+        disp = disp.dropna(subset=['dt_birthday']).sort_values(['dt_birthday'])
+    else:
+        disp = disp.sort_values("name")
+
+    for idx, row in disp.iterrows():
+        p_name = row['name']
+        p_stats = rank_df[rank_df['Player'] == p_name] if not rank_df.empty else pd.DataFrame()
+        has_stats = not p_stats.empty
+        s = p_stats.iloc[0] if has_stats else {}
+
+        with st.container():
+            c1, c2 = st.columns([1, 3])
+            with c1:
+                img = row['profile_image_url'] or "https://via.placeholder.com/150"
+                bday_str = f"🎂 {row['dt_birthday'].strftime('%d %b')}" if pd.notna(row['dt_birthday']) else ""
+                st.markdown(f"""
+                    <div style="text-align: center;">
+                        <img src="{img}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 3px solid #fff500;">
+                        <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
+                        <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            with c2:
+                if has_stats:
+                    badges_html = "".join([f"<span class='badge'>{b}</span>" for b in s.get('Badges', [])])
+                    st.markdown(f"""
+                    <div class="stat-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s.get('Rank', 'N/A')}</span>
+                            <div>{badges_html}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+                            <div><div class="metric-label">Games Won</div><div class="metric-value">{s.get('Games Won', 0)}</div></div>
+                            <div><div class="metric-label">GD Avg</div><div class="metric-value">{s.get('Game Diff Avg', 0)}</div></div>
+                            <div><div class="metric-label">Clutch</div><div class="metric-value">{s.get('Clutch Factor', 0)}%</div></div>
+                            <div><div class="metric-label">Consistency</div><div class="metric-value">{s.get('Consistency Index', 0)}</div></div>
+                            <div><div class="metric-label">Doubles Perf</div><div class="metric-value" style="color: #00ff00;">{s.get('Doubles Perf', 0)}%</div></div>
+                            <div><div class="metric-label">Singles Perf</div><div class="metric-value" style="color: #00bfff;">{s.get('Singles Perf', 0)}%</div></div>
+                            <div><div class="metric-label">Win %</div><div class="metric-value">{s.get('Win %', 0)}%</div></div>
+                            <div><div class="metric-label">Record</div><div class="metric-value">{s.get('Wins', 0)}W-{s.get('Losses', 0)}L</div></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    with st.expander("Details & Partners", expanded=False, icon="➡️"):
+                        t1, t2 = st.tabs(["Trends", "Partners"])
+                        with t1:
+                            fig = plot_player_performance(p_name, st.session_state.matches_df)
+                            if fig: st.plotly_chart(fig, use_container_width=True, key=f"p_{idx}")
+                        with t2:
+                            if p_name in partner_stats_global:
+                                parts = partner_stats_global[p_name]
+                                p_list = [{"Partner": n, "Win%": round((d['wins']/d['matches'])*100,1), "GD": d['game_diff_sum']} for n, d in parts.items() if d['matches'] > 0]
+                                if p_list: st.dataframe(pd.DataFrame(p_list).sort_values("Win%", ascending=False), hide_index=True)
+                else:
+                    st.info("No match data yet.")
+        st.divider()
+
+
 
 # --- Tab 4: Maps ---
 with tabs[3]:
