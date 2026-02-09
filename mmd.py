@@ -1578,37 +1578,844 @@ with tabs[3]:
     with st.expander("Mudon, AR2 & Other Tennis Courts", expanded=False, icon="➡️"):
         display_courts("", other_courts)
 
+
+
+
+
+
+
+
 # --- Tab 5: Bookings ---
 with tabs[4]:
-    st.header("Court Bookings")
-    
-    with st.expander("📅 Book a Court", expanded=False, icon="➡️"):
-        with st.form("booking_form"):
-            b_date = st.date_input("Date")
-            b_time = st.time_input("Time")
-            b_court = st.selectbox("Court", ["Mira 4 Court 1", "Mira 4 Court 2", "Mira 1", "Town Square"])
-            b_type = st.selectbox("Type", ["Match", "Practice", "Coaching"])
-            bp1 = st.selectbox("Player 1", [""]+sorted(st.session_state.players_df['name'].tolist()))
-            bp2 = st.selectbox("Player 2", [""]+sorted(st.session_state.players_df['name'].tolist()))
+    # --- MATCH UP EXPANDER ---
+    with st.expander("Match up", expanded=False, icon="➡️"):
+        
+        match_type = st.radio("Select Match Type", ["Doubles", "Singles"], horizontal=True)
+
+        if match_type == "Doubles":
+            t1p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="matchup_doubles_t1p1")
+            t1p2 = st.selectbox("Team 1 - Player 2", [""] + available_players, key="matchup_doubles_t1p2")
+            t2p1 = st.selectbox("Team 2 - Player 1", [""] + available_players, key="matchup_doubles_t2p1")
+            t2p2 = st.selectbox("Team 2 - Player 2", [""] + available_players, key="matchup_doubles_t2p2")
+
+            if st.button("Match up", key="btn_matchup_doubles"):
+                st.subheader("Match Odds")
+                players = [t1p1, t1p2, t2p1, t2p2]
+                doubles_rank_df, _ = calculate_rankings(
+                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"]
+                )
+                if all(p in doubles_rank_df["Player"].values for p in players if p):
+                    pairing_text, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
+                    if pairing_text:
+                        st.markdown(pairing_text, unsafe_allow_html=True)
+                        st.write(f"Team 1: {team1_odds:.1f}% | Team 2: {team2_odds:.1f}%")
+                    else:
+                        st.info("No odds available for this combination.")
+                else:
+                    st.info("No odds available (one or more players have no doubles match history).")
+        else:  # Singles
+            p1 = st.selectbox("Player 1", [""] + available_players, key="matchup_singles_p1")
+            p2 = st.selectbox("Player 2", [""] + available_players, key="matchup_singles_p2")
+
+            if st.button("Match up", key="btn_matchup_singles"):
+                st.subheader("Match Odds")
+                if p1 and p2:
+                    singles_rank_df, _ = calculate_rankings(
+                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"]
+                    )
+                    if p1 in singles_rank_df["Player"].values and p2 in singles_rank_df["Player"].values:
+                        odds1, odds2 = suggest_singles_odds([p1, p2], singles_rank_df)
+                        st.write(f"Odds → {p1}: {odds1:.1f}% | {p2}: {odds2:.1f}%")
+                    else:
+                        st.info("No odds available (one or both players have no singles match history).")
+                else:
+                    st.warning("Please select both players.")
+
+    # --- EXISTING BOOKING MANAGEMENT ---
+    load_bookings()
+
+    with st.expander("Add New Booking", expanded=False, icon="➡️"):
+        st.subheader("Add New Booking")
+        match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
+        
+        with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
+            date = st.date_input("Booking Date *", key=f"new_booking_date_{st.session_state.form_key_suffix}")
+            hours = []
+            hours.append(datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:00 AM
+            hours.append(datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:30 AM
+            hours.append(datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 7:30 AM
+            for h in range(7, 22):  # From 7 AM to 9 PM
+                hours.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))
+            time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{st.session_state.form_key_suffix}")
             
-            if st.form_submit_button("Book Court"):
-                new_booking = {
-                    "booking_id": str(uuid.uuid4()),
-                    "date": b_date.strftime("%Y-%m-%d"),
-                    "time": b_time.strftime("%H:%M"),
-                    "match_type": b_type,
-                    "court_name": b_court,
-                    "player1": bp1, "player2": bp2
-                }
-                st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
-                save_bookings(st.session_state.bookings_df)
-                st.success("Booking Added!")
-    
-    if not st.session_state.bookings_df.empty:
-        st.subheader("Upcoming Bookings")
-        st.dataframe(st.session_state.bookings_df[['date', 'time', 'court_name', 'player1', 'player2', 'match_type']], hide_index=True, width="stretch")
+            if match_type == "Doubles":
+                col1, col2 = st.columns(2)
+                with col1:
+                    p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"new_booking_t1p1_{st.session_state.form_key_suffix}")
+                    p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"new_booking_t1p2_{st.session_state.form_key_suffix}")
+                with col2:
+                    p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"new_booking_t2p1_{st.session_state.form_key_suffix}")
+                    p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"new_booking_t2p2_{st.session_state.form_key_suffix}")
+            else:
+                p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"new_booking_s1p1_{st.session_state.form_key_suffix}")
+                p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"new_booking_s1p2_{st.session_state.form_key_suffix}")
+                p2 = ""
+                p4 = ""
+            
+            standby = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"new_booking_standby_{st.session_state.form_key_suffix}")
+            court = st.selectbox("Court Name *", [""] + court_names, key=f"court_{st.session_state.form_key_suffix}")
+            screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_{st.session_state.form_key_suffix}")
+            st.markdown("*Required fields", unsafe_allow_html=True)
+            
+            submit = st.form_submit_button("Add Booking")
+            if submit:
+                if not court:
+                    st.error("Court name is required.")
+                elif not date or not time:
+                    st.error("Booking date and time are required.")
+                else:
+                    selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
+                    if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
+                        st.error("Please select different players for each position.")
+                    else:
+                        booking_id = str(uuid.uuid4())
+                        screenshot_url = upload_image_to_github(screenshot, booking_id, image_type="booking") if screenshot else None
+                        try:
+                            time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M:%S")
+                        except ValueError:
+                            st.error("Invalid time format. Please select a valid time.")
+                            st.rerun()
+                        new_booking = {
+                            "booking_id": booking_id,
+                            "date": date.isoformat(),
+                            "time": time_24hr,
+                            "match_type": match_type,
+                            "court_name": court,
+                            "player1": p1 if p1 else None,
+                            "player2": p2 if p2 else None,
+                            "player3": p3 if p3 else None,
+                            "player4": p4 if p4 else None,
+                            "standby_player": standby if standby else None,
+                            "screenshot_url": screenshot_url
+                        }
+                        st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
+                        try:
+                            expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                            bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
+                            for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+                                bookings_to_save[col] = bookings_to_save[col].replace("", None)
+                            save_bookings(bookings_to_save)
+                            load_bookings()
+                            st.success("Booking added successfully.")
+                            st.session_state.form_key_suffix += 1
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to save booking: {str(e)}")
+                            st.rerun()  
+
+
+    st.markdown("---")
+    st.subheader("📅 Upcoming Bookings")
+    bookings_df = st.session_state.bookings_df.copy()
+    court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
+    if bookings_df.empty:
+        st.info("No upcoming bookings found.")
     else:
-        st.info("No upcoming bookings.")
+        if 'standby_player' not in bookings_df.columns:
+            bookings_df['standby_player'] = ""
+        if 'standby' in bookings_df.columns:
+            bookings_df = bookings_df.drop(columns=['standby'])
+        if 'players' in bookings_df.columns:
+            bookings_df = bookings_df.drop(columns=['players'])
+        
+        # Create datetime column with explicit timezone handling
+        bookings_df['datetime'] = pd.to_datetime(
+            bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
+            errors='coerce',
+            format='%Y-%m-%d %H:%M:%S'
+        ).dt.tz_localize('Asia/Dubai')
+        
+        # Debug: Display datetime values
+        # st.write("Debug - Bookings datetime:", bookings_df[['booking_id', 'date', 'time', 'datetime']])
+        
+        upcoming_bookings = bookings_df[
+            (bookings_df['datetime'].notna()) & 
+            (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
+        ].sort_values('datetime')
+        
+        if upcoming_bookings.empty:
+            st.info("No upcoming bookings found.")
+        else:
+            try:
+                doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
+                singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
+                doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
+                singles_rank_df, _ = calculate_rankings(singles_matches_df)
+            except Exception as e:
+                doubles_rank_df = pd.DataFrame()
+                singles_rank_df = pd.DataFrame()
+                st.warning(f"Unable to load rankings for pairing odds: {str(e)}")
+            
+            for _, row in upcoming_bookings.iterrows():
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+                standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
+                date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+                time_value = str(row['time']).strip()
+            
+                time_ampm = ""
+                if time_value and time_value not in ["NaT", "nan", "None"]:
+                    try:
+                        dt_obj = datetime.strptime(time_value, "%H:%M:%S")
+                        time_ampm = dt_obj.strftime("%I:%M %p").lstrip('0')
+                    except ValueError:
+                        try:
+                            dt_obj = datetime.strptime(time_value, "%H:%M")
+                            time_ampm = dt_obj.strftime("%I:%M %p").lstrip('0')
+                        except ValueError:
+                            time_ampm = "Invalid Time"
+                
+                court_url = court_url_mapping.get(row['court_name'], "#")
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
+            
+                pairing_suggestion = ""
+                plain_suggestion = ""
+                try:
+                    if row['match_type'] == "Doubles" and len(players) == 4:
+                        rank_df = doubles_rank_df
+                        unranked = [p for p in players if p not in rank_df["Player"].values]
+                        if unranked:
+                            styled_unranked = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in unranked])
+                            message = f"Players {styled_unranked} are unranked, therefore no pairing odds available."
+                            pairing_suggestion = f"<div><strong style='color:white;'>Pairing Odds:</strong> {message}</div>"
+                            plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no pairing odds available."
+                        else:
+                            all_pairings = []
+                            player_list = list(players)
+                            seen_pairings = set()
+                            for team1 in combinations(player_list, 2):
+                                team1_set = frozenset(team1)
+                                team2 = tuple(p for p in player_list if p not in team1)
+                                team2_set = frozenset(team2)
+                                pairing_key = frozenset([team1_set, team2_set])
+                                if pairing_key in seen_pairings:
+                                    continue
+                                seen_pairings.add(pairing_key)
+                                team1_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team1)
+                                team2_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team2)
+                                diff = abs(team1_score - team2_score)
+                                odds_team1 = (team1_score / (team1_score + team2_score)) * 100 if team1_score + team2_score > 0 else 50
+                                odds_team2 = 100 - odds_team1
+                                team1_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in team1])
+                                team2_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in team2])
+                                pairing_str = f"{team1_str} vs {team2_str}"
+                                plain_pairing_str = f"{', '.join(team1)} vs {', '.join(team2)}"
+                                all_pairings.append({
+                                    'pairing': pairing_str,
+                                    'plain_pairing': plain_pairing_str,
+                                    'team1_odds': odds_team1,
+                                    'team2_odds': odds_team2,
+                                    'diff': diff
+                                })
+                            all_pairings.sort(key=lambda x: x['diff'])
+                            pairing_suggestion = "<div><strong style='color:white;'>Pairing Combos and Odds:</strong></div>"
+                            plain_suggestion = "*Pairing Combos and Odds:* | "
+                            for idx, pairing in enumerate(all_pairings[:3], 1):
+                                pairing_suggestion += (
+                                    f"<div>Option {idx}: {pairing['pairing']} "
+                                    f"(<span style='font-weight:bold; color:#fff500;'>{pairing['team1_odds']:.1f}%</span> vs "
+                                    f"<span style='font-weight:bold; color:#fff500;'>{pairing['team2_odds']:.1f}%</span>)</div>"
+                                )
+                                plain_suggestion += (
+                                    f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
+                                )
+                            plain_suggestion = plain_suggestion.rstrip(" | ")
+                    elif row['match_type'] == "Doubles" and len(players) < 4:
+                        pairing_suggestion = "<div><strong style='color:white;'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
+                        plain_suggestion = "Not enough players for pairing odds"
+                    elif row['match_type'] == "Singles" and len(players) == 2:
+                        rank_df = singles_rank_df
+                        unranked = [p for p in players if p not in rank_df["Player"].values]
+                        if unranked:
+                            styled_unranked = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in unranked])
+                            message = f"Players {styled_unranked} are unranked, therefore no odds available."
+                            pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {message}</div>"
+                            plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no odds available."
+                        else:
+                            p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
+                            if p1_odds is not None:
+                                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
+                                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                                pairing_suggestion = (
+                                    f"<div><strong style='color:white;'>Odds:</strong> "
+                                    f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+                                )
+                                plain_suggestion = f"Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)"
+                except Exception as e:
+                    pairing_suggestion = f"<div><strong style='color:white;'>Pairing Odds:</strong> Error calculating: {e}</div>"
+                    plain_suggestion = f"Error calculating odds: {str(e)}"
+                
+                # Generate ICS for calendar
+                ics_content, ics_error = generate_ics_for_booking(row, plain_suggestion)
+                calendar_link = ""
+                if ics_content:
+                    encoded_ics = urllib.parse.quote(ics_content)
+                    calendar_link = f'data:text/calendar;charset=utf8,{encoded_ics}'
+                else:
+                    calendar_link = "#"
+                    st.warning(f"Calendar add failed for booking {row['booking_id']}: {ics_error}")
+                
+                weekday = pd.to_datetime(row['date']).strftime('%a')
+                date_part = pd.to_datetime(row['date']).strftime('%d %b')
+                full_date = f"{weekday}, {date_part}, {time_ampm}"
+                court_name = row['court_name']
+                players_list = ", ".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
+                standby_text = f" | STD. BY: *{row['standby_player']}*" if row['standby_player'] else ""
+                
+                share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}* | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
+                encoded_text = urllib.parse.quote(share_text)
+                whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+                
+                booking_text = f"""
+                <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                    <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                    <div><strong>Court:</strong> {court_name_html}</div>
+                    <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                    <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
+                    <div><strong>Players:</strong> {players_str}</div>
+                    <div><strong>Standby Player:</strong> {standby_str}</div>
+                    {pairing_suggestion}
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
+                        </a>
+                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank">
+                            <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Add to Calendar" style="width: 30px; height: 30px;">
+                        </a>
+                    </div>
+                """
+                
+                visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
+                screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
+                if screenshot_url:
+                    visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
+                visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
+                booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
+                players_df = st.session_state.players_df
+                image_urls = []
+                placeholder_initials = []
+                for player_name in booking_players:
+                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                        player_data = players_df[players_df["name"] == player_name]
+                        if not player_data.empty:
+                            img_url = player_data.iloc[0].get("profile_image_url")
+                            if img_url and isinstance(img_url, str) and img_url.strip():
+                                image_urls.append((player_name, img_url))
+                            else:
+                                placeholder_initials.append((player_name, player_name[0].upper()))
+                for player_name, img_url in image_urls:
+                    visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                for player_name, initial in placeholder_initials:
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+                visuals_html += '</div></div>'
+                booking_text += visuals_html + '</div>'
+                
+                try:
+                    st.markdown(booking_text, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
+                    st.markdown(f"""
+                    **Court:** {court_name_html}  
+                    **Date:** {date_str}  
+                    **Time:** {time_ampm}  
+                    **Match Type:** {row['match_type']}  
+                    **Players:** {', '.join(players) if players else 'No players'}  
+                    **Standby Player:** {row.get('standby_player', 'None')}  
+                    {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
+                    """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px;">
+                        </a>
+                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank">
+                            <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Add to Calendar" style="width:30px; height:30px;">
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if screenshot_url:
+                        st.markdown(f"""
+                        <a href="{screenshot_url}" target="_blank">
+                            <img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size">
+                        </a>
+                        """, unsafe_allow_html=True)
+                    if image_urls or placeholder_initials:
+                        cols = st.columns(len(image_urls) + len(placeholder_initials))
+                        col_idx = 0
+                        for player_name, img_url in image_urls:
+                            with cols[col_idx]:
+                                st.image(img_url, width=50, caption=player_name)
+                            col_idx += 1
+                        for player_name, initial in placeholder_initials:
+                            with cols[col_idx]:
+                                st.markdown(f"""
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
+                                <div style='text-align: center;'>{player_name}</div>
+                                """, unsafe_allow_html=True)
+                            col_idx += 1
+    
+    st.markdown("---")
+    
+   
+    
+    
+    
+    
+    
+    #------------new Calendar feature -------------------------------
+
+
+
+
+    
+
+    
+    # Insert this new section right after the "Upcoming Bookings" subheader and before the existing bookings_df processing
+
+
+    
+    
+    st.markdown("---")
+    st.subheader("👥 Player Availability")
+    st.markdown("""
+    *Players can indicate their availability for the next 10 days. This helps in scheduling matches more efficiently.*
+    """)
+    
+    # Define next 10 days
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    next_10_days = [today + timedelta(days=i) for i in range(1, 11)]
+    day_options = [d.strftime("%A, %d %b") for d in next_10_days]
+    date_options = [d.isoformat() for d in next_10_days]
+    
+    # Load availability from Supabase
+    availability_table_name = "availability"
+    expected_columns = ["id", "player_name", "date", "comment"]
+    
+    if 'availability_df' not in st.session_state:
+        try:
+            response = supabase.table(availability_table_name).select("*").execute()
+            df = pd.DataFrame(response.data)
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+            # Ensure id is int if present
+            if 'id' in df.columns:
+                df['id'] = pd.to_numeric(df['id'], errors='coerce').fillna(0).astype(int)
+            # Drop any old columns like 'time_slot' if present
+            if 'time_slot' in df.columns:
+                df = df.drop(columns=['time_slot'])
+            st.session_state.availability_df = df
+        except Exception as e:
+            st.error(f"Error loading availability: {str(e)}")
+            st.session_state.availability_df = pd.DataFrame(columns=expected_columns)
+    
+    def save_availability(availability_df):
+        try:
+            if len(availability_df) == 0:
+                return  # Skip upsert if no data
+            # Select only expected columns
+            availability_df_to_save = availability_df[expected_columns].copy()
+            # Replace NaN with None for JSON compliance
+            availability_df_to_save = availability_df_to_save.where(pd.notna(availability_df_to_save), None)
+            # Ensure id is int
+            if 'id' in availability_df_to_save.columns:
+                availability_df_to_save['id'] = pd.to_numeric(availability_df_to_save['id'], errors='coerce').fillna(0).astype(int)
+            supabase.table(availability_table_name).upsert(availability_df_to_save.to_dict("records")).execute()
+            st.success("Availability updated successfully!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error saving availability: {str(e)}")
+    
+    def delete_availability(player_name, date_str):
+        try:
+            # Delete all entries for player and date
+            supabase.table(availability_table_name).delete().eq("player_name", player_name).eq("date", date_str).execute()
+            st.session_state.availability_df = st.session_state.availability_df[
+                ~((st.session_state.availability_df["player_name"] == player_name) & 
+                  (st.session_state.availability_df["date"] == date_str))
+            ].reset_index(drop=True)
+            save_availability(st.session_state.availability_df)
+        except Exception as e:
+            st.error(f"Error deleting availability: {str(e)}")
+    
+    # Add/Update Availability Form (simplified: one day at a time)
+    with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
+        selected_player = st.selectbox("Select Player", [""] + available_players, key="avail_player")
+        selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
+        if selected_player and selected_day_label:
+            day_date = next_10_days[day_options.index(selected_day_label)]
+            comment_key = f"comment_{selected_day_label.replace(', ', '_')}"
+            comment = st.text_area(
+                f"Comment for {selected_day_label} (e.g., 'free from 7pm onwards')",
+                key=comment_key,
+                help="Describe your availability for this day"
+            )
+            # Show current availability for this day
+            current_row = st.session_state.availability_df[
+                (st.session_state.availability_df["player_name"] == selected_player) &
+                (st.session_state.availability_df["date"] == day_date.isoformat())
+            ]
+            if not current_row.empty:
+                current_comment = current_row.iloc[0].get("comment", "")
+                if current_comment:
+                    st.info(f"Current comment for {selected_day_label}: {current_comment}")
+            
+            col_update, col_clear = st.columns(2)
+            with col_update:
+                if st.button(f"Update Availability for {selected_day_label}", key=f"update_{selected_day_label.replace(', ', '_')}"):
+                    if not comment.strip():
+                        st.warning("Please add a comment to update availability.")
+                    else:
+                        # Remove old entries for this player/day
+                        st.session_state.availability_df = st.session_state.availability_df[
+                            ~((st.session_state.availability_df["player_name"] == selected_player) &
+                              (st.session_state.availability_df["date"] == day_date.isoformat()))
+                        ].reset_index(drop=True)
+                        
+                        # Get next id
+                        next_id = st.session_state.availability_df['id'].max() + 1 if not st.session_state.availability_df.empty else 1
+                        
+                        # Add new entry
+                        new_entry = {
+                            "id": next_id,
+                            "player_name": selected_player,
+                            "date": day_date.isoformat(),
+                            "comment": comment.strip()
+                        }
+                        st.session_state.availability_df = pd.concat([
+                            st.session_state.availability_df,
+                            pd.DataFrame([new_entry])
+                        ], ignore_index=True)
+                        
+                        save_availability(st.session_state.availability_df)
+            
+            with col_clear:
+                if st.button(f"Clear Availability for {selected_day_label}", key=f"clear_{selected_day_label.replace(', ', '_')}"):
+                    delete_availability(selected_player, day_date.isoformat())
+    
+    # Display Availability Overview (Enhanced)
+    st.markdown("---")
+    st.subheader("Upcoming Availability Overview")
+    
+    if st.session_state.availability_df.empty:
+        st.info("No availability entries yet. Add some using the form above!")
+    else:
+        # Filter to next 10 days
+        recent_avail = st.session_state.availability_df[st.session_state.availability_df['date'].isin(date_options)]
+        day_grouped = recent_avail.groupby("date")
+        
+        # Custom CSS for day cards (add to your existing <style> block)
+        st.markdown("""
+        <style>
+        .availability-day-card {
+            background: linear-gradient(to bottom, #031827, #07314f);
+            border: 1px solid #fff500;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 245, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: left;
+        }
+        .availability-day-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 12px rgba(255, 245, 0, 0.4);
+        }
+        .day-header {
+            color: #fff500;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .player-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            background: rgba(255, 245, 0, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #fff500;
+        }
+        .player-name {
+            font-weight: bold;
+            color: #fff500;
+            margin-right: 8px;
+            min-width: 80px;
+        }
+        .player-comment {
+            color: #ffffff;
+            font-size: 0.9em;
+            flex-grow: 1;
+            white-space: pre-line;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Grid: 3 columns for desktop, stack on mobile
+        for i in range(0, len(date_options), 3):
+            cols = st.columns(3)
+            for j, date_str in enumerate(date_options[i:i+3]):
+                with cols[j]:
+                    day_data = day_grouped.get_group(date_str) if date_str in day_grouped.groups else pd.DataFrame()
+                    if day_data.empty:
+                        continue
+                    
+                    day_label = next_10_days[date_options.index(date_str)].strftime("%A, %d %b")
+                    player_comments = {}
+                    for _, row in day_data.iterrows():
+                        player = row['player_name']
+                        if player not in player_comments:
+                            player_comments[player] = row.get('comment', '')
+                    
+                    if player_comments:
+                        # Build HTML card content
+                        players_html = ""
+                        for player, comment in sorted(player_comments.items()):
+                            # For title, replace newlines with ' | ' for better tooltip display
+                            title_attr = comment.replace('\n', ' | ')
+                            players_html += f"""
+                            <div class="player-item">
+                                <span class="player-name">👤 {player}:</span>
+                                <span class="player-comment" title="{title_attr}">{comment}</span>
+                            </div>
+                            """
+                        
+                        card_html = f"""
+                        <div class="availability-day-card">
+                            <div class="day-header">📅 {day_label}</div>
+                            {players_html}
+                        </div>
+                        """
+                        st.html(card_html)
+    
+    # Manage Existing Availability (optional)
+    with st.expander("Manage All Availability", expanded=False, icon="⚙️"):
+        if not st.session_state.availability_df.empty:
+            st.dataframe(st.session_state.availability_df, width="stretch")
+            
+            selected_to_delete = st.multiselect("Select entries to delete (by ID)", 
+                                              st.session_state.availability_df["id"].tolist(),
+                                              key="delete_avail")
+            if st.button("Delete Selected"):
+                for entry_id in selected_to_delete:
+                    # Delete single entry by id
+                    try:
+                        supabase.table(availability_table_name).delete().eq("id", entry_id).execute()
+                        st.session_state.availability_df = st.session_state.availability_df[
+                            st.session_state.availability_df["id"] != entry_id
+                        ].reset_index(drop=True)
+                    except Exception as e:
+                        st.error(f"Error deleting {entry_id}: {str(e)}")
+                save_availability(st.session_state.availability_df)
+        else:
+            st.info("No availability to manage.")
+    
+    st.markdown("---")
+    # Continue with the existing bookings_df processing below this point...
+
+
+
+    
+
+
+
+    
+
+        
+
+    
+
+
+
+
+
+
+    #----------end of new calendar
+    
+    st.subheader("✏️ Manage Existing Booking")
+    if 'edit_booking_key' not in st.session_state:
+        st.session_state.edit_booking_key = 0
+    unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
+
+    if bookings_df.empty:
+        st.info("No bookings available to manage.")
+    else:
+        duplicate_ids = bookings_df[bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
+        if len(duplicate_ids) > 0:
+            st.warning(f"Found duplicate booking_id values: {duplicate_ids.tolist()}. Please remove duplicates in Supabase before editing.")
+        else:
+            booking_options = []
+
+            def format_time_safe(time_str):
+                if not time_str or str(time_str).lower() in ["nat", "nan", "none"]:
+                    return "Unknown Time"
+                t = str(time_str).strip()
+                for fmt in ["%H:%M", "%H:%M:%S"]:
+                    try:
+                        return datetime.strptime(t, fmt).strftime("%I:%M %p").lstrip('0')
+                    except ValueError:
+                        continue
+                return "Unknown Time"
+
+            for _, row in bookings_df.iterrows():
+                date_str = pd.to_datetime(row['date'], errors="coerce").strftime('%A, %d %b') if row['date'] else "Unknown Date"
+                time_ampm = format_time_safe(row['time'])
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players_str = ", ".join(players) if players else "No players"
+                standby_str = row.get('standby_player', "None")
+                desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
+                booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
+
+            selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
+            if selected_booking:
+                booking_id = selected_booking.split(" | Booking ID: ")[-1]
+                booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
+                booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
+
+                with st.expander("Edit Booking Details", expanded=True):
+                    date_edit = st.date_input(
+                        "Booking Date *",
+                        value=pd.to_datetime(booking_row["date"], errors="coerce").date(),
+                        key=f"edit_booking_date_{booking_id}"
+                    )
+
+                    current_time_ampm = format_time_safe(booking_row["time"])
+                    hours = []
+                    hours.append(datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:00 AM
+                    hours.append(datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:30 AM
+                    hours.append(datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 7:30 AM
+                    for h in range(7, 22):  # From 7 AM to 9 PM
+                        hours.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))
+                    time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
+                    time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                    match_type_edit = st.radio("Match Type", ["Doubles", "Singles"],
+                                               index=0 if booking_row["match_type"] == "Doubles" else 1,
+                                               key=f"edit_booking_match_type_{booking_id}")
+
+                    if match_type_edit == "Doubles":
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                                                   key=f"edit_t1p1_{booking_id}")
+                            p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0,
+                                                   key=f"edit_t1p2_{booking_id}")
+                        with col2:
+                            p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                                                   key=f"edit_t2p1_{booking_id}")
+                            p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0,
+                                                   key=f"edit_t2p2_{booking_id}")
+                    else:
+                        p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
+                                               index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                                               key=f"edit_s1p1_{booking_id}")
+                        p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
+                                               index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                                               key=f"edit_s1p2_{booking_id}")
+                        p2_edit = ""
+                        p4_edit = ""
+
+                    standby_initial_index = 0
+                    if "standby_player" in booking_row and booking_row["standby_player"] and booking_row["standby_player"] in available_players:
+                        standby_initial_index = available_players.index(booking_row["standby_player"]) + 1
+
+                    standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players,
+                                                index=standby_initial_index, key=f"edit_standby_{booking_id}")
+                    court_edit = st.selectbox("Court Name *", [""] + court_names,
+                                              index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0,
+                                              key=f"edit_court_{booking_id}")
+                    screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)",
+                                                       type=["jpg", "jpeg", "png", "gif", "bmp", "webp"],
+                                                       key=f"edit_screenshot_{booking_id}")
+                    st.markdown("*Required fields", unsafe_allow_html=True)
+
+                    col_save, col_delete = st.columns(2)
+                    with col_save:
+                        if st.button("Save Changes", key=f"save_booking_changes_{booking_id}"):
+                            if not court_edit:
+                                st.error("Court name is required.")
+                            elif not date_edit or not time_edit:
+                                st.error("Booking date and time are required.")
+                            else:
+                                players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit] if p]
+                                if len(set(players_edit)) != len(players_edit):
+                                    st.error("Please select different players for each position.")
+                                else:
+                                    screenshot_url_edit = booking_row["screenshot_url"]
+                                    if screenshot_edit:
+                                        screenshot_url_edit = upload_image_to_github(screenshot_edit, booking_id, image_type="booking")
+
+                                    time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M:%S")
+                                    updated_booking = {
+                                        "booking_id": booking_id,
+                                        "date": date_edit.isoformat(),
+                                        "time": time_24hr_edit,
+                                        "match_type": match_type_edit,
+                                        "court_name": court_edit,
+                                        "player1": p1_edit if p1_edit else None,
+                                        "player2": p2_edit if p2_edit else None,
+                                        "player3": p3_edit if p3_edit else None,
+                                        "player4": p4_edit if p4_edit else None,
+                                        "standby_player": standby_edit if standby_edit else None,
+                                        "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
+                                    }
+                                    try:
+                                        st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
+                                        expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name',
+                                                            'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                        bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
+                                        for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+                                            bookings_to_save[col] = bookings_to_save[col].replace("", None)
+                                        bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
+                                        save_bookings(bookings_to_save)
+                                        load_bookings()
+                                        st.success("Booking updated successfully.")
+                                        st.session_state.edit_booking_key += 1
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Failed to save booking: {str(e)}")
+                                        st.session_state.edit_booking_key += 1
+                                        st.rerun()
+                    with col_delete:
+                        if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
+                            try:
+                                delete_booking_from_db(booking_id)
+                                load_bookings()
+                                st.success("Booking deleted.")
+                                st.session_state.edit_booking_key += 1
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Failed to delete booking: {str(e)}")
+                                st.session_state.edit_booking_key += 1
+                                st.rerun()
+    st.markdown("---")
+    st.markdown("Odds Calculation Logic process uploaded at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
+
+
+
+
+
+
+
+
+
+
 
 # ...START OF TAB 5 HALL OF FAME -------------------------------------------------------------------------
 with tabs[5]:
