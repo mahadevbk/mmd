@@ -941,29 +941,30 @@ with tabs[0]:
                 badges_str = " ".join([f"<span class='badge'>{b}</span>" for b in row['Badges']]) if row['Badges'] else ""
                 trend_str = get_player_trend(row['Player'], st.session_state.matches_df)
                 
-                # Keep this variable assignment left-aligned to avoid Markdown code-block formatting
+                # row_html must start at the far left of the script to prevent markdown code blocks
                 row_html = f"""
-            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px;">
-                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 10px;">
-                    <div style="font-size: 0.8em; color: #aaa; margin-bottom: 4px;">RANK {row['Rank']}</div>
-                    <img src="{row['Profile'] or 'https://via.placeholder.com/80?text=Player'}" 
-                         style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); margin-bottom: 8px;">
-                    <div style="font-weight: bold; font-size: 1.1em; color: white;">{row['Player']}</div>
-                    <div style="margin-top: 5px;">{badges_str}</div>
+            <div class="ranking-row" style="display: flex; flex-direction: column; align-items: center;">
+                <div class="rank-profile-player-group" style="display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 15px; width: 100%;">
+                    <div class="rank-col" style="margin-right: 15px;">{row['Rank']}</div>
+                    <img src="{row['Profile'] or 'https://via.placeholder.com/80?text=Player'}" class="profile-image">
+                    <div class="player-col" style="text-align: left; margin-left: 15px;">
+                        {row['Player']}
+                        <div style="margin-top: 5px;">{badges_str}</div>
+                    </div>
                 </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%;">
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Points</div><div class="stat-value stat-highlight">{row['Points']}</div></div>
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Win %</div><div class="stat-value">{row['Win %']}%</div></div>
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Record</div><div class="stat-value">{row['Wins']}W - {row['Losses']}L</div></div>
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Games</div><div class="stat-value">{row['Games Won']}</div></div>
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Game Diff</div><div class="stat-value">{row['Game Diff Avg']}</div></div>
-                    <div class="stat-box" style="text-align: center;"><div class="stat-label">Trend</div><div class="stat-value" style="font-family: monospace; letter-spacing: 2px;">{trend_str}</div></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: 100%;">
+                    <div class="stat-box"><div class="stat-label">Points</div><div class="stat-value stat-highlight">{row['Points']}</div></div>
+                    <div class="stat-box"><div class="stat-label">Win %</div><div class="stat-value">{row['Win %']}%</div></div>
+                    <div class="stat-box"><div class="stat-label">Record</div><div class="stat-value">{row['Wins']}W - {row['Losses']}L</div></div>
+                    <div class="stat-box"><div class="stat-label">Games</div><div class="stat-value">{row['Games Won']}</div></div>
+                    <div class="stat-box"><div class="stat-label">Game Diff</div><div class="stat-value">{row['Game Diff Avg']}</div></div>
+                    <div class="stat-box"><div class="stat-label">Trend</div><div class="stat-value" style="font-family: monospace; letter-spacing: 2px;">{trend_str}</div></div>
                 </div>
             </div>
             """
                 st.markdown(row_html, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
-    else:
+                else:
         st.info("No matches recorded yet.")
 
 
