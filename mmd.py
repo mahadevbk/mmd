@@ -1248,7 +1248,9 @@ with tabs[2]:
                 curr = st.session_state.players_df[st.session_state.players_df['name'] == sel].iloc[0] if sel else None
                 n = st.text_input("Name", value=curr['name'] if curr is not None else "")
                 img = st.text_input("Img URL", value=curr['profile_image_url'] if curr is not None else "")
-                dob = st.date_input("Bday", value=parse_bd(curr['birthday']) if curr is not None else None)
+                #dob = st.date_input("Bday", value=parse_bd(curr['birthday']) if curr is not None else None)
+                bd_val = parse_bd(curr['birthday']) if (curr is not None and 'birthday' in curr) else None
+                dob = st.date_input("Bday", value=bd_val)
                 g = st.selectbox("Gender", ["M", "F"], index=0 if curr is not None and curr['gender'] == "M" else 1)
                 orig_name = sel
             
