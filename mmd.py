@@ -1224,7 +1224,7 @@ with tabs[1]:
         names = sorted([n for n in st.session_state.players_df['name'] if n.upper() != 'VISITOR'])
         
         # A. POST MATCH FORM
-        with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
+        
         with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
             # Define available_players
             if "players_df" not in st.session_state or st.session_state.players_df.empty:
