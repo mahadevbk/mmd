@@ -350,6 +350,7 @@ def get_partner_stats_template():
     return defaultdict(get_partner_stats_inner_template)
 
 
+
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
@@ -360,6 +361,7 @@ def calculate_rankings(matches_to_rank):
     # Track performance breakdown
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
 
+    # Prepare gender mapping from the players dataframe
     players_df = st.session_state.players_df
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
@@ -368,29 +370,39 @@ def calculate_rankings(matches_to_rank):
 
     for row in matches_to_rank.itertuples(index=False):
         match_type = row.match_type
-        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and p != "Visitor"]
-        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and p != "Visitor"]
-        if not t1 or not t2: continue
+        
+        # 1. Identify valid players (Excluding Visitors from gender checks and ranking points)
+        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
+        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
+        
+        if not t1 or not t2: 
+            continue
 
+        # 2. AUTOMATED MIXED DOUBLES DETECTION
+        # Criteria: M+F vs M+F strictly. If a Visitor is in the match, t1 or t2 length 
+        # will be less than 2 (since we filtered them above), so it stays 'is_mixed = False'.
         is_mixed = False
-        if match_type == 'Doubles' and len(t1) == 2 and len(t2) == 2:
-            g1 = sorted([gender_map.get(p) for p in t1])
-            g2 = sorted([gender_map.get(p) for p in t2])
-            if g1 == ['F', 'M'] and g2 == ['F', 'M']: is_mixed = True
+        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
+            g1 = sorted([gender_map.get(p, 'U') for p in t1]) # 'U' for Unknown
+            g2 = sorted([gender_map.get(p, 'U') for p in t2])
+            if g1 == ['F', 'M'] and g2 == ['F', 'M']:
+                is_mixed = True
 
         match_gd = 0
         is_clutch = False
         sets = [row.set1, row.set2, row.set3]
         winner_code = row.winner
 
+        # 3. Game and Set Logic
         for s in sets:
-            if not s: continue
+            if not s or str(s).lower() == 'nan': continue
             s_str = str(s)
             t1_g, t2_g = 0, 0
+            
             if "Tie Break" in s_str:
                 is_clutch = True
                 nums = [int(x) for x in re.findall(r'\d+', s_str)]
-                if len(nums) == 2:
+                if len(nums) >= 2:
                     if nums[0] > nums[1]: t1_g, t2_g = 7, 6
                     else: t1_g, t2_g = 6, 7
             elif '-' in s_str:
@@ -410,15 +422,24 @@ def calculate_rankings(matches_to_rank):
                 stats[p]['gd_sum'] -= diff
                 stats[p]['gd_list'].append(-diff)
 
-        if row.set3 and str(row.set3).strip(): is_clutch = True
+        if row.set3 and str(row.set3).strip() and str(row.set3).lower() != 'nan': 
+            is_clutch = True
+        
+        # 4. POINT SYSTEM ASSIGNMENT
+        # Winners: 3 pts (Mixed) or 2 pts (Singles/Standard Doubles)
+        # Losers: Always 1 pt
         w_points = 3 if is_mixed else 2
         
         def update_player_metrics(players, outcome):
             for p in players:
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
-                if match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
-                else: perf_breakdown[p]['doubles_m'] += 1
+                
+                # Logic for performance breakdown tabs
+                if match_type == 'Singles': 
+                    perf_breakdown[p]['singles_m'] += 1
+                else: 
+                    perf_breakdown[p]['doubles_m'] += 1
 
                 if outcome == 'win':
                     scores[p] += w_points
@@ -426,6 +447,7 @@ def calculate_rankings(matches_to_rank):
                     if is_clutch: stats[p]['clutch_wins'] += 1
                     if match_type == 'Singles': perf_breakdown[p]['singles_w'] += 1
                     else: perf_breakdown[p]['doubles_w'] += 1
+                    
                     if current_streaks[p] < 0: current_streaks[p] = 0
                     current_streaks[p] += 1
                 elif outcome == 'loss':
@@ -433,7 +455,7 @@ def calculate_rankings(matches_to_rank):
                     stats[p]['losses'] += 1
                     if current_streaks[p] > 0: current_streaks[p] = 0
                     current_streaks[p] -= 1
-                else:
+                else: # Tie logic
                     scores[p] += 1.5
                     current_streaks[p] = 0
 
@@ -447,8 +469,8 @@ def calculate_rankings(matches_to_rank):
             update_player_metrics(t1, 'tie')
             update_player_metrics(t2, 'tie')
 
-        # Partner Stats
-        if match_type == 'Doubles':
+        # 5. PARTNER STATS (Tracks performance of specific pairings)
+        if match_type in ['Doubles', 'Mixed Doubles']:
             for team, code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
                 if len(team) < 2: continue
                 p1, p2 = team[0], team[1]
@@ -461,6 +483,7 @@ def calculate_rankings(matches_to_rank):
                         ps['wins'] += 1
                     else: ps['losses'] += 1
 
+    # 6. RANKING DATA AGGREGATION
     rank_data = []
     img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
     
@@ -481,16 +504,25 @@ def calculate_rankings(matches_to_rank):
         if current_streaks[p] >= 3: badges.append("🔥 Hot")
         
         rank_data.append({
-            "Player": p, "Points": scores[p], "Win %": round((s['wins']/m_played)*100, 1),
-            "Matches": m_played, "Wins": s['wins'], "Losses": s['losses'],
-            "Games Won": s['games_won'], "Game Diff Avg": round(s['gd_sum']/m_played, 2),
-            "Clutch Factor": round(clutch_pct, 1), "Consistency Index": round(consistency, 2),
-            "Singles Perf": round(s_perf, 1), "Doubles Perf": round(d_perf, 1),
-            "Badges": badges, "Profile": img_map.get(p, "")
+            "Player": p, 
+            "Points": scores[p], 
+            "Win %": round((s['wins']/m_played)*100, 1),
+            "Matches": m_played, 
+            "Wins": s['wins'], 
+            "Losses": s['losses'],
+            "Games Won": s['games_won'], 
+            "Game Diff Avg": round(s['gd_sum']/m_played, 2),
+            "Clutch Factor": round(clutch_pct, 1), 
+            "Consistency Index": round(consistency, 2),
+            "Singles Perf": round(s_perf, 1), 
+            "Doubles Perf": round(d_perf, 1),
+            "Badges": badges, 
+            "Profile": img_map.get(p, "")
         })
         
     df = pd.DataFrame(rank_data)
     if not df.empty:
+        # Sort by primary Points, then secondary Win %
         df = df.sort_values(by=["Points", "Win %"], ascending=[False, False]).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
         
