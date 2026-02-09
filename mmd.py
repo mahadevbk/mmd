@@ -1059,7 +1059,7 @@ with tabs[2]:
         return pd.to_datetime(s, dayfirst=True, errors='coerce')
 
     # --- Manage Profiles ---
-    with st.expander("⚙️ Manage Player Profiles", expanded=False):
+    with st.expander("⚙️ Manage Player Profiles", expanded=False, icon="➡️"):
         mp_action = st.radio("Action", ["Add New", "Edit Existing"], horizontal=True)
         with st.form("player_form"):
             if mp_action == "Add New":
