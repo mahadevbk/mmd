@@ -904,6 +904,7 @@ with tabs[0]:
 
 
 
+
 # --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
@@ -937,11 +938,7 @@ with tabs[1]:
         </style>
     """, unsafe_allow_html=True)
 
-    if not st.session_state.players_df.empty:
-        names = sorted([n for n in st.session_state.players_df['name'] if n != 'Visitor'])
-        
-        # --- [Expander sections for Posting/Editing remain the same as previous] ---
-        # ... (Include your existing expander code here) ...
+    # ... (Your existing code for Post/Edit Match expanders) ...
 
     # --- Match History ---
     st.subheader("History")
@@ -954,9 +951,10 @@ with tabs[1]:
             t1_total, t2_total, sets_count = 0, 0, 0
             display_scores = []
 
-            # Robust Parsing for Math and Display
+            # Loop through sets to calculate totals and format display
             for s in [row.set1, row.set2, row.set3]:
                 if s and str(s).strip():
+                    # Extract the raw numbers (e.g., 7, 5) regardless of text
                     nums = re.findall(r'\d+', str(s))
                     if len(nums) >= 2:
                         g1, g2 = int(nums[0]), int(nums[1])
@@ -964,21 +962,24 @@ with tabs[1]:
                         t2_total += g2
                         sets_count += 1
                         
-                        # Formatting "Tie Break 7-5" into "7-6 (7-5)"
-                        if "Tie Break" in str(s) or (abs(g1-g2) == 1 and (g1 > 5 or g2 > 5)):
-                            display_scores.append(f"7-6 ({g1}-{g2})")
+                        # Formatting Logic
+                        # If the original string contains "Tie Break" or the score is 7-6/6-7
+                        is_tb = "Tie Break" in str(s) or (abs(g1-g2) == 1 and (g1 > 5 or g2 > 5))
+                        
+                        if is_tb:
+                            # Standardizes 7-5 points into the 7-6 (Tie Break 7-5) format
+                            display_scores.append(f"7-6 (Tie Break {g1}-{g2})")
                         else:
                             display_scores.append(f"{g1}-{g2}")
 
-            # Calculate GDA
+            # 1. Match Margin Calculation (Abs difference of total games / sets)
             match_margin = abs(t1_total - t2_total)
             match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
             
-            # Formatting Display Names
+            # 2. Participant Names & Headline Styling
             t1_n = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
             t2_n = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
             
-            # Styled Headline Logic
             name1_html = f"<span class='player-name-bold'>{t1_n}</span>"
             name2_html = f"<span class='player-name-bold'>{t2_n}</span>"
             
@@ -1010,7 +1011,6 @@ with tabs[1]:
             """, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
 
 # --- Tab 3: Player Profile ---
 with tabs[2]:
