@@ -940,7 +940,6 @@ with tabs[2]:
             if mp_action == "Add New Player":
                 mp_name = st.text_input("Player Name (First Name)")
                 mp_img = st.text_input("Profile Image URL")
-                # Use value=None for a clean start
                 mp_dob = st.date_input("Birthday", value=None, min_value=datetime(1960,1,1))
                 mp_gender = st.selectbox("Gender", ["M", "F"])
                 mp_orig_name = None
@@ -955,7 +954,7 @@ with tabs[2]:
                     mp_name = st.text_input("Player Name", value=curr_data['name'])
                     mp_img = st.text_input("Profile Image URL", value=curr_data['profile_image_url'])
                     try:
-                        # Fixed: Use dayfirst=True to read DD/MM/YYYY from Supabase correctly
+                        # Parse existing birthday using dayfirst=True for DD/MM/YYYY support
                         dob_val = pd.to_datetime(curr_data['birthday'], dayfirst=True, errors='coerce') if curr_data['birthday'] else None
                     except: 
                         dob_val = None
@@ -976,7 +975,7 @@ with tabs[2]:
                     new_entry = {
                         "name": mp_name.upper().strip(),
                         "profile_image_url": mp_img,
-                        # Store in DD/MM/YYYY to match your existing Supabase format
+                        # Save in DD/MM/YYYY format to remain consistent with your table
                         "birthday": mp_dob.strftime("%d/%m/%Y") if mp_dob else None,
                         "gender": mp_gender
                     }
@@ -995,19 +994,18 @@ with tabs[2]:
     st.divider()
 
     # --- View Controls ---
-    # Sort Options restored exactly as requested
+    # Restored Sort Options radio button
     sort_option = st.radio("Sort Players By", ["Alphabetical", "Birthday"], horizontal=True)
 
     # --- Prepare Data ---
     display_players = st.session_state.players_df.copy()
-    
-    # Process birthdays for sorting and display using dayfirst=True
+    # Correctly parse birthdays with dayfirst=True for proper sorting and display
     display_players['dt_birthday'] = pd.to_datetime(display_players['birthday'], dayfirst=True, errors='coerce')
     
     if sort_option == "Birthday":
-        # Filter out invalid birthdays for the birthday-specific view
+        # Filter out invalid birthdays for this specific view
         display_players = display_players.dropna(subset=['dt_birthday'])
-        # Sort by Month then Day (chronological within a year)
+        # Sort by Month then Day
         display_players['month'] = display_players['dt_birthday'].dt.month
         display_players['day'] = display_players['dt_birthday'].dt.day
         display_players = display_players.sort_values(['month', 'day'])
@@ -1024,7 +1022,7 @@ with tabs[2]:
             has_stats = not p_stats.empty
             s = p_stats.iloc[0] if has_stats else None
             
-            # Display Birthday on Card
+            # Correctly format Birthday for the card display
             bday_html = ""
             if pd.notna(row['dt_birthday']):
                 bday_html = f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
@@ -1067,7 +1065,7 @@ with tabs[2]:
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
                                 fig = plot_player_performance(player_name, st.session_state.matches_df)
-                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
+                                if fig: st.plotly_chart(fig, width="stretch", key=f"plot_{player_name}_{idx}")
                                 else: st.info("No match history.")
                             with t2:
                                 if player_name in partner_stats_global:
@@ -1082,7 +1080,7 @@ with tabs[2]:
                                                 "Game Diff": p_data_dict['game_diff_sum']
                                             })
                                     if p_data:
-                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
+                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, width="stretch")
                                     else:
                                         st.info("No doubles matches.")
                                 else:
@@ -1096,7 +1094,6 @@ with tabs[2]:
             st.info("No players have valid birthdays listed. Edit player profiles to add birthdays.")
         else:
             st.info("No players found in database.")
-
 
 
 
