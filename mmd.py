@@ -123,7 +123,8 @@ except KeyError:
 PLAYERS_TABLE = "players"
 MATCHES_TABLE = "matches"
 BOOKINGS_TABLE = "bookings"
-HOF_TABLE = "hall_of_fame"
+#HOF_TABLE = "hall_of_fame"
+hall_of_fame_table_name="hall_of_fame"
 AVAILABILITY_TABLE = "availability"
 
 # --- Session State Init ---
