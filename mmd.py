@@ -1078,177 +1078,119 @@ with tabs[1]:
 with tabs[2]:
     st.header("Player Profile")
 
-    # Helper function to parse birthdays (handles '15-10' and 'DD/MM/YYYY')
-    def parse_bd_flex(val):
-        if pd.isna(val) or str(val).strip() == '':
-            return pd.NaT
+    # CSS for badge styling
+    st.markdown("""
+        <style>
+        .badge {
+            background: #fff500; color: black; padding: 2px 8px; 
+            border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
+            border-left: 4px solid #fff500; margin-bottom: 10px;
+        }
+        .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
+        .metric-value { font-size: 1.1em; font-weight: bold; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Birthday Helper
+    def parse_bd(val):
+        if pd.isna(val) or not str(val).strip(): return pd.NaT
         s = str(val).strip()
-        # If the date is short (e.g., '15-10'), append a year so it parses
-        if len(s) <= 5: 
-            s += "-2024" 
+        if len(s) <= 5: s += "-2024"
         return pd.to_datetime(s, dayfirst=True, errors='coerce')
 
-    # --- Manage Profiles Expander ---
-    with st.expander("⚙️ Manage Player Profiles (Add / Edit)", expanded=False, icon="➡️"):
-        mp_action = st.radio("Action", ["Add New Player", "Edit Existing Player"], horizontal=True)
-        
-        with st.form("manage_player_form"):
-            if mp_action == "Add New Player":
-                mp_name = st.text_input("Player Name (First Name)")
-                mp_img = st.text_input("Profile Image URL")
-                mp_dob = st.date_input("Birthday", value=None, min_value=datetime(1960,1,1))
-                mp_gender = st.selectbox("Gender", ["M", "F"])
-                mp_orig_name = None
+    # --- Manage Profiles ---
+    with st.expander("⚙️ Manage Player Profiles", expanded=False):
+        mp_action = st.radio("Action", ["Add New", "Edit Existing"], horizontal=True)
+        with st.form("player_form"):
+            if mp_action == "Add New":
+                n, img, dob, g = st.text_input("Name"), st.text_input("Img URL"), st.date_input("Bday", value=None), st.selectbox("Gender", ["M", "F"])
+                orig_name = None
             else:
-                existing_names = sorted(st.session_state.players_df['name'].unique())
-                mp_name_select = st.selectbox("Select Player", existing_names)
-                
-                # Pre-fill data
-                curr_data = st.session_state.players_df[st.session_state.players_df['name'] == mp_name_select].iloc[0] if mp_name_select else None
-                
-                if curr_data is not None:
-                    mp_name = st.text_input("Player Name", value=curr_data['name'])
-                    mp_img = st.text_input("Profile Image URL", value=curr_data['profile_image_url'])
-                    
-                    # Parse existing birthday for the form
-                    dob_val = parse_bd_flex(curr_data['birthday'])
-                    if pd.isna(dob_val): dob_val = None
-                    
-                    mp_dob = st.date_input("Birthday", value=dob_val, min_value=datetime(1960,1,1))
-                    g_idx = 0 if curr_data['gender'] == "M" else 1
-                    mp_gender = st.selectbox("Gender", ["M", "F"], index=g_idx)
-                    mp_orig_name = mp_name_select
-                else:
-                    mp_name = ""
-                    mp_img = ""
-                    mp_dob = None
-                    mp_gender = "M"
-                    mp_orig_name = None
-
-            if st.form_submit_button("Save Player Profile"):
-                if mp_name:
-                    new_entry = {
-                        "name": mp_name.upper().strip(),
-                        "profile_image_url": mp_img,
-                        "birthday": mp_dob.strftime("%d/%m/%Y") if mp_dob else None,
-                        "gender": mp_gender
-                    }
-                    if mp_orig_name:
-                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != mp_orig_name]
-                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != new_entry['name']]
-                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_entry])], ignore_index=True)
+                names = sorted(st.session_state.players_df['name'].unique())
+                sel = st.selectbox("Select Player", names)
+                curr = st.session_state.players_df[st.session_state.players_df['name'] == sel].iloc[0] if sel else None
+                n = st.text_input("Name", value=curr['name'] if curr is not None else "")
+                img = st.text_input("Img URL", value=curr['profile_image_url'] if curr is not None else "")
+                dob = st.date_input("Bday", value=parse_bd(curr['birthday']) if curr is not None else None)
+                g = st.selectbox("Gender", ["M", "F"], index=0 if curr is not None and curr['gender'] == "M" else 1)
+                orig_name = sel
+            
+            if st.form_submit_button("Save"):
+                if n:
+                    new_e = {"name": n.upper().strip(), "profile_image_url": img, "birthday": dob.strftime("%d/%m/%Y") if dob else None, "gender": g}
+                    if orig_name: st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != orig_name]
+                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_e])], ignore_index=True)
                     save_players(st.session_state.players_df)
-                    st.success(f"Profile for {mp_name} saved!")
-                    st.rerun()
-                else:
-                    st.error("Name is required.")
+                    st.success("Saved!"); st.rerun()
 
     st.divider()
+    sort_opt = st.radio("Sort By", ["Alphabetical", "Birthday"], horizontal=True)
 
-    # --- View Controls ---
-    sort_option = st.radio("Sort Players By", ["Alphabetical", "Birthday"], horizontal=True)
-
-    # --- Prepare Data ---
-    display_players = st.session_state.players_df.copy()
-    display_players['dt_birthday'] = display_players['birthday'].apply(parse_bd_flex)
-    
-    if sort_option == "Birthday":
-        display_players = display_players.dropna(subset=['dt_birthday'])
-        display_players['month'] = display_players['dt_birthday'].dt.month
-        display_players['day'] = display_players['dt_birthday'].dt.day
-        display_players = display_players.sort_values(['month', 'day'])
+    # --- Process Display ---
+    disp = st.session_state.players_df.copy()
+    disp['dt_birthday'] = disp['birthday'].apply(parse_bd)
+    if sort_opt == "Birthday":
+        disp = disp.dropna(subset=['dt_birthday']).sort_values(['dt_birthday'])
     else:
-        display_players = display_players.sort_values("name")
+        disp = disp.sort_values("name")
 
-    # --- Render Player List ---
-    if not display_players.empty:
-        for idx, row in display_players.iterrows():
-            player_name = row['name']
-            p_stats = rank_df[rank_df['Player'] == player_name] if not rank_df.empty else pd.DataFrame()
-            has_stats = not p_stats.empty
-            s = p_stats.iloc[0] if has_stats else None
-            
-            bday_html = ""
-            if pd.notna(row['dt_birthday']):
-                bday_html = f'<div style="color: #ffd700; font-size: 0.9em; margin-top:5px;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
+    for idx, row in disp.iterrows():
+        p_name = row['name']
+        p_stats = rank_df[rank_df['Player'] == p_name] if not rank_df.empty else pd.DataFrame()
+        has_stats = not p_stats.empty
+        s = p_stats.iloc[0] if has_stats else {}
 
-            with st.container():
-                c1, c2 = st.columns([1, 3])
-                with c1:
-                    img_src = row['profile_image_url'] or "https://via.placeholder.com/150"
+        with st.container():
+            c1, c2 = st.columns([1, 3])
+            with c1:
+                img = row['profile_image_url'] or "https://via.placeholder.com/150"
+                bday_str = f"🎂 {row['dt_birthday'].strftime('%d %b')}" if pd.notna(row['dt_birthday']) else ""
+                st.markdown(f"""
+                    <div style="text-align: center;">
+                        <img src="{img}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 3px solid #fff500;">
+                        <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
+                        <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            with c2:
+                if has_stats:
+                    badges_html = "".join([f"<span class='badge'>{b}</span>" for b in s.get('Badges', [])])
                     st.markdown(f"""
-                        <div style="text-align: center;">
-                            <img src="{img_src}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 3px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(255, 245, 0, 0.6);">
-                            <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em; color: white;">{player_name}</div>
-                            {bday_html}
+                    <div class="stat-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s.get('Rank', 'N/A')}</span>
+                            <div>{badges_html}</div>
                         </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+                            <div><div class="metric-label">Games Won</div><div class="metric-value">{s.get('Games Won', 0)}</div></div>
+                            <div><div class="metric-label">GD Avg</div><div class="metric-value">{s.get('Game Diff Avg', 0)}</div></div>
+                            <div><div class="metric-label">Clutch</div><div class="metric-value">{s.get('Clutch Factor', 0)}%</div></div>
+                            <div><div class="metric-label">Consistency</div><div class="metric-value">{s.get('Consistency Index', 0)}</div></div>
+                            <div><div class="metric-label">Doubles Perf</div><div class="metric-value" style="color: #00ff00;">{s.get('Doubles Perf', 0)}%</div></div>
+                            <div><div class="metric-label">Singles Perf</div><div class="metric-value" style="color: #00bfff;">{s.get('Singles Perf', 0)}%</div></div>
+                            <div><div class="metric-label">Win %</div><div class="metric-value">{s.get('Win %', 0)}%</div></div>
+                            <div><div class="metric-label">Record</div><div class="metric-value">{s.get('Wins', 0)}W-{s.get('Losses', 0)}L</div></div>
+                        </div>
+                    </div>
                     """, unsafe_allow_html=True)
-                
-                with c2:
-                    if has_stats:
-                        # Extract metrics safely
-                        g_won = s.get('Games Won', 0)
-                        gd_avg = s.get('Game Diff Avg', 0)
-                        clutch = s.get('Clutch Factor', 0)
-                        consistency = s.get('Consistency Index', 0)
-                        d_perf = s.get('Doubles Perf', 0)
-                        s_perf = s.get('Singles Perf', 0)
-                        win_pct = s.get('Win %', 0)
-                        rec = f"{s.get('Wins', 0)}W-{s.get('Losses', 0)}L"
-                        rank_val = s.get('Rank', 'N/A')
-                        badges = s.get('Badges', [])
-
-                        st.markdown(f"""
-                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #fff500; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                                <span style="color: #fff500; font-weight: bold; font-size: 1.2em;">Rank: {rank_val}</span>
-                                <span>{' '.join([f"<span class='badge'>{b}</span>" for b in badges])}</span>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
-                                <div><div style="font-size: 0.7em; color: #aaa;">GAMES WON</div><div style="font-size: 1.1em; font-weight: bold;">{g_won}</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF AVG</div><div style="font-size: 1.1em; font-weight: bold;">{gd_avg}</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">CLUTCH FACTOR</div><div style="font-size: 1.1em; font-weight: bold;">{clutch}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">CONSISTENCY</div><div style="font-size: 1.1em; font-weight: bold;">{consistency}</div></div>
-                                
-                                <div><div style="font-size: 0.7em; color: #aaa;">DOUBLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00ff00;">{d_perf}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">SINGLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00bfff;">{s_perf}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.1em; font-weight: bold;">{win_pct}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.1em; font-weight: bold;">{rec}</div></div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        with st.expander("Show Performance Trends & Partners", expanded=False, icon="➡️"):
-                            t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
-                            with t1:
-                                fig = plot_player_performance(player_name, st.session_state.matches_df)
-                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
-                                else: st.info("No match history.")
-                            with t2:
-                                if player_name in partner_stats_global:
-                                    partners = partner_stats_global[player_name]
-                                    p_data = []
-                                    for p_name, p_data_dict in partners.items():
-                                        if p_data_dict['matches'] > 0:
-                                            p_data.append({
-                                                "Partner": p_name,
-                                                "Matches": p_data_dict['matches'],
-                                                "Win %": round((p_data_dict['wins'] / p_data_dict['matches']) * 100, 1),
-                                                "Game Diff": p_data_dict['game_diff_sum']
-                                            })
-                                    if p_data:
-                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
-                                    else:
-                                        st.info("No doubles matches.")
-                                else:
-                                    st.info("No partner data.")
-                    else:
-                        st.info("No stats available (Play some matches!)")
-                st.divider() 
-    else:
-        st.info("No players found in database.")
-
+                    
+                    with st.expander("Details & Partners"):
+                        t1, t2 = st.tabs(["Trends", "Partners"])
+                        with t1:
+                            fig = plot_player_performance(p_name, st.session_state.matches_df)
+                            if fig: st.plotly_chart(fig, use_container_width=True, key=f"p_{idx}")
+                        with t2:
+                            if p_name in partner_stats_global:
+                                parts = partner_stats_global[p_name]
+                                p_list = [{"Partner": n, "Win%": round((d['wins']/d['matches'])*100,1), "GD": d['game_diff_sum']} for n, d in parts.items() if d['matches'] > 0]
+                                if p_list: st.dataframe(pd.DataFrame(p_list).sort_values("Win%", ascending=False), hide_index=True)
+                else:
+                    st.info("No match data yet.")
+        st.divider()
 
 
 
