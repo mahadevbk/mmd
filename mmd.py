@@ -906,10 +906,11 @@ with tabs[0]:
 
 
 # --- Tab 2: Matches ---
+# --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
     
-    # CSS for the Match Cards and Optic Yellow text
+    # CSS for the Match Cards, Optic Yellow text, and Grey status
     st.markdown("""
         <style>
         .match-score-container {
@@ -930,15 +931,57 @@ with tabs[1]:
         .player-name-bold {
             color: #CCFF00; /* Optic Yellow */
             font-weight: bold;
+            text-transform: uppercase;
         }
         .status-text-grey {
             color: #888888; /* Grey */
             font-size: 0.9em;
+            font-weight: normal;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # ... (Your existing code for Post/Edit Match expanders) ...
+    if not st.session_state.players_df.empty:
+        names = sorted([n for n in st.session_state.players_df['name'] if n not in ['Visitor', 'VISITOR']])
+        
+        # --- [Expander sections for Posting/Editing] ---
+        with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
+            with st.form("match_form"):
+                mtype = st.radio("Type", ["Doubles", "Singles"])
+                c1, c2 = st.columns(2)
+                if mtype == "Doubles":
+                    t1p1 = c1.selectbox("T1 P1", [""]+names)
+                    t1p2 = c1.selectbox("T1 P2", ["", "Visitor"]+names)
+                    t2p1 = c2.selectbox("T2 P1", [""]+names)
+                    t2p2 = c2.selectbox("T2 P2", ["", "Visitor"]+names)
+                else:
+                    t1p1 = c1.selectbox("P1", [""]+names)
+                    t2p1 = c2.selectbox("P2", [""]+names)
+                    t1p2, t2p2 = None, None
+                
+                date = st.date_input("Date")
+                scores = tennis_scores()
+                s1 = st.selectbox("Set 1", [""]+scores)
+                s2 = st.selectbox("Set 2", [""]+scores)
+                s3 = st.selectbox("Set 3", [""]+scores)
+                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"])
+                img = st.file_uploader("Image", type=["jpg","png"])
+                
+                if st.form_submit_button("Submit"):
+                    mid = generate_match_id(st.session_state.matches_df, pd.to_datetime(date))
+                    url = upload_image_to_github(img, mid) if img else ""
+                    new_match = {
+                        "match_id": mid, "date": date.isoformat(), "match_type": mtype,
+                        "team1_player1": t1p1, "team1_player2": t1p2, "team2_player1": t2p1, "team2_player2": t2p2,
+                        "set1": s1, "set2": s2, "set3": s3, "winner": winner, "match_image_url": url
+                    }
+                    st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                    save_matches(st.session_state.matches_df)
+                    st.success("Saved!"); st.rerun()
+
+        with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
+            # ... (Existing Edit Logic) ...
+            pass
 
     # --- Match History ---
     st.subheader("History")
@@ -951,10 +994,9 @@ with tabs[1]:
             t1_total, t2_total, sets_count = 0, 0, 0
             display_scores = []
 
-            # Loop through sets to calculate totals and format display
+            # 1. Parsing Logic for Math (Handles "Tie Break 7-5" etc.)
             for s in [row.set1, row.set2, row.set3]:
-                if s and str(s).strip():
-                    # Extract the raw numbers (e.g., 7, 5) regardless of text
+                if s and str(s).strip() and str(s).lower() != 'nan':
                     nums = re.findall(r'\d+', str(s))
                     if len(nums) >= 2:
                         g1, g2 = int(nums[0]), int(nums[1])
@@ -962,35 +1004,45 @@ with tabs[1]:
                         t2_total += g2
                         sets_count += 1
                         
-                        # Formatting Logic
-                        # If the original string contains "Tie Break" or the score is 7-6/6-7
+                        # Format for display
                         is_tb = "Tie Break" in str(s) or (abs(g1-g2) == 1 and (g1 > 5 or g2 > 5))
-                        
                         if is_tb:
-                            # Standardizes 7-5 points into the 7-6 (Tie Break 7-5) format
                             display_scores.append(f"7-6 (Tie Break {g1}-{g2})")
                         else:
                             display_scores.append(f"{g1}-{g2}")
 
-            # 1. Match Margin Calculation (Abs difference of total games / sets)
+            # 2. GDA Math
             match_margin = abs(t1_total - t2_total)
             match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
             
-            # 2. Participant Names & Headline Styling
-            t1_n = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
-            t2_n = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
+            # 3. Visitor & Team Name Logic
+            def get_team_html(p1, p2, mtype):
+                # Clean strings
+                p1_str = str(p1).strip() if p1 and str(p1) != 'nan' else ""
+                p2_str = str(p2).strip() if p2 and str(p2) != 'nan' else ""
+                
+                if mtype == "Doubles":
+                    # If one player is missing or labeled 'Visitor', ensure VISITOR is shown
+                    if not p2_str or p2_str.upper() == "VISITOR":
+                        return f"<span class='player-name-bold'>{p1_str} / VISITOR</span>"
+                    if not p1_str or p1_str.upper() == "VISITOR":
+                        return f"<span class='player-name-bold'>VISITOR / {p2_str}</span>"
+                    return f"<span class='player-name-bold'>{p1_str} / {p2_str}</span>"
+                else:
+                    return f"<span class='player-name-bold'>{p1_str}</span>"
+
+            t1_html = get_team_html(row.team1_player1, row.team1_player2, row.match_type)
+            t2_html = get_team_html(row.team2_player1, row.team2_player2, row.match_type)
             
-            name1_html = f"<span class='player-name-bold'>{t1_n}</span>"
-            name2_html = f"<span class='player-name-bold'>{t2_n}</span>"
-            
+            # 4. Headline & Labeling
             if row.winner == "Team 1":
-                headline = f"{name1_html} <span class='status-text-grey'>defeated</span> {name2_html}"
+                headline = f"{t1_html} <span class='status-text-grey'>defeated</span> {t2_html}"
                 gda_text = f"Game Diff Avg (Winner): +{match_gda}"
             elif row.winner == "Team 2":
-                headline = f"{name2_html} <span class='status-text-grey'>defeated</span> {name1_html}"
+                headline = f"{t2_html} <span class='status-text-grey'>defeated</span> {t1_html}"
                 gda_text = f"Game Diff Avg (Winner): +{match_gda}"
             else:
-                headline = f"{name1_html} <span class='status-text-grey'>tied with</span> {name2_html}"
+                headline = f"{t1_html} <span class='status-text-grey'>tied with</span> {t2_html}"
                 gda_text = f"Net Game Margin Avg: +{match_gda}"
 
             score_line = " | ".join(display_scores)
@@ -1011,126 +1063,6 @@ with tabs[1]:
             """, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
-# --- Tab 3: Player Profile ---
-with tabs[2]:
-    st.header("Player Profile")
-
-    # CSS for badge styling
-    st.markdown("""
-        <style>
-        .badge {
-            background: #fff500; color: black; padding: 2px 8px; 
-            border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
-        }
-        .stat-box {
-            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
-            border-left: 4px solid #fff500; margin-bottom: 10px;
-        }
-        .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
-        .metric-value { font-size: 1.1em; font-weight: bold; }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Birthday Helper
-    def parse_bd(val):
-        if pd.isna(val) or not str(val).strip(): return pd.NaT
-        s = str(val).strip()
-        if len(s) <= 5: s += "-2024"
-        return pd.to_datetime(s, dayfirst=True, errors='coerce')
-
-    # --- Manage Profiles ---
-    with st.expander("⚙️ Manage Player Profiles", expanded=False, icon="➡️"):
-        mp_action = st.radio("Action", ["Add New", "Edit Existing"], horizontal=True)
-        with st.form("player_form"):
-            if mp_action == "Add New":
-                n, img, dob, g = st.text_input("Name"), st.text_input("Img URL"), st.date_input("Bday", value=None), st.selectbox("Gender", ["M", "F"])
-                orig_name = None
-            else:
-                names = sorted(st.session_state.players_df['name'].unique())
-                sel = st.selectbox("Select Player", names)
-                curr = st.session_state.players_df[st.session_state.players_df['name'] == sel].iloc[0] if sel else None
-                n = st.text_input("Name", value=curr['name'] if curr is not None else "")
-                img = st.text_input("Img URL", value=curr['profile_image_url'] if curr is not None else "")
-                dob = st.date_input("Bday", value=parse_bd(curr['birthday']) if curr is not None else None)
-                g = st.selectbox("Gender", ["M", "F"], index=0 if curr is not None and curr['gender'] == "M" else 1)
-                orig_name = sel
-            
-            if st.form_submit_button("Save"):
-                if n:
-                    new_e = {"name": n.upper().strip(), "profile_image_url": img, "birthday": dob.strftime("%d/%m/%Y") if dob else None, "gender": g}
-                    if orig_name: st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != orig_name]
-                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_e])], ignore_index=True)
-                    save_players(st.session_state.players_df)
-                    st.success("Saved!"); st.rerun()
-
-    st.divider()
-    sort_opt = st.radio("Sort By", ["Alphabetical", "Birthday"], horizontal=True)
-
-    # --- Process Display ---
-    disp = st.session_state.players_df.copy()
-    disp['dt_birthday'] = disp['birthday'].apply(parse_bd)
-    if sort_opt == "Birthday":
-        disp = disp.dropna(subset=['dt_birthday']).sort_values(['dt_birthday'])
-    else:
-        disp = disp.sort_values("name")
-
-    for idx, row in disp.iterrows():
-        p_name = row['name']
-        p_stats = rank_df[rank_df['Player'] == p_name] if not rank_df.empty else pd.DataFrame()
-        has_stats = not p_stats.empty
-        s = p_stats.iloc[0] if has_stats else {}
-
-        with st.container():
-            c1, c2 = st.columns([1, 3])
-            with c1:
-                img = row['profile_image_url'] or "https://via.placeholder.com/150"
-                bday_str = f"🎂 {row['dt_birthday'].strftime('%d %b')}" if pd.notna(row['dt_birthday']) else ""
-                st.markdown(f"""
-                    <div style="text-align: center;">
-                        <img src="{img}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 3px solid #fff500;">
-                        <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
-                        <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            with c2:
-                if has_stats:
-                    badges_html = "".join([f"<span class='badge'>{b}</span>" for b in s.get('Badges', [])])
-                    st.markdown(f"""
-                    <div class="stat-box">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s.get('Rank', 'N/A')}</span>
-                            <div>{badges_html}</div>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
-                            <div><div class="metric-label">Games Won</div><div class="metric-value">{s.get('Games Won', 0)}</div></div>
-                            <div><div class="metric-label">GD Avg</div><div class="metric-value">{s.get('Game Diff Avg', 0)}</div></div>
-                            <div><div class="metric-label">Clutch</div><div class="metric-value">{s.get('Clutch Factor', 0)}%</div></div>
-                            <div><div class="metric-label">Consistency</div><div class="metric-value">{s.get('Consistency Index', 0)}</div></div>
-                            <div><div class="metric-label">Doubles Perf</div><div class="metric-value" style="color: #00ff00;">{s.get('Doubles Perf', 0)}%</div></div>
-                            <div><div class="metric-label">Singles Perf</div><div class="metric-value" style="color: #00bfff;">{s.get('Singles Perf', 0)}%</div></div>
-                            <div><div class="metric-label">Win %</div><div class="metric-value">{s.get('Win %', 0)}%</div></div>
-                            <div><div class="metric-label">Record</div><div class="metric-value">{s.get('Wins', 0)}W-{s.get('Losses', 0)}L</div></div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    with st.expander("Details & Partners", expanded=False, icon="➡️"):
-                        t1, t2 = st.tabs(["Trends", "Partners"])
-                        with t1:
-                            fig = plot_player_performance(p_name, st.session_state.matches_df)
-                            if fig: st.plotly_chart(fig, use_container_width=True, key=f"p_{idx}")
-                        with t2:
-                            if p_name in partner_stats_global:
-                                parts = partner_stats_global[p_name]
-                                p_list = [{"Partner": n, "Win%": round((d['wins']/d['matches'])*100,1), "GD": d['game_diff_sum']} for n, d in parts.items() if d['matches'] > 0]
-                                if p_list: st.dataframe(pd.DataFrame(p_list).sort_values("Win%", ascending=False), hide_index=True)
-                else:
-                    st.info("No match data yet.")
-        st.divider()
-
-
 
 
 
