@@ -932,6 +932,17 @@ with tabs[1]:
 with tabs[2]:
     st.header("Player Profile")
 
+    # Helper function to parse birthdays (handles '15-10' and 'DD/MM/YYYY')
+    def parse_bd_flex(val):
+        if pd.isna(val) or str(val).strip() == '':
+            return pd.NaT
+        s = str(val).strip()
+        # If the date is short (e.g., '15-10' or '5-11'), append a leap year so it parses correctly
+        if len(s) <= 5: 
+            s += "-2024" # Use 2024 to handle Feb 29th if needed
+        # Parse with dayfirst=True to handle DD-MM-YYYY or DD/MM/YYYY
+        return pd.to_datetime(s, dayfirst=True, errors='coerce')
+
     # --- Manage Profiles Expander ---
     with st.expander("⚙️ Manage Player Profiles (Add / Edit)", expanded=False, icon="➡️"):
         mp_action = st.radio("Action", ["Add New Player", "Edit Existing Player"], horizontal=True)
@@ -953,11 +964,11 @@ with tabs[2]:
                 if curr_data is not None:
                     mp_name = st.text_input("Player Name", value=curr_data['name'])
                     mp_img = st.text_input("Profile Image URL", value=curr_data['profile_image_url'])
-                    try:
-                        # Parse existing birthday using dayfirst=True for DD/MM/YYYY support
-                        dob_val = pd.to_datetime(curr_data['birthday'], dayfirst=True, errors='coerce') if curr_data['birthday'] else None
-                    except: 
-                        dob_val = None
+                    
+                    # Parse existing birthday for the form
+                    dob_val = parse_bd_flex(curr_data['birthday'])
+                    if pd.isna(dob_val): dob_val = None
+                    
                     mp_dob = st.date_input("Birthday", value=dob_val, min_value=datetime(1960,1,1))
                     g_idx = 0 if curr_data['gender'] == "M" else 1
                     mp_gender = st.selectbox("Gender", ["M", "F"], index=g_idx)
@@ -975,7 +986,7 @@ with tabs[2]:
                     new_entry = {
                         "name": mp_name.upper().strip(),
                         "profile_image_url": mp_img,
-                        # Save in DD/MM/YYYY format to remain consistent with your table
+                        # Save as full date DD/MM/YYYY to standardize future reads
                         "birthday": mp_dob.strftime("%d/%m/%Y") if mp_dob else None,
                         "gender": mp_gender
                     }
@@ -994,16 +1005,16 @@ with tabs[2]:
     st.divider()
 
     # --- View Controls ---
-    # Restored Sort Options radio button
     sort_option = st.radio("Sort Players By", ["Alphabetical", "Birthday"], horizontal=True)
 
     # --- Prepare Data ---
     display_players = st.session_state.players_df.copy()
-    # Correctly parse birthdays with dayfirst=True for proper sorting and display
-    display_players['dt_birthday'] = pd.to_datetime(display_players['birthday'], dayfirst=True, errors='coerce')
+    
+    # Create a temporary column for proper sorting/display using our robust parser
+    display_players['dt_birthday'] = display_players['birthday'].apply(parse_bd_flex)
     
     if sort_option == "Birthday":
-        # Filter out invalid birthdays for this specific view
+        # Filter out invalid birthdays for this view
         display_players = display_players.dropna(subset=['dt_birthday'])
         # Sort by Month then Day
         display_players['month'] = display_players['dt_birthday'].dt.month
@@ -1022,10 +1033,10 @@ with tabs[2]:
             has_stats = not p_stats.empty
             s = p_stats.iloc[0] if has_stats else None
             
-            # Correctly format Birthday for the card display
+            # Format Birthday Display (e.g., "15 Oct")
             bday_html = ""
             if pd.notna(row['dt_birthday']):
-                bday_html = f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
+                bday_html = f'<div style="color: #ffd700; font-size: 0.9em; margin-top:5px;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
 
             # Card Container
             with st.container():
@@ -1065,7 +1076,7 @@ with tabs[2]:
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
                                 fig = plot_player_performance(player_name, st.session_state.matches_df)
-                                if fig: st.plotly_chart(fig, width="stretch", key=f"plot_{player_name}_{idx}")
+                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
                                 else: st.info("No match history.")
                             with t2:
                                 if player_name in partner_stats_global:
@@ -1080,7 +1091,7 @@ with tabs[2]:
                                                 "Game Diff": p_data_dict['game_diff_sum']
                                             })
                                     if p_data:
-                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, width="stretch")
+                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
                                     else:
                                         st.info("No doubles matches.")
                                 else:
@@ -1094,8 +1105,6 @@ with tabs[2]:
             st.info("No players have valid birthdays listed. Edit player profiles to add birthdays.")
         else:
             st.info("No players found in database.")
-
-
 
 
 
