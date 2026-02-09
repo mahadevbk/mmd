@@ -1224,163 +1224,131 @@ with tabs[1]:
         names = sorted([n for n in st.session_state.players_df['name'] if n.upper() != 'VISITOR'])
         
         # A. POST MATCH FORM
-        
+                
         with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
-            # Define available_players
+            # 1. Setup Player Lists
             if "players_df" not in st.session_state or st.session_state.players_df.empty:
                 st.warning("No players available. Please add players in the Player Profile tab.")
-                available_players = []
-            else:
-                # Get base list of names
-                permanent_names = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"])
-                available_players = permanent_names
-        
-            # Stop if no players are available
-            if not available_players:
                 st.stop()
             
-            match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, horizontal=True)
+            permanent_names = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"])
             
-            # Players selection based on type
-            if match_type == "Doubles":
-                # For Doubles, we allow ONE Visitor
-                available_with_visitor = sorted(permanent_names + ["Visitor"])
-                col1, col2 = st.columns(2)
+            # 2. Match Type Selection
+            m_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, horizontal=True)
+            m_date = st.date_input("Match Date *", datetime.now())
+        
+            # 3. Dynamic Player Selection Layout
+            col1, col2 = st.columns(2)
+            if m_type == "Doubles":
+                # Include Visitor for Doubles
+                doubles_options = [""] + permanent_names + ["Visitor"]
                 with col1:
-                    t1p1 = st.selectbox("Team 1 - Player 1 *", [""] + available_with_visitor, key="t1p1_doubles")
-                    t1p2 = st.selectbox("Team 1 - Player 2 *", [""] + available_with_visitor, key="t1p2_doubles")
+                    st.markdown("**Team 1**")
+                    t1p1 = st.selectbox("Player 1 *", doubles_options, key="d_t1p1")
+                    t1p2 = st.selectbox("Player 2 *", doubles_options, key="d_t1p2")
                 with col2:
-                    t2p1 = st.selectbox("Team 2 - Player 1 *", [""] + available_with_visitor, key="t2p1_doubles")
-                    t2p2 = st.selectbox("Team 2 - Player 2 *", [""] + available_with_visitor, key="t2p2_doubles")
-                p1, p2 = "", ""
-            else:  # Singles
-                # For Singles, "Visitor" is NOT added to available_options
-                col1, col2 = st.columns(2)
-                with col1:
-                    p1 = st.selectbox("Player 1 *", [""] + available_players, key="p1_singles")
-                with col2:
-                    p2 = st.selectbox("Player 2 *", [""] + available_players, key="p2_singles")
-                t1p1, t1p2, t2p1, t2p2 = p1, "", p2, ""
-            
-            # Date input
-            date = st.date_input("Match Date *")
-            
-            # Score inputs
-            set1 = st.selectbox("Set 1 Score *", [""] + tennis_scores(), key="set1")
-            set2 = st.selectbox("Set 2 Score (optional for Singles, required for Doubles)", [""] + tennis_scores(), key="set2")
-            set3 = st.selectbox("Set 3 (Optional)", [""] + tennis_scores(), key="set3")
-            
-            # Winner selection
-            if match_type == "Doubles":
-                selected_players = [t1p1, t1p2, t2p1, t2p2]
-                winner_options = ["Team 1", "Team 2", "Tie"]
+                    st.markdown("**Team 2**")
+                    t2p1 = st.selectbox("Player 1 *", doubles_options, key="d_t2p1")
+                    t2p2 = st.selectbox("Player 2 *", doubles_options, key="d_t2p2")
             else:
-                selected_players = [p1, p2]
-                winner_options = ["Player 1", "Player 2", "Tie"]
+                # No Visitor for Singles
+                singles_options = [""] + permanent_names
+                with col1:
+                    st.markdown("**Player 1 (Team 1)**")
+                    t1p1 = st.selectbox("Select Name *", singles_options, key="s_t1p1")
+                    t1p2 = ""
+                with col2:
+                    st.markdown("**Player 2 (Team 2)**")
+                    t2p1 = st.selectbox("Select Name *", singles_options, key="s_t2p1")
+                    t2p2 = ""
+        
+            st.markdown("---")
             
-            winner = st.selectbox("Winner *", winner_options, key="winner_sel")
+            # 4. Scores and Winner Selection
+            sc1, sc2, sc3 = st.columns(3)
+            s1 = sc1.selectbox("Set 1 Score *", [""] + tennis_scores(), key="match_s1")
+            s2 = sc2.selectbox("Set 2 Score", [""] + tennis_scores(), key="match_s2")
+            s3 = sc3.selectbox("Set 3 Score", [""] + tennis_scores(), key="match_s3")
             
-            # Map singles winner to team format
-            final_winner = winner
-            if match_type == "Singles":
-                if winner == "Player 1": final_winner = "Team 1"
-                elif winner == "Player 2": final_winner = "Team 2"
-            
-            match_image = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"], key="match_image_up")
-            
-            # Validation and Submission Form
-            with st.form(key=f"add_match_form_{st.session_state.get('form_key_suffix', 0)}"):
-                submit = st.form_submit_button("Post Match")
-                if submit:
-                    current_time = time.time()
-                    last_submit = st.session_state.get('last_match_submit_time', 0)
+            winner_selection = st.radio("Select Winner *", ["Team 1", "Team 2", "Tie"], horizontal=True)
+            match_img = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"])
+        
+            # 5. Form Submission & Validation Logic
+            if st.button("🚀 Post Match Result"):
+                valid = True
+                error_msg = ""
+                
+                # --- A. Basic Field Validation ---
+                selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
+                visitor_count = sum(1 for p in selected_players if p == "Visitor")
+                
+                if not s1:
+                    st.error("Set 1 score is required.")
+                    valid = False
+                elif not match_img:
+                    st.error("A match photo is required.")
+                    valid = False
+                elif m_type == "Doubles" and (len(selected_players) < 4 or not s2):
+                    st.error("Doubles requires 4 players and at least 2 sets.")
+                    valid = False
+                elif m_type == "Doubles" and visitor_count > 1:
+                    st.error("Invalid: Only ONE Visitor allowed in Doubles.")
+                    valid = False
+                elif m_type == "Singles" and len(selected_players) < 2:
+                    st.error("Singles requires 2 players.")
+                    valid = False
+                
+                # --- B. Winner vs Score Cross-Check Logic ---
+                if valid:
+                    t1_sets = 0
+                    t2_sets = 0
+                    active_sets = [s for s in [s1, s2, s3] if s]
                     
-                    # 1. Debounce Check
-                    if current_time - last_submit < 5:
-                        st.warning("Processing previous submission...")
-                    else:
-                        st.session_state.last_match_submit_time = current_time
-                        valid = True
+                    for score_str in active_sets:
+                        try:
+                            # Handle "Tie Break 10-8" or "6-4"
+                            nums = [int(n) for n in re.findall(r'\d+', score_str)]
+                            if len(nums) >= 2:
+                                if nums[0] > nums[1]: t1_sets += 1
+                                elif nums[1] > nums[0]: t2_sets += 1
+                        except:
+                            continue
+                    
+                    # Determine Mathematical Winner
+                    math_winner = "Tie"
+                    if t1_sets > t2_sets: math_winner = "Team 1"
+                    elif t2_sets > t1_sets: math_winner = "Team 2"
+                    
+                    # --- C. Final Cross-Check Flag ---
+                    if winner_selection != math_winner:
+                        valid = False
+                        if math_winner == "Tie":
+                            st.error(f"❌ Score Mismatch: Sets are split ({t1_sets}-{t2_sets}). You must select 'Tie' as the winner.")
+                        else:
+                            st.error(f"❌ Score Mismatch: Based on the scores, {math_winner} won {max(t1_sets, t2_sets)} sets. Please correct the winner selection or the scores.")
+        
+                # --- D. Final Execution ---
+                if valid:
+                    with st.spinner("Uploading and saving..."):
+                        mid = generate_match_id(st.session_state.matches_df, datetime.combine(m_date, datetime.min.time()))
+                        img_url = upload_image_to_github(match_img, mid, "match")
                         
-                        # Filter out empty strings for counting
-                        actual_players = [p for p in selected_players if p != ""]
-                        visitor_count = sum(1 for p in actual_players if p == "Visitor")
-        
-                        # 2. Basic Validation
-                        if not match_image:
-                            st.error("A match photo is required.")
-                            valid = False
-                        elif match_type == "Doubles":
-                            if len(actual_players) < 4 or not set1 or not set2:
-                                st.error("For Doubles: 4 players, Set 1, and Set 2 are required.")
-                                valid = False
-                            elif visitor_count > 1:
-                                st.error("Only one Visitor is allowed per Doubles match (3+1 rule).")
-                                valid = False
-                            elif len(set(actual_players)) != len(actual_players) and visitor_count <= 1:
-                                st.error("Duplicate permanent players selected.")
-                                valid = False
-                        else: # Singles
-                            if len(actual_players) < 2 or not set1:
-                                st.error("For Singles: 2 players and Set 1 are required.")
-                                valid = False
-                            elif p1 == p2:
-                                st.error("Select different players.")
-                                valid = False
-        
-                        # 3. Score-winner consistency (Your original logic)
-                        if valid:
-                            team1_sets = 0
-                            team2_sets = 0
-                            valid_sets = [s for s in [set1, set2, set3] if s]
-                            for score in valid_sets:
-                                try:
-                                    if "Tie Break" in score:
-                                        nums = [int(s) for s in re.findall(r'\d+', score)]
-                                        t1, t2 = nums[0], nums[1]
-                                    else:
-                                        t1, t2 = map(int, score.split("-"))
-                                    if t1 > t2: team1_sets += 1
-                                    elif t2 > t1: team2_sets += 1
-                                except:
-                                    valid = False
-                            
-                            if valid:
-                                if team1_sets > team2_sets and final_winner != "Team 1":
-                                    st.error("Score suggests Team 1/Player 1 won.")
-                                    valid = False
-                                elif team2_sets > team1_sets and final_winner != "Team 2":
-                                    st.error("Score suggests Team 2/Player 2 won.")
-                                    valid = False
-        
-                        # 4. Save Match
-                        if valid:
-                            try:
-                                match_id = generate_match_id(st.session_state.matches_df, datetime.combine(date, datetime.min.time()))
-                                image_url = upload_image_to_github(match_image, match_id, "match")
-                                
-                                new_match = {
-                                    "match_id": match_id,
-                                    "date": date.strftime('%Y-%m-%d'),
-                                    "match_type": match_type,
-                                    "team1_player1": t1p1,
-                                    "team1_player2": t1p2,
-                                    "team2_player1": t2p1,
-                                    "team2_player2": t2p2,
-                                    "set1": set1, "set2": set2 if set2 else "", "set3": set3 if set3 else "",
-                                    "winner": final_winner,
-                                    "match_image_url": image_url
-                                }
-                                
-                                st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
-                                save_matches(st.session_state.matches_df)
-                                st.success("Match posted successfully!")
-                                st.balloons()
-                                st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
-                                time.sleep(1)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error: {e}")       
+                        new_match = {
+                            "match_id": mid,
+                            "date": m_date.strftime('%Y-%m-%d'),
+                            "match_type": m_type,
+                            "team1_player1": t1p1, "team1_player2": t1p2,
+                            "team2_player1": t2p1, "team2_player2": t2p2,
+                            "set1": s1, "set2": s2 if s2 else "", "set3": s3 if s3 else "",
+                            "winner": winner_selection, "match_image_url": img_url
+                        }
+                        
+                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                        save_matches(st.session_state.matches_df)
+                        st.success("Match verified and saved!")
+                        st.balloons()
+                        time.sleep(1)
+                        st.rerun()     
 
 
         # B. EDIT MATCH FORM (Fixed AttributeError & Timestamp error)
