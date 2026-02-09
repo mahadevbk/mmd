@@ -1037,18 +1037,33 @@ with tabs[1]:
                     except: continue
 
             # 2. Logic for GDA Label and Value
-            if row.winner == "Team 1":
-                diff = t1_games - t2_games
-                gda_label = "Game Diff Avg (Winner)"
-            elif row.winner == "Team 2":
-                diff = t2_games - t1_games
-                gda_label = "Game Diff Avg (Winner)"
+            # --- Logic for GDA Calculation (Place this inside your loop) ---
+            
+            t1_games = 0
+            t2_games = 0
+            sets_played = 0
+            
+            for s in [row.set1, row.set2, row.set3]:
+                if s and "-" in str(s):
+                    try:
+                        # Strip tie-break points like (5)
+                        clean_s = str(s).split('(')[0].strip()
+                        parts = clean_s.split('-')
+                        t1_games += int(parts[0])
+                        t2_games += int(parts[1])
+                        sets_played += 1
+                    except:
+                        continue
+            
+            # Calculate the net difference
+            net_diff = abs(t1_games - t2_games)
+            match_gda = round(net_diff / sets_played, 2) if sets_played > 0 else 0
+            
+            # Set the Label
+            if row.winner == "Tie":
+                gda_label = f"Net Game Margin Avg: +{match_gda}"
             else:
-                # If it's a tie, we show the absolute game spread
-                diff = abs(t1_games - t2_games)
-                gda_label = "Game Diff Avg"
-
-            match_gda = round(diff / sets_played, 2) if sets_played > 0 else 0
+                gda_label = f"Game Diff Avg (Winner): +{match_gda}"
             
             # Formatting Display
             t1_display = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
