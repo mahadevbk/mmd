@@ -1201,18 +1201,24 @@ with tabs[2]:
                 
                 with c2:
                     if has_stats:
-                        # Stats Header
+                        # Stats Grid with Metrics (Games Won, GD Avg, Clutch, Consistency, Doubles, Singles)
                         st.markdown(f"""
                         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #fff500; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s['Rank']}</span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                                <span style="color: #fff500; font-weight: bold; font-size: 1.2em;">Rank: {s['Rank']}</span>
                                 <span>{' '.join([f"<span class='badge'>{b}</span>" for b in s['Badges']])}</span>
                             </div>
-                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                                <div><div style="font-size: 0.7em; color: #aaa;">POINTS</div><div style="font-size: 1.2em; font-weight: bold;">{s['Points']}</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.2em; font-weight: bold; color: {'#00ff00' if s['Win %'] > 50 else '#ff4444'};">{s['Win %']}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.2em; font-weight: bold;">{s['Wins']}W - {s['Losses']}L</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF</div><div style="font-size: 1.2em; font-weight: bold;">{s['Game Diff Avg']}</div></div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+                                <div><div style="font-size: 0.7em; color: #aaa;">GAMES WON</div><div style="font-size: 1.1em; font-weight: bold;">{s['Games Won']}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF AVG</div><div style="font-size: 1.1em; font-weight: bold;">{s['Game Diff Avg']}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">CLUTCH FACTOR</div><div style="font-size: 1.1em; font-weight: bold;">{s['Clutch Factor']}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">CONSISTENCY</div><div style="font-size: 1.1em; font-weight: bold;">{s['Consistency Index']}</div></div>
+                                
+                                <div><div style="font-size: 0.7em; color: #aaa;">DOUBLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00ff00;">{s['Doubles Perf']}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">SINGLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00bfff;">{s['Singles Perf']}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.1em; font-weight: bold;">{s['Win %']}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.1em; font-weight: bold;">{s['Wins']}W-{s['Losses']}L</div></div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1251,7 +1257,6 @@ with tabs[2]:
             st.info("No players have valid birthdays listed. Edit player profiles to add birthdays.")
         else:
             st.info("No players found in database.")
-
 
 
 # --- Tab 4: Maps ---
