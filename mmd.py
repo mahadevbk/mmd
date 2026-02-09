@@ -928,6 +928,8 @@ with tabs[1]:
         st.info("No matches recorded yet.")
 
 # --- Tab 3: Player Profile ---
+
+# --- Tab 3: Player Profile ---
 with tabs[2]:
     st.header("Player Profile")
 
@@ -939,6 +941,7 @@ with tabs[2]:
             if mp_action == "Add New Player":
                 mp_name = st.text_input("Player Name (First Name)")
                 mp_img = st.text_input("Profile Image URL")
+                # Birthdays in Supabase are DD/MM/YYYY; Streamlit date_input handles the object
                 mp_dob = st.date_input("Birthday", value=None, min_value=datetime(1960,1,1))
                 mp_gender = st.selectbox("Gender", ["M", "F"])
                 mp_orig_name = None
@@ -953,8 +956,10 @@ with tabs[2]:
                     mp_name = st.text_input("Player Name", value=curr_data['name'])
                     mp_img = st.text_input("Profile Image URL", value=curr_data['profile_image_url'])
                     try:
-                        dob_val = pd.to_datetime(curr_data['birthday']) if curr_data['birthday'] else None
-                    except: dob_val = None
+                        # Use dayfirst=True to handle DD/MM/YYYY format from Supabase
+                        dob_val = pd.to_datetime(curr_data['birthday'], dayfirst=True, errors='coerce') if curr_data['birthday'] else None
+                    except: 
+                        dob_val = None
                     mp_dob = st.date_input("Birthday", value=dob_val, min_value=datetime(1960,1,1))
                     g_idx = 0 if curr_data['gender'] == "M" else 1
                     mp_gender = st.selectbox("Gender", ["M", "F"], index=g_idx)
@@ -968,21 +973,18 @@ with tabs[2]:
 
             if st.form_submit_button("Save Player Profile"):
                 if mp_name:
-                    # Update DataFrame
+                    # Save as ISO format for consistency, but logic below handles your existing slashes
                     new_entry = {
                         "name": mp_name.upper().strip(),
                         "profile_image_url": mp_img,
-                        "birthday": mp_dob.isoformat() if mp_dob else None,
+                        "birthday": mp_dob.strftime("%d/%m/%Y") if mp_dob else None,
                         "gender": mp_gender
                     }
                     
-                    # Remove old entry if name changed or just editing
                     if mp_orig_name:
                         st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != mp_orig_name]
                     
-                    # Remove potential duplicate of new name
                     st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != new_entry['name']]
-                    
                     st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_entry])], ignore_index=True)
                     save_players(st.session_state.players_df)
                     st.success(f"Profile for {mp_name} saved!")
@@ -992,54 +994,73 @@ with tabs[2]:
 
     st.divider()
 
+    # --- Upcoming Birthdays Section ---
+    st.subheader("🎂 Upcoming Birthdays (Next 30 Days)")
+    today = datetime.now()
+    upcoming_bdays = []
+    
+    # Process birthdays for the banner/list
+    temp_df = st.session_state.players_df.copy()
+    if not temp_df.empty:
+        # Crucial fix: parse existing DD/MM/YYYY data
+        temp_df['dt_birthday'] = pd.to_datetime(temp_df['birthday'], dayfirst=True, errors='coerce')
+        
+        for _, row in temp_df.iterrows():
+            if pd.notnull(row['dt_birthday']):
+                # Set birthday to current year to check proximity
+                bday_this_year = row['dt_birthday'].replace(year=today.year)
+                if bday_this_year.date() < today.date():
+                    bday_this_year = bday_this_year.replace(year=today.year + 1)
+                
+                days_until = (bday_this_year.date() - today.date()).days
+                if 0 <= days_until <= 30:
+                    upcoming_bdays.append({
+                        "name": row['name'],
+                        "date": bday_this_year.strftime("%d %b"),
+                        "days": days_until
+                    })
+
+    if upcoming_bdays:
+        upcoming_bdays.sort(key=lambda x: x['days'])
+        cols = st.columns(len(upcoming_bdays) if len(upcoming_bdays) < 4 else 4)
+        for i, bday in enumerate(upcoming_bdays[:4]): # Show top 4
+            with cols[i]:
+                st.success(f"**{bday['name']}** \n{bday['date']} ({bday['days']}d)")
+    else:
+        st.info("No upcoming birthdays in the next 30 days.")
+
+    st.divider()
+
     # --- View Controls ---
-    # Sort Options
     sort_option = st.radio("Sort Players By", ["Alphabetical", "Birthday"], horizontal=True)
 
     # --- Prepare Data ---
     display_players = st.session_state.players_df.copy()
+    display_players['dt_birthday'] = pd.to_datetime(display_players['birthday'], dayfirst=True, errors='coerce')
     
     if sort_option == "Birthday":
-        # Create temp column for datetime
-        display_players['dt_birthday'] = pd.to_datetime(display_players['birthday'], errors='coerce')
-        # Filter out invalid birthdays
         display_players = display_players.dropna(subset=['dt_birthday'])
-        # Sort by Month, Day
         display_players['month'] = display_players['dt_birthday'].dt.month
         display_players['day'] = display_players['dt_birthday'].dt.day
         display_players = display_players.sort_values(['month', 'day'])
-        # Clean up
-        display_players = display_players.drop(columns=['dt_birthday', 'month', 'day'])
     else:
         display_players = display_players.sort_values("name")
-
-    
     
     # --- Render Player List ---
     if not display_players.empty:
         for idx, row in display_players.iterrows():
             player_name = row['name']
-            
-            # Get Stats
             p_stats = rank_df[rank_df['Player'] == player_name] if not rank_df.empty else pd.DataFrame()
             has_stats = not p_stats.empty
             s = p_stats.iloc[0] if has_stats else None
             
-            # FIX: Safe Birthday Formatting
             bday_html = ""
-            if row['birthday']:
-                try:
-                    d_obj = pd.to_datetime(row['birthday'], errors='coerce')
-                    if pd.notna(d_obj):
-                        bday_html = f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {d_obj.strftime("%d %b")}</div>'
-                except: pass
+            if pd.notna(row['dt_birthday']):
+                bday_html = f'<div style="color: #ffd700; font-size: 0.8em;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
 
-            # Card Container
             with st.container():
                 c1, c2 = st.columns([1, 3])
-                
                 with c1:
-                    # Profile Image
                     img_src = row['profile_image_url'] or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="text-align: center;">
@@ -1051,7 +1072,6 @@ with tabs[2]:
                 
                 with c2:
                     if has_stats:
-                        # Stats Header
                         st.markdown(f"""
                         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #fff500; margin-bottom: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1067,12 +1087,11 @@ with tabs[2]:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Data Expander (Graph & Partners)
                         with st.expander("Show Performance Trends & Partners", expanded=False, icon="➡️"):
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
                                 fig = plot_player_performance(player_name, st.session_state.matches_df)
-                                if fig: st.plotly_chart(fig, width="stretch", key=f"plot_{player_name}_{idx}")
+                                if fig: st.plotly_chart(fig, use_container_width=True, key=f"plot_{player_name}_{idx}")
                                 else: st.info("No match history.")
                             with t2:
                                 if player_name in partner_stats_global:
@@ -1087,20 +1106,23 @@ with tabs[2]:
                                                 "Game Diff": p_data_dict['game_diff_sum']
                                             })
                                     if p_data:
-                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, width="stretch")
+                                        st.dataframe(pd.DataFrame(p_data).sort_values("Win %", ascending=False), hide_index=True, use_container_width=True)
                                     else:
                                         st.info("No doubles matches.")
                                 else:
                                     st.info("No partner data.")
                     else:
                         st.info("No stats available (Play some matches!)")
-                
                 st.divider() 
     else:
-        if sort_option == "Birthday" and not st.session_state.players_df.empty:
-            st.info("No players have birthdays listed. Edit player profiles to add birthdays.")
-        else:
-            st.info("No players found in database.")    
+        st.info("No players found in database.")
+
+
+
+
+
+
+
 
 # --- Tab 4: Maps ---
 with tabs[3]:
