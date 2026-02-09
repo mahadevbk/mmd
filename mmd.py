@@ -1226,33 +1226,36 @@ with tabs[1]:
         # A. POST MATCH FORM
         with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
         
-            # 1. Prepare player list and ensure "Visitor" is an option
-            available_players_list = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
-            if "Visitor" not in available_players_list:
-                available_players_list.append("Visitor")
+            
+            # Base list of permanent players
+            permanent_players = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
             
             with st.form("post_match_form", clear_on_submit=True):
                 m_type = st.radio("Match Type", ["Singles", "Doubles"], index=1, horizontal=True)
                 m_date = st.date_input("Match Date", datetime.now())
                 
+                # Logic: Only show "Visitor" in the dropdown list if Match Type is Doubles
+                if m_type == "Doubles":
+                    available_options = [""] + permanent_players + ["Visitor"]
+                else:
+                    available_options = [""] + permanent_players
+        
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown("**Team 1**")
-                    t1p1 = st.selectbox("Player 1", [""] + available_players_list, key="new_t1p1")
+                    t1p1 = st.selectbox("Player 1", available_options, key="new_t1p1")
                     
-                    # Show second player ONLY if Doubles is selected
                     t1p2 = "" 
                     if m_type == "Doubles":
-                        t1p2 = st.selectbox("Player 2", [""] + available_players_list, key="new_t1p2")
+                        t1p2 = st.selectbox("Player 2", available_options, key="new_t1p2")
                         
                 with col2:
                     st.markdown("**Team 2**")
-                    t2p1 = st.selectbox("Player 1", [""] + available_players_list, key="new_t2p1")
+                    t2p1 = st.selectbox("Player 1", available_options, key="new_t2p1")
                     
-                    # Show second player ONLY if Doubles is selected
                     t2p2 = ""
                     if m_type == "Doubles":
-                        t2p2 = st.selectbox("Player 2", [""] + available_players_list, key="new_t2p2")
+                        t2p2 = st.selectbox("Player 2", available_options, key="new_t2p2")
         
                 st.markdown("---")
                 sc1, sc2, sc3 = st.columns(3)
@@ -1265,29 +1268,28 @@ with tabs[1]:
         
                 if st.form_submit_button("Submit Match Result"):
                     # --- Validation Logic ---
-                    # Get all non-empty selections
                     selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
                     visitor_count = sum(1 for p in selected_players if p.lower() == "visitor")
                     
-                    # Rule 1: Correct number of players selected
+                    # Rule 1: Correct number of players
                     required_count = 4 if m_type == "Doubles" else 2
                     if len(selected_players) < required_count:
-                        st.error(f"Please select {required_count} players for a {m_type} match.")
+                        st.error(f"Please select {required_count} players.")
                     
-                    # Rule 2: Visitor Rules
+                    # Rule 2: Visitor Rules (Max 1 in doubles, none in singles)
                     elif m_type == "Singles" and visitor_count > 0:
-                        st.error("No visitors allowed for Singles matches.")
+                        st.error("❌ Visitors are not permitted in Singles matches.")
                     elif m_type == "Doubles" and visitor_count > 1:
-                        st.error("Only 1 visitor is allowed in a Doubles match (3 players + 1 visitor).")
+                        st.error("❌ Only ONE Visitor is allowed per Doubles match (3 Players + 1 Visitor).")
                         
-                    # Rule 3: Prevent duplicate permanent players
+                    # Rule 3: No duplicate permanent players
                     elif len(set(selected_players)) != len(selected_players) and visitor_count <= 1:
-                        st.error("The same permanent player cannot be selected twice.")
+                        st.error("❌ The same player cannot be selected more than once.")
                         
                     elif not s1 or not s2:
-                        st.error("Please enter scores for at least Set 1 and Set 2.")
+                        st.error("Please enter scores for Set 1 and Set 2.")
                     else:
-                        # Save Logic
+                        # Process and Save
                         mid = generate_match_id(st.session_state.matches_df, m_date)
                         url = upload_image_to_github(match_img, mid, "match") if match_img else ""
                         
@@ -1305,7 +1307,8 @@ with tabs[1]:
                         save_matches(st.session_state.matches_df)
                         st.success("Match Recorded!")
                         time.sleep(1)
-                        st.rerun()
+                        st.rerun()        
+
 
         # B. EDIT MATCH FORM (Fixed AttributeError & Timestamp error)
         with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
