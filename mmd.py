@@ -938,7 +938,6 @@ with tabs[1]:
             font-size: 0.9em;
             font-weight: normal;
         }
-        /* Custom styling for the image to prevent cropping and backgrounds */
         .match-img-wrapper {
             width: 100%;
             display: flex;
@@ -947,14 +946,14 @@ with tabs[1]:
         }
         .match-img-content {
             width: 100%;
-            max-height: 600px; /* Limits size on desktop but keeps aspect ratio */
+            max-height: 600px;
             object-fit: contain;
             display: block;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # ... (Post Match and Edit Match Forms remain exactly as they were) ...
+    # ... (Your Post Match and Edit Match Forms here) ...
 
     # --- Match History ---
     st.subheader("History")
@@ -986,7 +985,7 @@ with tabs[1]:
             match_margin = abs(t1_total - t2_total)
             match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
             
-            # 3. Visitor & Team Name Logic
+            # 3. Team Name Logic
             def get_team_html(p1, p2, mtype):
                 p1_s = str(p1).strip() if p1 and str(p1) != 'nan' else ""
                 p2_s = str(p2).strip() if p2 and str(p2) != 'nan' else ""
@@ -1014,15 +1013,13 @@ with tabs[1]:
 
             score_line = " | ".join(display_scores)
             
-            # --- TRANSPARENT NO-CROP IMAGE LOGIC ---
-            img_html = f"""
-                <div class="match-img-wrapper">
-                    <img src="{row.match_image_url}" class="match-img-content">
-                </div>
-            """ if row.match_image_url else ""
+            # 5. Image HTML
+            img_html = f'<div class="match-img-wrapper"><img src="{row.match_image_url}" class="match-img-content"></div>' if row.match_image_url else ""
             
-            st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
+            # 6. Final Render
+            # We use a single f-string to ensure Streamlit treats it as one block of HTML
+            card_content = f"""
+                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
                     {img_html}
                     <div style="padding: 15px;">
                         <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {row.match_type}</div>
@@ -1033,10 +1030,10 @@ with tabs[1]:
                         </div>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            """
+            st.markdown(card_content, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
 
 
 # --- Tab 4: Maps ---
