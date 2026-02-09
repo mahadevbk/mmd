@@ -357,6 +357,9 @@ def calculate_rankings(matches_to_rank):
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
 
+    # Track singles vs doubles performance separately
+    perf_breakdown = defaultdict(lambda: {'singles_wins': 0, 'singles_matches': 0, 'doubles_wins': 0, 'doubles_matches': 0})
+
     players_df = st.session_state.players_df
     # Pre-fetch genders map for O(1) lookup
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
@@ -432,10 +435,20 @@ def calculate_rankings(matches_to_rank):
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
                 
+                # Performance Breakdown
+                if match_type == 'Singles':
+                    perf_breakdown[p]['singles_matches'] += 1
+                else:
+                    perf_breakdown[p]['doubles_matches'] += 1
+
                 if outcome == 'win':
                     scores[p] += w_points
                     stats[p]['wins'] += 1
                     if is_clutch: stats[p]['clutch_wins'] += 1
+                    
+                    if match_type == 'Singles': perf_breakdown[p]['singles_wins'] += 1
+                    else: perf_breakdown[p]['doubles_wins'] += 1
+
                     # Streak Logic
                     if current_streaks[p] < 0: current_streaks[p] = 0
                     current_streaks[p] += 1
@@ -460,13 +473,11 @@ def calculate_rankings(matches_to_rank):
             update_stats(t1, 'tie', match_gd)
             update_stats(t2, 'tie', -match_gd)
 
-        # Partner stats
+        # Partner stats (unchanged)
         if match_type == 'Doubles':
             for team, outcome_code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
                 if len(team) < 2: continue
                 p1, p2 = team[0], team[1]
-                # Canonical ordering for key not needed if we store symmetric keys in partner_stats
-                # Current logic stores p1->p2 and p2->p1
                 for a, b in [(p1, p2), (p2, p1)]:
                     ps = partner_stats[a][b]
                     ps['matches'] += 1
@@ -479,7 +490,6 @@ def calculate_rankings(matches_to_rank):
 
     # Build DataFrame
     rank_data = []
-    # Pre-fetch image urls
     img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
     max_matches_played = max([s['matches'] for s in stats.values()]) if stats else 0
     
@@ -490,28 +500,44 @@ def calculate_rankings(matches_to_rank):
         win_pct = (s['wins'] / matches_played) * 100
         gd_avg = s['gd_sum'] / matches_played
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
+        
+        # Consistency Index: Lower std dev means more consistent. 
+        # We invert it or map it so higher is "better" or just show the raw std dev.
+        # Here we show raw std dev (lower is better consistency)
         consistency = np.std(s['gd_list']) if s['gd_list'] else 0
         
+        # Performance Scores
+        pb = perf_breakdown[p]
+        singles_perf = (pb['singles_wins'] / pb['singles_matches'] * 100) if pb['singles_matches'] > 0 else 0
+        doubles_perf = (pb['doubles_wins'] / pb['doubles_matches'] * 100) if pb['doubles_matches'] > 0 else 0
+
         # Badges
         badges = []
         if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Tie-break Monster")
-        if consistency < 2 and matches_played >= 5: badges.append("📈 Consistent Performer")
+        if consistency < 2 and matches_played >= 5: badges.append("📈 Consistent")
         if current_streaks[p] >= 3: badges.append("🔥 On Fire")
-        if win_pct == 100 and matches_played >= 3: badges.append("🦄 Unbeatable")
-        if matches_played == max_matches_played and max_matches_played >= 5: badges.append("🐝 Busy Bee")
         
         rank_data.append({
-            "Player": p, "Points": scores[p], "Win %": round(win_pct, 2),
-            "Matches": matches_played, "Wins": s['wins'], "Losses": s['losses'],
-            "Games Won": s['games_won'], "Game Diff Avg": round(gd_avg, 2),
-            "Cumulative Game Diff": s['gd_sum'], "Clutch Factor": round(clutch_pct, 1),
-            "Consistency Index": round(consistency, 2), "Badges": badges,
-            "Profile": img_map.get(p, ""), "Recent Trend": "" # Trend calc is separate/expensive
+            "Player": p, 
+            "Points": scores[p], 
+            "Win %": round(win_pct, 1),
+            "Matches": matches_played, 
+            "Wins": s['wins'], 
+            "Losses": s['losses'],
+            "Games Won": s['games_won'], 
+            "Game Diff Avg": round(gd_avg, 2),
+            "Cumulative Game Diff": s['gd_sum'], 
+            "Clutch Factor": round(clutch_pct, 1),
+            "Consistency Index": round(consistency, 2),
+            "Singles Perf": round(singles_perf, 1),
+            "Doubles Perf": round(doubles_perf, 1),
+            "Badges": badges, 
+            "Profile": img_map.get(p, "")
         })
         
     df = pd.DataFrame(rank_data)
     if not df.empty:
-        df = df.sort_values(by=["Points", "Win %", "Game Diff Avg", "Games Won"], ascending=[False, False, False, False]).reset_index(drop=True)
+        df = df.sort_values(by=["Points", "Win %"], ascending=[False, False]).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
         
     return df, partner_stats
