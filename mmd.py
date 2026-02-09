@@ -904,6 +904,7 @@ with tabs[0]:
 
 
 # --- Tab 2: Matches ---
+# --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
     
@@ -1078,7 +1079,6 @@ with tabs[1]:
             """, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
 
 
 
