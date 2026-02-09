@@ -907,7 +907,6 @@ with tabs[0]:
 with tabs[1]:
     st.header("Matches")
     
-    # CSS for the Match History layout
     st.markdown("""
         <style>
         .match-score-container {
@@ -1024,23 +1023,31 @@ with tabs[1]:
         m_hist = m_hist.sort_values('date', ascending=False)
         
         for row in m_hist.itertuples():
-            # Winner Logic Calculation
-            w_total, l_total, sets_played = 0, 0, 0
-            is_t1_w = (row.winner == "Team 1")
-            
+            # 1. Calculate Games
+            t1_games, t2_games, sets_played = 0, 0, 0
             for s in [row.set1, row.set2, row.set3]:
                 if s and str(s).strip() and "-" in str(s):
                     try:
                         clean_s = str(s).split('(')[0].strip()
                         parts = clean_s.split('-')
-                        g1, g2 = int(parts[0]), int(parts[1])
-                        if row.winner == "Tie": w_total += g1; l_total += g2
-                        elif is_t1_w: w_total += g1; l_total += g2
-                        else: w_total += g2; l_total += g1
+                        t1_games += int(parts[0])
+                        t2_games += int(parts[1])
                         sets_played += 1
                     except: continue
 
-            match_gda = round((w_total - l_total) / sets_played, 2) if sets_played > 0 else 0
+            # 2. Logic for GDA Label and Value
+            if row.winner == "Team 1":
+                diff = t1_games - t2_games
+                gda_label = "Game Diff Avg (Winner)"
+            elif row.winner == "Team 2":
+                diff = t2_games - t1_games
+                gda_label = "Game Diff Avg (Winner)"
+            else:
+                # If it's a tie, we show the absolute game spread
+                diff = abs(t1_games - t2_games)
+                gda_label = "Game Diff Avg"
+
+            match_gda = round(diff / sets_played, 2) if sets_played > 0 else 0
             
             # Formatting Display
             t1_display = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
@@ -1054,7 +1061,6 @@ with tabs[1]:
                 headline = f"<span style='color:white'>{t1_display}</span> tied with <span style='color:white'>{t2_display}</span>"
 
             score_line = f"{row.set1 or ''} {f'| {row.set2}' if row.set2 else ''} {f'| {row.set3}' if row.set3 else ''}"
-            
             img_html = f'<div style="width:100%; text-align:center;"><img src="{row.match_image_url}" style="width:100%; max-height: 350px; object-fit: cover; border-radius: 10px 10px 0 0;"></div>' if row.match_image_url else ""
             
             st.markdown(f"""
@@ -1065,15 +1071,13 @@ with tabs[1]:
                         <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
                         <div class="match-score-container">
                             <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{score_line}</div>
-                            <div class="gda-label">Game Diff Avg (Winner): +{match_gda}</div>
+                            <div class="gda-label">{gda_label}: +{match_gda}</div>
                         </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
-
 
 
 
