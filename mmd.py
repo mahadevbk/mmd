@@ -1202,11 +1202,11 @@ with tabs[1]:
 
 
 # --- Tab 3: Player Profiles ---
-# --- Tab 2: Player Profiles (Restored with Thumbnail Fix) ---
+# --- Tab 3: Player Profiles (Fully Restored with Original Stats) ---
 with tabs[2]:
     st.header("Player Profiles")
     
-    # CSS for "Fit to Square" Thumbnails
+    # CSS for the "Fit to Square" fix
     st.markdown("""
         <style>
         .profile-thumb-box {
@@ -1219,75 +1219,33 @@ with tabs[2]:
             justify-content: center;
             align-items: center;
             border: 2px solid rgba(204, 255, 0, 0.1);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .profile-thumb-img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* THE FIX: Ensures face is never cropped */
+            object-fit: contain; /* Ensures head is never cut off */
             display: block;
-        }
-        .profile-card-mini {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 15px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     if not st.session_state.players_df.empty:
-        # 1. Selection and View Controls
-        col_s1, col_s2 = st.columns([1, 1])
-        with col_s1:
+        # Search & Sort Controls
+        c_s1, c_s2 = st.columns([1, 1])
+        with c_s1:
             p_names = sorted(st.session_state.players_df['name'].tolist())
-            selected_player = st.selectbox("Select a Player", [""] + p_names)
-        with col_s2:
-            sort_order = st.radio("View By", ["Alphabetical", "Next Birthday"], horizontal=True)
+            search_player = st.selectbox("Search Player", [""] + p_names)
+        with c_s2:
+            sort_by = st.radio("Sort View", ["Alphabetical", "Next Birthday"], horizontal=True)
 
-        # 2. Detailed View (Restored Original Stats Card)
-        if selected_player:
-            st.markdown("---")
-            p_data = st.session_state.players_df[st.session_state.players_df['name'] == selected_player].iloc[0]
-            rank_df, partner_stats = calculate_rankings(st.session_state.matches_df)
-            p_stats = rank_df[rank_df['Player'] == selected_player].iloc[0] if not rank_df.empty and selected_player in rank_df['Player'].values else None
-            
-            c1, c2 = st.columns([1, 2])
-            with c1:
-                # Thumbnail fix inside detailed view
-                img_url = p_data['profile_image_url'] if pd.notna(p_data['profile_image_url']) else ""
-                st.markdown(f"""
-                    <div class="profile-thumb-box" style="width:250px; margin:0 auto;">
-                        <img src="{img_url}" class="profile-thumb-img">
-                    </div>
-                """, unsafe_allow_html=True)
-                st.markdown(f"<h2 style='text-align:center; color:#CCFF00;'>{selected_player}</h2>", unsafe_allow_html=True)
-                
-            with c2:
-                if p_stats is not None:
-                    # Your original metrics display
-                    st.subheader("Performance Summary")
-                    met1, met2, met3 = st.columns(3)
-                    met1.metric("Points", int(p_stats['Points']))
-                    met2.metric("Win Rate", f"{p_stats['Win %']}%")
-                    met3.metric("Rank", p_stats['Rank'])
-                    
-                    # Original GDA Chart
-                    if 'gd_list' in p_stats and p_stats['gd_list']:
-                        fig_gda = px.line(y=p_stats['gd_list'], title="Game Differential Trend",
-                                        labels={'y':'GD','x':'Matches'}, markers=True)
-                        fig_gda.update_layout(height=200, margin=dict(l=20,r=20,t=40,b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                        st.plotly_chart(fig_gda, use_container_width=True)
-                else:
-                    st.info("Play a match to see detailed stats!")
-            st.markdown("---")
-
-        # 3. Alphabetical/Birthday Grid (Restored Original)
+        # Prepare Display Data
         display_df = st.session_state.players_df.copy()
-        if sort_order == "Next Birthday":
-            def next_bday(s):
+        if search_player:
+            display_df = display_df[display_df['name'] == search_player]
+        
+        if sort_by == "Next Birthday":
+            def get_next_bday(s):
                 if not s or str(s) == 'nan': return datetime(2099,1,1)
                 try:
                     d, m = map(int, str(s).split('-'))
@@ -1295,29 +1253,76 @@ with tabs[2]:
                     b = datetime(t.year, m, d)
                     return b if b >= t else datetime(t.year+1, m, d)
                 except: return datetime(2099,1,1)
-            display_df['sort_key'] = display_df['birthday'].apply(next_bday)
+            display_df['sort_key'] = display_df['birthday'].apply(get_next_bday)
             display_df = display_df.sort_values('sort_key')
         else:
             display_df = display_df.sort_values('name')
 
-        # Rendering original grid with updated thumbnail container
-        grid_cols = st.columns(6)
-        for i, row in enumerate(display_df.itertuples()):
-            with grid_cols[i % 6]:
-                img = row.profile_image_url if pd.notna(row.profile_image_url) else ""
-                bday_html = f"<div style='color:#FF7518; font-size:0.8em;'>🎂 {row.birthday}</div>" if pd.notna(row.birthday) and row.birthday else ""
+        # Ranking and Partner stats for charts
+        rank_df, partner_stats = calculate_rankings(st.session_state.matches_df)
+
+        # Loop through every player and show the FULL card (from your uploaded file)
+        for row in display_df.itertuples():
+            with st.container():
+                st.markdown(f"### {row.name}")
+                p_stats = rank_df[rank_df['Player'] == row.name].iloc[0] if not rank_df.empty and row.name in rank_df['Player'].values else None
                 
-                st.markdown(f"""
-                    <div class="profile-card-mini">
+                col1, col2, col3 = st.columns([1, 2, 2])
+                
+                with col1:
+                    # UPDATED: No-crop thumbnail container
+                    img_url = row.profile_image_url if pd.notna(row.profile_image_url) else ""
+                    st.markdown(f"""
                         <div class="profile-thumb-box">
-                            <img src="{img}" class="profile-thumb-img">
+                            <img src="{img_url}" class="profile-thumb-img">
                         </div>
-                        <div style="font-weight:bold; color:#CCFF00; font-size:0.9em;">{row.name}</div>
-                        {bday_html}
-                    </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                    
+                    st.write(f"🎂 **Birthday:** {row.birthday if pd.notna(row.birthday) else 'N/A'}")
+                    st.write(f"👤 **Gender:** {row.gender if pd.notna(row.gender) else 'N/A'}")
+                    if p_stats is not None and p_stats['Badges']:
+                        badge_html = "".join([f"<span style='background:#CCFF00; color:#000; padding:2px 8px; border-radius:10px; margin-right:4px; font-weight:bold; font-size:0.75em;'>{b}</span>" for b in p_stats['Badges']])
+                        st.markdown(badge_html, unsafe_allow_html=True)
+
+                with col2:
+                    if p_stats is not None:
+                        st.write("**Performance Stats**")
+                        sc1, sc2 = st.columns(2)
+                        sc1.metric("Points", int(p_stats['Points']))
+                        sc1.metric("Win Rate", f"{p_stats['Win %']}%")
+                        sc2.metric("Rank", p_stats['Rank'])
+                        sc2.metric("Matches", int(p_stats['Matches']))
+                        
+                        # GDA Trend Chart
+                        if 'gd_list' in p_stats and p_stats['gd_list']:
+                            fig_gda = px.line(y=p_stats['gd_list'], title="Game Differential Trend", markers=True)
+                            fig_gda.update_layout(height=180, margin=dict(l=0,r=0,t=30,b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                            st.plotly_chart(fig_gda, use_container_width=True)
+                    else:
+                        st.info("No match stats yet.")
+
+                with col3:
+                    if p_stats is not None:
+                        st.write("**Match History**")
+                        # Show last 5 matches for this player
+                        p_matches = st.session_state.matches_df[
+                            (st.session_state.matches_df['team1_player1'] == row.name) | 
+                            (st.session_state.matches_df['team1_player2'] == row.name) | 
+                            (st.session_state.matches_df['team2_player1'] == row.name) | 
+                            (st.session_state.matches_df['team2_player2'] == row.name)
+                        ].sort_values('date', ascending=False).head(5)
+                        
+                        if not p_matches.empty:
+                            for m in p_matches.itertuples():
+                                res = "✅" if m.winner == ("Team 1" if (row.name in [m.team1_player1, m.team1_player2]) else "Team 2") else "❌"
+                                if m.winner == "Tie": res = "🤝"
+                                st.write(f"{res} {m.date[:10]} | {m.set1} {m.set2} {m.set3}")
+                        else:
+                            st.write("No recent matches.")
+
+                st.markdown("---")
     else:
-        st.warning("Please add players first.")
+        st.warning("Please add players in the Admin tab.")
 
 
 # --- Tab 4: Maps ---
