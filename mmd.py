@@ -1225,9 +1225,7 @@ with tabs[1]:
         
         # A. POST MATCH FORM
         with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
-        # --- Tab 2: Matches -> Post New Match Expander ---
-        #with st.expander("📝 Post New Match Result", expanded=False, icon="➡️"):
-            # Prepare player list including "Visitor"
+            # 1. Prepare player list including "Visitor" dynamically
             available_players_with_visitor = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
             if "VISITOR" not in [p.upper() for p in available_players_with_visitor]:
                 available_players_with_visitor.append("VISITOR")
@@ -1240,14 +1238,16 @@ with tabs[1]:
                 with col1:
                     st.markdown("**Team 1**")
                     t1p1 = st.selectbox("Player 1", [""] + available_players_with_visitor, key="new_t1p1")
-                    t1p2 = ""
+                    t1p2 = "" # Initialize empty for Singles
+                    # Only show 2nd slot if Doubles is selected
                     if m_type == "Doubles":
                         t1p2 = st.selectbox("Player 2", [""] + available_players_with_visitor, key="new_t1p2")
                         
                 with col2:
                     st.markdown("**Team 2**")
                     t2p1 = st.selectbox("Player 1", [""] + available_players_with_visitor, key="new_t2p1")
-                    t2p2 = ""
+                    t2p2 = "" # Initialize empty for Singles
+                    # Only show 2nd slot if Doubles is selected
                     if m_type == "Doubles":
                         t2p2 = st.selectbox("Player 2", [""] + available_players_with_visitor, key="new_t2p2")
         
@@ -1265,26 +1265,26 @@ with tabs[1]:
                     selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
                     visitor_count = sum(1 for p in selected_players if p.upper() == "VISITOR")
                     
-                    # Rule 1: Check required number of players
+                    # Rule: Required number of players
                     required_count = 4 if m_type == "Doubles" else 2
-                    if len(selected_players) < required_count:
-                        st.error(f"Please select all {required_count} players.")
                     
-                    # Rule 2: Visitor Rules
+                    if len(selected_players) < required_count:
+                        st.error(f"Please select all {required_count} players for a {m_type} match.")
+                    
+                    # Rule: Visitor Rules (No visitors in Singles, Max 1 in Doubles)
                     elif m_type == "Singles" and visitor_count > 0:
                         st.error("Visitors are not allowed in Singles matches.")
                     elif m_type == "Doubles" and visitor_count > 1:
-                        st.error("Only one Visitor is allowed per Doubles match.")
+                        st.error("Only one Visitor is allowed per Doubles match (3 Players + 1 Visitor).")
                         
-                    # Rule 3: No duplicate players (excluding multiple 'Visitor' labels if they were allowed, but here we strictly limit to 1)
+                    # Rule: No duplicate permanent players
                     elif len(set(selected_players)) != len(selected_players) and visitor_count <= 1:
-                        # If they select the same player twice
                         st.error("The same player cannot be selected more than once.")
                         
                     elif not s1 or not s2:
                         st.error("Please enter at least Set 1 and Set 2 scores.")
                     else:
-                        # Process Upload
+                        # Process match ID and upload image
                         mid = generate_match_id(st.session_state.matches_df, m_date)
                         url = upload_image_to_github(match_img, mid, "match") if match_img else ""
                         
@@ -1298,6 +1298,7 @@ with tabs[1]:
                             "winner": winner, "match_image_url": url
                         }
                         
+                        # Append and Save
                         st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
                         save_matches(st.session_state.matches_df)
                         st.success("Match Saved Successfully!")
