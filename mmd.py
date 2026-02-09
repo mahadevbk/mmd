@@ -903,12 +903,12 @@ with tabs[0]:
         st.info("No matches recorded yet.")
 
 
-# --- Tab 2: Matches ---
+
 # --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
     
-    # CSS for the Match Cards
+    # CSS for the Match Cards and Optic Yellow text
     st.markdown("""
         <style>
         .match-score-container {
@@ -920,16 +920,30 @@ with tabs[1]:
         }
         .gda-label {
             font-size: 0.85em;
-            color: #fff500;
+            color: #CCFF00; /* Optic Yellow */
             font-weight: bold;
             margin-top: 4px;
             border-top: 1px solid rgba(255,255,255,0.1);
             padding-top: 4px;
         }
+        .player-name-bold {
+            color: #CCFF00; /* Optic Yellow */
+            font-weight: bold;
+        }
+        .status-text-grey {
+            color: #888888; /* Grey */
+            font-size: 0.9em;
+        }
         </style>
     """, unsafe_allow_html=True)
 
-    # --- Match History Section ---
+    if not st.session_state.players_df.empty:
+        names = sorted([n for n in st.session_state.players_df['name'] if n != 'Visitor'])
+        
+        # --- [Expander sections for Posting/Editing remain the same as previous] ---
+        # ... (Include your existing expander code here) ...
+
+    # --- Match History ---
     st.subheader("History")
     m_hist = st.session_state.matches_df.copy()
     if not m_hist.empty:
@@ -940,9 +954,9 @@ with tabs[1]:
             t1_total, t2_total, sets_count = 0, 0, 0
             display_scores = []
 
+            # Robust Parsing for Math and Display
             for s in [row.set1, row.set2, row.set3]:
                 if s and str(s).strip():
-                    # ROBUST PARSING: Extract numbers from "7-5", "7-6(5)", or "Tie Break 7-5"
                     nums = re.findall(r'\d+', str(s))
                     if len(nums) >= 2:
                         g1, g2 = int(nums[0]), int(nums[1])
@@ -950,7 +964,7 @@ with tabs[1]:
                         t2_total += g2
                         sets_count += 1
                         
-                        # Re-format for clean display: "7-6" for tiebreaks, or just the games
+                        # Formatting "Tie Break 7-5" into "7-6 (7-5)"
                         if "Tie Break" in str(s) or (abs(g1-g2) == 1 and (g1 > 5 or g2 > 5)):
                             display_scores.append(f"7-6 ({g1}-{g2})")
                         else:
@@ -960,24 +974,23 @@ with tabs[1]:
             match_margin = abs(t1_total - t2_total)
             match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
             
-            # Determine Labels
-            if row.winner == "Team 1":
-                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
-            elif row.winner == "Team 2":
-                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
-            else:
-                gda_text = f"Net Game Margin Avg: +{match_gda}"
-
-            # Participant Names
+            # Formatting Display Names
             t1_n = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
             t2_n = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
             
+            # Styled Headline Logic
+            name1_html = f"<span class='player-name-bold'>{t1_n}</span>"
+            name2_html = f"<span class='player-name-bold'>{t2_n}</span>"
+            
             if row.winner == "Team 1":
-                headline = f"<span style='color:#fff500'>{t1_n}</span> defeated <span style='color:white'>{t2_n}</span>"
+                headline = f"{name1_html} <span class='status-text-grey'>defeated</span> {name2_html}"
+                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
             elif row.winner == "Team 2":
-                headline = f"<span style='color:#fff500'>{t2_n}</span> defeated <span style='color:white'>{t1_n}</span>"
+                headline = f"{name2_html} <span class='status-text-grey'>defeated</span> {name1_html}"
+                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
             else:
-                headline = f"<span style='color:white'>{t1_n}</span> tied with <span style='color:white'>{t2_n}</span>"
+                headline = f"{name1_html} <span class='status-text-grey'>tied with</span> {name2_html}"
+                gda_text = f"Net Game Margin Avg: +{match_gda}"
 
             score_line = " | ".join(display_scores)
             img_html = f'<div style="width:100%; text-align:center;"><img src="{row.match_image_url}" style="width:100%; max-height: 350px; object-fit: cover; border-radius: 10px 10px 0 0;"></div>' if row.match_image_url else ""
