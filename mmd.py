@@ -591,25 +591,47 @@ def plot_player_performance(player_name, matches_df):
     return fig
 
 def get_birthday_banner(players_df):
-    if players_df.empty: return
-    today = datetime.now()
-    birthdays = []
+    if players_df.empty:
+        return
     
-    for row in players_df.itertuples(index=False):
-        if row.birthday:
-            try:
-                dob = pd.to_datetime(row.birthday, errors='coerce')
-                if pd.notna(dob) and dob.month == today.month and dob.day == today.day:
-                    birthdays.append(row.name)
-            except: pass
+    today = datetime.now()
+    today_str = today.strftime("%d-%m") # Matches your CSV format like '15-10'
+    
+    # Check for players whose birthday matches today
+    # We strip leading zeros to handle both '05-11' and '5-11'
+    birthday_people = []
+    for _, row in players_df.iterrows():
+        if pd.notna(row['birthday']) and str(row['birthday']).strip() != "":
+            # Normalize strings by removing leading zeros from both day and month
+            # This ensures '5-6' matches '05-06'
+            normalized_bday = "-".join([part.lstrip('0') for part in str(row['birthday']).split('-')])
+            normalized_today = "-".join([part.lstrip('0') for part in today_str.split('-')])
             
-    if birthdays:
-        names = ", ".join(birthdays)
-        st.balloons()
+            if normalized_bday == normalized_today:
+                birthday_people.append(row['name'])
+
+    if birthday_people:
+        names = " & ".join(birthday_people)
         st.markdown(f"""
-        <div class="birthday-banner">
-            🎂 Happy Birthday to {names}! 🥳
-        </div>
+            <div style="
+                background: linear-gradient(90deg, #fff500, #ff0055);
+                padding: 15px;
+                border-radius: 10px;
+                text-align: center;
+                margin-bottom: 25px;
+                animation: pulse 2s infinite;
+                box-shadow: 0 4px 15px rgba(255, 245, 0, 0.4);
+            ">
+                <h2 style="color: white; margin: 0; font-size: 1.5em;">🎂 Happy Birthday, {names}! 🥳</h2>
+                <p style="color: white; margin: 5px 0 0 0; opacity: 0.9;">Wishing you a great day on and off the court!</p>
+            </div>
+            <style>
+            @keyframes pulse {{
+                0% {{ transform: scale(1); }}
+                50% {{ transform: scale(1.02); }}
+                100% {{ transform: scale(1); }}
+            }}
+            </style>
         """, unsafe_allow_html=True)
 
 def load_bookings():
