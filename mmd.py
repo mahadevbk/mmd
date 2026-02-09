@@ -497,6 +497,36 @@ def calculate_rankings(matches_to_rank):
     return df, partner_stats
 
 
+def detect_match_category(row, gender_map):
+    """
+    Automated detection: 
+    Mixed Doubles = (M+F) vs (M+F) with NO Visitors.
+    """
+    if row.match_type == "Singles":
+        return "Singles"
+    
+    # Identify players
+    p1, p2 = str(row.team1_player1), str(row.team1_player2)
+    p3, p4 = str(row.team2_player1), str(row.team2_player2)
+    
+    # 1. Check for Visitors (Manual override to standard Doubles)
+    all_players = [p1.upper(), p2.upper(), p3.upper(), p4.upper()]
+    if "VISITOR" in all_players or "NONE" in all_players or "" in all_players:
+        return "Doubles"
+
+    # 2. Get Genders from the players_rows.csv map
+    g1, g2 = gender_map.get(p1), gender_map.get(p2)
+    g3, g4 = gender_map.get(p3), gender_map.get(p4)
+
+    # 3. Check for Mixed (One M, One F per team)
+    team1_is_mixed = set([g1, g2]) == {'M', 'F'}
+    team2_is_mixed = set([g3, g4]) == {'M', 'F'}
+
+    if team1_is_mixed and team2_is_mixed:
+        return "Mixed Doubles"
+    
+    return "Doubles"
+
 
 
 def get_player_trend(player, matches, max_matches=5):
