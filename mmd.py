@@ -1085,7 +1085,7 @@ with tabs[1]:
                     st.success("Saved!"); st.rerun()
 
         # B. EDIT MATCH FORM (Fixed AttributeError & Timestamp error)
-        with st.expander("✏️ Edit Match Result", expanded=False,, icon="➡️"):
+        with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
             if not st.session_state.matches_df.empty:
                 m_df = st.session_state.matches_df.copy()
                 m_df['date'] = pd.to_datetime(m_df['date'])
