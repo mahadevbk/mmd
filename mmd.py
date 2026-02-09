@@ -879,6 +879,7 @@ tabs = st.tabs(tab_names)
 
 
 # --- Tab 1: Rankings ---
+# --- Tab 1: Rankings ---
 with tabs[0]:
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     ranking_view = st.radio("View", ["Combined", "Doubles", "Singles", "Table View"], horizontal=True, key="rank_view_radio")
@@ -898,75 +899,54 @@ with tabs[0]:
                 display_rank_df, 
                 hide_index=True, 
                 width="stretch",
-                column_config={
-                    "Profile": st.column_config.ImageColumn("Profile"),
-                }
+                column_config={"Profile": st.column_config.ImageColumn("Profile")}
             )
         else:
-            # Podium for Top 3
+            # --- Podium for Top 3 ---
             if len(display_rank_df) >= 3:
                 top3 = display_rank_df.head(3).to_dict('records')
-                
                 podium_items = [
-                    {"player": top3[1], "margin": "40px"}, # Rank 2
-                    {"player": top3[0], "margin": "0px"},  # Rank 1
-                    {"player": top3[2], "margin": "40px"}  # Rank 3
+                    {"p": top3[1], "m": "40px"}, # Rank 2
+                    {"p": top3[0], "m": "0px"},  # Rank 1
+                    {"p": top3[2], "m": "40px"}  # Rank 3
                 ]
                 
-                cols_html = ""
-                for item in podium_items:
-                    p = item['player']
-                    cols_html += f"""
-                    <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                        <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                            <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{p['Rank']}</div>
-                            <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                                <img src="{p['Profile'] or 'https://via.placeholder.com/100?text=Player'}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
-                            </div>
-                            <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{p['Player']}</div>
-                            <div style="color: white; font-weight: bold; font-size: 0.8em;">{p['Points']} pts</div>
-                            <div style="color: #aaa; font-size: 0.7em;">{p['Win %']}% Win</div>
-                        </div>
-                    </div>"""
+                # Build podium HTML as a single string to avoid indentation issues
+                cols_html = "".join([f'<div style="flex: 1; margin-top: {i["m"]}; min-width: 0; display: flex; flex-direction: column;"><div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);"><div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{i["p"]["Rank"]}</div><div style="display: flex; justify-content: center; margin-bottom: 5px;"><img src="{i["p"]["Profile"] or "https://via.placeholder.com/100?text=Player"}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);"></div><div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{i["p"]["Player"]}</div><div style="color: white; font-weight: bold; font-size: 0.8em;">{i["p"]["Points"]} pts</div><div style="color: #aaa; font-size: 0.7em;">{i["p"]["Win %"]}% Win</div></div></div>' for i in podium_items])
                 
-                st.markdown(textwrap.dedent(f"""
-                <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">
-                {cols_html}
-                </div>"""), unsafe_allow_html=True)
+                st.markdown(f'<div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">{cols_html}</div>', unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Detailed List (HTML based)
+            # --- Detailed List (HTML based) ---
             st.markdown("<div class='rankings-table-container'>", unsafe_allow_html=True)
             for row in display_rank_df.to_dict('records'):
                 badges_str = " ".join([f"<span class='badge'>{b}</span>" for b in row['Badges']]) if row['Badges'] else ""
                 trend_str = get_player_trend(row['Player'], st.session_state.matches_df)
                 
-                row_html = f"""
-                <div class="ranking-row" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">
-                    <div class="rank-profile-player-group" style="display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 15px; width: 100%;">
-                        <div class="rank-col" style="margin-right: 15px;">{row['Rank']}</div>
-                        <img src="{row['Profile'] or 'https://via.placeholder.com/80?text=Player'}" class="profile-image">
-                        <div class="player-col" style="text-align: left; margin-left: 15px;">
-                            <div style="font-weight: bold; font-size: 1.1em;">{row['Player']}</div>
-                            <div style="margin-top: 5px;">{badges_str}</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: 100%;">
-                        <div class="stat-box"><div class="stat-label">Points</div><div class="stat-value stat-highlight">{row['Points']}</div></div>
-                        <div class="stat-box"><div class="stat-label">Win %</div><div class="stat-value">{row['Win %']}%</div></div>
-                        <div class="stat-box"><div class="stat-label">Record</div><div class="stat-value">{row['Wins']}W - {row['Losses']}L</div></div>
-                        <div class="stat-box"><div class="stat-label">Games</div><div class="stat-value">{row['Games Won']}</div></div>
-                        <div class="stat-box"><div class="stat-label">Game Diff</div><div class="stat-value">{row['Game Diff Avg']}</div></div>
-                        <div class="stat-box"><div class="stat-label">Trend</div><div class="stat-value" style="font-family: monospace; letter-spacing: 2px;">{trend_str}</div></div>
-                    </div>
-                </div>
-                """
-                st.markdown(textwrap.dedent(row_html), unsafe_allow_html=True)
+                # Single-line row string to prevent Markdown code-block interpretation
+                row_html = (
+                    f'<div class="ranking-row" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;">'
+                    f'<div class="rank-profile-player-group" style="display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 15px; width: 100%;">'
+                    f'<div class="rank-col" style="margin-right: 15px;">{row["Rank"]}</div>'
+                    f'<img src="{row["Profile"] or "https://via.placeholder.com/80?text=Player"}" class="profile-image">'
+                    f'<div class="player-col" style="text-align: left; margin-left: 15px;">'
+                    f'<div style="font-weight: bold; font-size: 1.1em; color: white;">{row["Player"]}</div>'
+                    f'<div style="margin-top: 5px;">{badges_str}</div>'
+                    f'</div></div>'
+                    f'<div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; width: 100%;">'
+                    f'<div class="stat-box"><div class="stat-label">Points</div><div class="stat-value stat-highlight">{row["Points"]}</div></div>'
+                    f'<div class="stat-box"><div class="stat-label">Win %</div><div class="stat-value">{row["Win %"]}%</div></div>'
+                    f'<div class="stat-box"><div class="stat-label">Record</div><div class="stat-value">{row["Wins"]}W - {row["Losses"]}L</div></div>'
+                    f'<div class="stat-box"><div class="stat-label">Games</div><div class="stat-value">{row["Games Won"]}</div></div>'
+                    f'<div class="stat-box"><div class="stat-label">Game Diff</div><div class="stat-value">{row["Game Diff Avg"]}</div></div>'
+                    f'<div class="stat-box"><div class="stat-label">Trend</div><div class="stat-value" style="font-family: monospace; letter-spacing: 2px;">{trend_str}</div></div>'
+                    f'</div></div>'
+                )
+                st.markdown(row_html, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
-
 
 
 
