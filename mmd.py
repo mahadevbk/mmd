@@ -908,6 +908,7 @@ with tabs[0]:
 with tabs[1]:
     st.header("Matches")
     
+    # CSS for the Match Cards
     st.markdown("""
         <style>
         .match-score-container {
@@ -1024,70 +1025,53 @@ with tabs[1]:
         m_hist = m_hist.sort_values('date', ascending=False)
         
         for row in m_hist.itertuples():
-            # 1. Calculate Games
-            t1_games, t2_games, sets_played = 0, 0, 0
-            for s in [row.set1, row.set2, row.set3]:
-                if s and str(s).strip() and "-" in str(s):
-                    try:
-                        clean_s = str(s).split('(')[0].strip()
-                        parts = clean_s.split('-')
-                        t1_games += int(parts[0])
-                        t2_games += int(parts[1])
-                        sets_played += 1
-                    except: continue
-
-            # 2. Logic for GDA Label and Value
-            # --- Logic for GDA Calculation (Place this inside your loop) ---
-            
-            t1_games = 0
-            t2_games = 0
-            sets_played = 0
-            
+            # 1. Total Games Calculation
+            t1_total, t2_total, sets_count = 0, 0, 0
             for s in [row.set1, row.set2, row.set3]:
                 if s and "-" in str(s):
                     try:
-                        # Strip tie-break points like (5)
                         clean_s = str(s).split('(')[0].strip()
                         parts = clean_s.split('-')
-                        t1_games += int(parts[0])
-                        t2_games += int(parts[1])
-                        sets_played += 1
-                    except:
-                        continue
+                        t1_total += int(parts[0])
+                        t2_total += int(parts[1])
+                        sets_count += 1
+                    except: continue
+
+            # 2. Match Margin Calculation
+            match_margin = abs(t1_total - t2_total)
+            match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
             
-            # Calculate the net difference
-            net_diff = abs(t1_games - t2_games)
-            match_gda = round(net_diff / sets_played, 2) if sets_played > 0 else 0
-            
-            # Set the Label
-            if row.winner == "Tie":
-                gda_label = f"Net Game Margin Avg: +{match_gda}"
+            # 3. Labeling Logic
+            if row.winner == "Team 1":
+                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
+            elif row.winner == "Team 2":
+                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
             else:
-                gda_label = f"Game Diff Avg (Winner): +{match_gda}"
-            
-            # Formatting Display
-            t1_display = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
-            t2_display = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
+                gda_text = f"Net Game Margin Avg: +{match_gda}"
+
+            # 4. Display Strings
+            t1_names = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
+            t2_names = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
             
             if row.winner == "Team 1":
-                headline = f"<span style='color:#fff500'>{t1_display}</span> defeated <span style='color:white'>{t2_display}</span>"
+                headline = f"<span style='color:#fff500'>{t1_names}</span> defeated <span style='color:white'>{t2_names}</span>"
             elif row.winner == "Team 2":
-                headline = f"<span style='color:#fff500'>{t2_display}</span> defeated <span style='color:white'>{t1_display}</span>"
+                headline = f"<span style='color:#fff500'>{t2_names}</span> defeated <span style='color:white'>{t1_names}</span>"
             else:
-                headline = f"<span style='color:white'>{t1_display}</span> tied with <span style='color:white'>{t2_display}</span>"
+                headline = f"<span style='color:white'>{t1_names}</span> tied with <span style='color:white'>{t2_names}</span>"
 
             score_line = f"{row.set1 or ''} {f'| {row.set2}' if row.set2 else ''} {f'| {row.set3}' if row.set3 else ''}"
             img_html = f'<div style="width:100%; text-align:center;"><img src="{row.match_image_url}" style="width:100%; max-height: 350px; object-fit: cover; border-radius: 10px 10px 0 0;"></div>' if row.match_image_url else ""
             
             st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
+                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
                     {img_html}
-                    <div style="padding: 15px;">
-                        <div style="font-size: 0.8em; color: #888; margin-bottom: 10px;">{row.date.strftime('%d %b %Y')} | {row.match_type}</div>
-                        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
+                    <div style="padding: 10px;">
+                        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {row.match_type}</div>
+                        <div style="font-size: 1.15em; text-align: center; margin: 10px 0;">{headline}</div>
                         <div class="match-score-container">
-                            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{score_line}</div>
-                            <div class="gda-label">{gda_label}: +{match_gda}</div>
+                            <div style="font-size: 1.25em; font-weight: bold; color: #FF7518;">{score_line}</div>
+                            <div class="gda-label">{gda_text}</div>
                         </div>
                     </div>
                 </div>
