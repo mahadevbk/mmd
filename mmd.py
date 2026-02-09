@@ -1141,10 +1141,9 @@ with tabs[1]:
                             st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([upd])], ignore_index=True)
                             save_matches(st.session_state.matches_df); st.success("Updated!"); st.rerun()
 
+
     # --- Match History ---
-    st.subheader("History")
-    # --- Match History ---
-    st.subheader("History")
+    st.subheader("Match Records")
     m_hist = st.session_state.matches_df.copy()
 
     if not m_hist.empty:
