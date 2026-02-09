@@ -1733,6 +1733,7 @@ with tabs[4]:
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
         
+        available_players = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
         match_type = st.radio("Select Match Type", ["Doubles", "Singles"], horizontal=True)
 
         if match_type == "Doubles":
