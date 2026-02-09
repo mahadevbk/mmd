@@ -1135,7 +1135,7 @@ with tabs[2]:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    with st.expander("Details & Partners"):
+                    with st.expander("Details & Partners", expanded=False, icon="➡️"):
                         t1, t2 = st.tabs(["Trends", "Partners"])
                         with t1:
                             fig = plot_player_performance(p_name, st.session_state.matches_df)
