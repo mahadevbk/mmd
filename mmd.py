@@ -1223,11 +1223,17 @@ with tabs[2]:
     """, unsafe_allow_html=True)
 
     # Birthday Helper
+    
     def parse_bd(val):
-        if pd.isna(val) or not str(val).strip(): return pd.NaT
+        if pd.isna(val) or not str(val).strip() or str(val) == "None":
+            return None  # Change from pd.NaT to None
         s = str(val).strip()
-        if len(s) <= 5: s += "-2024"
-        return pd.to_datetime(s, dayfirst=True, errors='coerce')
+        if len(s) <= 5:
+            s += "-2024"
+        try:
+            return pd.to_datetime(s, dayfirst=True, errors='coerce').to_pydatetime().date()
+        except:
+            return None
 
     # --- Manage Profiles ---
     with st.expander("⚙️ Manage Player Profiles", expanded=False, icon="➡️"):
