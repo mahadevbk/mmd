@@ -1088,7 +1088,9 @@ with tabs[1]:
         with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
             if not st.session_state.matches_df.empty:
                 m_df = st.session_state.matches_df.sort_values('date', ascending=False)
-                match_options = {f"{r.date[:10]} | {r.team1_player1} vs {r.team2_player1}": r.match_id for r in m_df.itertuples()}
+                #match_options = {f"{r.date[:10]} | {r.team1_player1} vs {r.team2_player1}": r.match_id for r in m_df.itertuples()}
+                # Convert date to string before slicing, or use strftime
+                match_options = {f"{str(r.date)[:10]} | {r.team1_player1} vs {row.team2_player1}": r.match_id for r in m_df.itertuples()}
                 sel_label = st.selectbox("Select Match to Edit", list(match_options.keys()))
                 
                 if sel_label:
