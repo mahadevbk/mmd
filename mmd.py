@@ -1726,6 +1726,10 @@ with tabs[3]:
 
 # --- Tab 5: Bookings ---
 with tabs[4]:
+
+    available_players = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
+    
+
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
         
