@@ -1083,10 +1083,9 @@ with tabs[2]:
         if pd.isna(val) or str(val).strip() == '':
             return pd.NaT
         s = str(val).strip()
-        # If the date is short (e.g., '15-10' or '5-11'), append a leap year so it parses correctly
+        # If the date is short (e.g., '15-10'), append a year so it parses
         if len(s) <= 5: 
-            s += "-2024" # Use 2024 to handle Feb 29th if needed
-        # Parse with dayfirst=True to handle DD-MM-YYYY or DD/MM/YYYY
+            s += "-2024" 
         return pd.to_datetime(s, dayfirst=True, errors='coerce')
 
     # --- Manage Profiles Expander ---
@@ -1128,18 +1127,14 @@ with tabs[2]:
 
             if st.form_submit_button("Save Player Profile"):
                 if mp_name:
-                    # Update DataFrame
                     new_entry = {
                         "name": mp_name.upper().strip(),
                         "profile_image_url": mp_img,
-                        # Save as full date DD/MM/YYYY to standardize future reads
                         "birthday": mp_dob.strftime("%d/%m/%Y") if mp_dob else None,
                         "gender": mp_gender
                     }
-                    
                     if mp_orig_name:
                         st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != mp_orig_name]
-                    
                     st.session_state.players_df = st.session_state.players_df[st.session_state.players_df['name'] != new_entry['name']]
                     st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_entry])], ignore_index=True)
                     save_players(st.session_state.players_df)
@@ -1155,14 +1150,10 @@ with tabs[2]:
 
     # --- Prepare Data ---
     display_players = st.session_state.players_df.copy()
-    
-    # Create a temporary column for proper sorting/display using our robust parser
     display_players['dt_birthday'] = display_players['birthday'].apply(parse_bd_flex)
     
     if sort_option == "Birthday":
-        # Filter out invalid birthdays for this view
         display_players = display_players.dropna(subset=['dt_birthday'])
-        # Sort by Month then Day
         display_players['month'] = display_players['dt_birthday'].dt.month
         display_players['day'] = display_players['dt_birthday'].dt.day
         display_players = display_players.sort_values(['month', 'day'])
@@ -1173,23 +1164,17 @@ with tabs[2]:
     if not display_players.empty:
         for idx, row in display_players.iterrows():
             player_name = row['name']
-            
-            # Get Stats
             p_stats = rank_df[rank_df['Player'] == player_name] if not rank_df.empty else pd.DataFrame()
             has_stats = not p_stats.empty
             s = p_stats.iloc[0] if has_stats else None
             
-            # Format Birthday Display (e.g., "15 Oct")
             bday_html = ""
             if pd.notna(row['dt_birthday']):
                 bday_html = f'<div style="color: #ffd700; font-size: 0.9em; margin-top:5px;">🎂 {row["dt_birthday"].strftime("%d %b")}</div>'
 
-            # Card Container
             with st.container():
                 c1, c2 = st.columns([1, 3])
-                
                 with c1:
-                    # Profile Image
                     img_src = row['profile_image_url'] or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="text-align: center;">
@@ -1201,29 +1186,39 @@ with tabs[2]:
                 
                 with c2:
                     if has_stats:
-                        # Stats Grid with Metrics (Games Won, GD Avg, Clutch, Consistency, Doubles, Singles)
+                        # Extract metrics safely
+                        g_won = s.get('Games Won', 0)
+                        gd_avg = s.get('Game Diff Avg', 0)
+                        clutch = s.get('Clutch Factor', 0)
+                        consistency = s.get('Consistency Index', 0)
+                        d_perf = s.get('Doubles Perf', 0)
+                        s_perf = s.get('Singles Perf', 0)
+                        win_pct = s.get('Win %', 0)
+                        rec = f"{s.get('Wins', 0)}W-{s.get('Losses', 0)}L"
+                        rank_val = s.get('Rank', 'N/A')
+                        badges = s.get('Badges', [])
+
                         st.markdown(f"""
                         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border-left: 4px solid #fff500; margin-bottom: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                                <span style="color: #fff500; font-weight: bold; font-size: 1.2em;">Rank: {s['Rank']}</span>
-                                <span>{' '.join([f"<span class='badge'>{b}</span>" for b in s['Badges']])}</span>
+                                <span style="color: #fff500; font-weight: bold; font-size: 1.2em;">Rank: {rank_val}</span>
+                                <span>{' '.join([f"<span class='badge'>{b}</span>" for b in badges])}</span>
                             </div>
                             
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
-                                <div><div style="font-size: 0.7em; color: #aaa;">GAMES WON</div><div style="font-size: 1.1em; font-weight: bold;">{s['Games Won']}</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF AVG</div><div style="font-size: 1.1em; font-weight: bold;">{s['Game Diff Avg']}</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">CLUTCH FACTOR</div><div style="font-size: 1.1em; font-weight: bold;">{s['Clutch Factor']}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">CONSISTENCY</div><div style="font-size: 1.1em; font-weight: bold;">{s['Consistency Index']}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">GAMES WON</div><div style="font-size: 1.1em; font-weight: bold;">{g_won}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">GAME DIFF AVG</div><div style="font-size: 1.1em; font-weight: bold;">{gd_avg}</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">CLUTCH FACTOR</div><div style="font-size: 1.1em; font-weight: bold;">{clutch}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">CONSISTENCY</div><div style="font-size: 1.1em; font-weight: bold;">{consistency}</div></div>
                                 
-                                <div><div style="font-size: 0.7em; color: #aaa;">DOUBLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00ff00;">{s['Doubles Perf']}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">SINGLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00bfff;">{s['Singles Perf']}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.1em; font-weight: bold;">{s['Win %']}%</div></div>
-                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.1em; font-weight: bold;">{s['Wins']}W-{s['Losses']}L</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">DOUBLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00ff00;">{d_perf}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">SINGLES PERF</div><div style="font-size: 1.1em; font-weight: bold; color: #00bfff;">{s_perf}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">WIN %</div><div style="font-size: 1.1em; font-weight: bold;">{win_pct}%</div></div>
+                                <div><div style="font-size: 0.7em; color: #aaa;">RECORD</div><div style="font-size: 1.1em; font-weight: bold;">{rec}</div></div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Data Expander (Graph & Partners)
                         with st.expander("Show Performance Trends & Partners", expanded=False, icon="➡️"):
                             t1, t2 = st.tabs(["Performance Graph", "Partner Stats"])
                             with t1:
@@ -1250,13 +1245,14 @@ with tabs[2]:
                                     st.info("No partner data.")
                     else:
                         st.info("No stats available (Play some matches!)")
-                
                 st.divider() 
     else:
-        if sort_option == "Birthday" and not st.session_state.players_df.empty:
-            st.info("No players have valid birthdays listed. Edit player profiles to add birthdays.")
-        else:
-            st.info("No players found in database.")
+        st.info("No players found in database.")
+
+
+
+
+
 
 
 # --- Tab 4: Maps ---
