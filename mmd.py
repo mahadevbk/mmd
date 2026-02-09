@@ -1143,56 +1143,77 @@ with tabs[1]:
 
     # --- Match History ---
     st.subheader("History")
+    # --- Match History ---
+    st.subheader("History")
     m_hist = st.session_state.matches_df.copy()
+
     if not m_hist.empty:
+        # 1. ADD PLAYER FILTER
+        filter_names = sorted(st.session_state.players_df['name'].unique())
+        selected_player = st.selectbox("Filter by Player", ["All Players"] + filter_names)
+
         m_hist['date'] = pd.to_datetime(m_hist['date'])
         m_hist = m_hist.sort_values('date', ascending=False)
-        
-        for row in m_hist.itertuples():
-            display_type = auto_detect_category(row)
-            t1_total, t2_total, sets_count = 0, 0, 0
-            display_scores = []
-            for s in [row.set1, row.set2, row.set3]:
-                if s and str(s).strip() and str(s).lower() != 'nan':
-                    nums = re.findall(r'\d+', str(s))
-                    if len(nums) >= 2:
-                        g1, g2 = int(nums[0]), int(nums[1])
-                        t1_total, t2_total, sets_count = t1_total+g1, t2_total+g2, sets_count+1
-                        display_scores.append(f"{g1}-{g2}" if not ("Tie Break" in str(s)) else f"7-6 (TB {g1}-{g2})")
 
-            match_gda = round(abs(t1_total - t2_total) / sets_count, 2) if sets_count > 0 else 0
-            
-            def fmt_team(p1, p2):
-                p1s, p2s = str(p1), str(p2)
-                if display_type in ["Doubles", "Mixed Doubles"]:
-                    return f"<span class='player-name-bold'>{p1s} / {p2s}</span>"
-                return f"<span class='player-name-bold'>{p1s}</span>"
+        # 2. APPLY FILTER LOGIC
+        if selected_player != "All Players":
+            m_hist = m_hist[
+                (m_hist['team1_player1'] == selected_player) |
+                (m_hist['team1_player2'] == selected_player) |
+                (m_hist['team2_player1'] == selected_player) |
+                (m_hist['team2_player2'] == selected_player)
+            ]
 
-            t1_h, t2_h = fmt_team(row.team1_player1, row.team1_player2), fmt_team(row.team2_player1, row.team2_player2)
-            status_txt = "defeated" if row.winner != "Tie" else "tied with"
-            winner_h = t1_h if row.winner == "Team 1" else t2_h if row.winner == "Team 2" else t1_h
-            loser_h = t2_h if row.winner == "Team 1" else t1_h if row.winner == "Team 2" else t2_h
-            headline = f"{winner_h} <span class='status-text-grey'>{status_txt}</span> {loser_h}"
+        if m_hist.empty:
+            st.info(f"No matches found for {selected_player}.")
+        else:
+            for row in m_hist.itertuples():
+                display_type = auto_detect_category(row)
+                t1_total, t2_total, sets_count = 0, 0, 0
+                display_scores = []
+                
+                # Score parsing logic
+                for s in [row.set1, row.set2, row.set3]:
+                    if s and str(s).strip() and str(s).lower() != 'nan':
+                        nums = re.findall(r'\d+', str(s))
+                        if len(nums) >= 2:
+                            g1, g2 = int(nums[0]), int(nums[1])
+                            t1_total, t2_total, sets_count = t1_total+g1, t2_total+g2, sets_count+1
+                            display_scores.append(f"{g1}-{g2}" if not ("Tie Break" in str(s)) else f"7-6 (TB {g1}-{g2})")
 
-            img_html = f'<div class="match-img-wrapper"><img src="{row.match_image_url}" class="match-img-content"></div>' if row.match_image_url else ""
-            
-            card_html = f"""
-                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
-                    {img_html}
-                    <div style="padding: 15px;">
-                        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
-                        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
-                        <div class="match-score-container">
-                            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
-                            <div class="gda-label">Game Diff Avg: +{match_gda}</div>
+                match_gda = round(abs(t1_total - t2_total) / sets_count, 2) if sets_count > 0 else 0
+                
+                def fmt_team(p1, p2):
+                    p1s, p2s = str(p1), str(p2)
+                    if display_type in ["Doubles", "Mixed Doubles"]:
+                        return f"<span class='player-name-bold'>{p1s} / {p2s}</span>"
+                    return f"<span class='player-name-bold'>{p1s}</span>"
+
+                t1_h, t2_h = fmt_team(row.team1_player1, row.team1_player2), fmt_team(row.team2_player1, row.team2_player2)
+                status_txt = "defeated" if row.winner != "Tie" else "tied with"
+                winner_h = t1_h if row.winner == "Team 1" else t2_h if row.winner == "Team 2" else t1_h
+                loser_h = t2_h if row.winner == "Team 1" else t1_h if row.winner == "Team 2" else t2_h
+                headline = f"{winner_h} <span class='status-text-grey'>{status_txt}</span> {loser_h}"
+
+                img_html = f'<div class="match-img-wrapper"><img src="{row.match_image_url}" class="match-img-content"></div>' if row.match_image_url else ""
+                
+                card_html = f"""
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
+                        {img_html}
+                        <div style="padding: 15px;">
+                            <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+                            <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
+                            <div class="match-score-container">
+                                <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
+                                <div class="gda-label">Game Diff Avg: +{match_gda}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
-
+    
 
 
 
