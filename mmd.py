@@ -1439,7 +1439,7 @@ with tabs[2]:
                         t1, t2 = st.tabs(["Trends", "Partners"])
                         with t1:
                             fig = plot_player_performance(p_name, st.session_state.matches_df)
-                            if fig: st.plotly_chart(fig, use_container_width=True, key=f"p_{idx}")
+                            if fig: st.plotly_chart(fig, width="stretch", key=f"p_{idx}")
                         with t2:
                             if p_name in partner_stats_global:
                                 parts = partner_stats_global[p_name]
