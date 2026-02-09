@@ -902,12 +902,36 @@ with tabs[0]:
     else:
         st.info("No matches recorded yet.")
 
+
 # --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
+    
+    # CSS for the Match History layout
+    st.markdown("""
+        <style>
+        .match-score-container {
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .gda-label {
+            font-size: 0.85em;
+            color: #fff500;
+            font-weight: bold;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 4px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     if not st.session_state.players_df.empty:
         names = sorted([n for n in st.session_state.players_df['name'] if n != 'Visitor'])
         
+        # --- Post Match Form ---
         with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
             with st.form("match_form"):
                 mtype = st.radio("Type", ["Doubles", "Singles"])
@@ -946,13 +970,11 @@ with tabs[1]:
                     st.success("Saved!")
                     st.rerun()
 
+        # --- Edit Match Form ---
         with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
             if not st.session_state.matches_df.empty:
                 matches_list = st.session_state.matches_df.sort_values('date', ascending=False)
-                match_options = {}
-                for r in matches_list.itertuples():
-                    label = f"{pd.to_datetime(r.date).strftime('%Y-%m-%d')} - {r.team1_player1}/{r.team1_player2} vs {r.team2_player1}/{r.team2_player2}"
-                    match_options[label] = r.match_id
+                match_options = {f"{pd.to_datetime(r.date).strftime('%Y-%m-%d')} - {r.team1_player1}/{r.team1_player2} vs {r.team2_player1}/{r.team2_player2}": r.match_id for r in matches_list.itertuples()}
                 
                 selected_label = st.selectbox("Select Match to Edit", list(match_options.keys()))
                 if selected_label:
@@ -978,81 +1000,84 @@ with tabs[1]:
                             et1p2, et2p2 = None, None
                             
                         edate = st.date_input("Date", value=pd.to_datetime(row_edit.date))
-                        escores_opts = [""] + tennis_scores()
-                        es1 = st.selectbox("Set 1", escores_opts, index=get_idx(row_edit.set1, escores_opts))
-                        es2 = st.selectbox("Set 2", escores_opts, index=get_idx(row_edit.set2, escores_opts))
-                        es3 = st.selectbox("Set 3", escores_opts, index=get_idx(row_edit.set3, escores_opts))
+                        es1 = st.selectbox("Set 1", [""]+tennis_scores(), index=get_idx(row_edit.set1, [""]+tennis_scores()))
+                        es2 = st.selectbox("Set 2", [""]+tennis_scores(), index=get_idx(row_edit.set2, [""]+tennis_scores()))
+                        es3 = st.selectbox("Set 3", [""]+tennis_scores(), index=get_idx(row_edit.set3, [""]+tennis_scores()))
                         ewinner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row_edit.winner) if row_edit.winner in ["Team 1", "Team 2", "Tie"] else 0)
                         
-                        st.write(f"Current Image: {row_edit.match_image_url or 'None'}")
-                        eimg = st.file_uploader("Change Image (Leave empty to keep current)", type=["jpg","png"])
-                        
                         if st.form_submit_button("Update Match"):
-                            new_url = row_edit.match_image_url
-                            if eimg:
-                                new_url = upload_image_to_github(eimg, mid_to_edit)
-                            
                             updated_match = {
                                 "match_id": mid_to_edit, "date": edate.isoformat(), "match_type": em_type,
-                                "team1_player1": et1p1, "team1_player2": et1p2,
-                                "team2_player1": et2p1, "team2_player2": et2p2,
-                                "set1": es1, "set2": es2, "set3": es3, "winner": ewinner,
-                                "match_image_url": new_url
+                                "team1_player1": et1p1, "team1_player2": et1p2, "team2_player1": et2p1, "team2_player2": et2p2,
+                                "set1": es1, "set2": es2, "set3": es3, "winner": ewinner, "match_image_url": row_edit.match_image_url
                             }
                             st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df['match_id'] != mid_to_edit]
                             st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([updated_match])], ignore_index=True)
                             save_matches(st.session_state.matches_df)
-                            st.success("Match Updated!")
-                            st.rerun()
-            else:
-                st.info("No matches to edit.")
+                            st.success("Match Updated!"); st.rerun()
 
-    # Match History
+    # --- Match History ---
     st.subheader("History")
     m_hist = st.session_state.matches_df.copy()
     if not m_hist.empty:
         m_hist['date'] = pd.to_datetime(m_hist['date'])
         m_hist = m_hist.sort_values('date', ascending=False)
+        
         for row in m_hist.itertuples():
+            # Winner Logic Calculation
+            w_total, l_total, sets_played = 0, 0, 0
+            is_t1_w = (row.winner == "Team 1")
+            
+            for s in [row.set1, row.set2, row.set3]:
+                if s and str(s).strip() and "-" in str(s):
+                    try:
+                        clean_s = str(s).split('(')[0].strip()
+                        parts = clean_s.split('-')
+                        g1, g2 = int(parts[0]), int(parts[1])
+                        if row.winner == "Tie": w_total += g1; l_total += g2
+                        elif is_t1_w: w_total += g1; l_total += g2
+                        else: w_total += g2; l_total += g1
+                        sets_played += 1
+                    except: continue
+
+            match_gda = round((w_total - l_total) / sets_played, 2) if sets_played > 0 else 0
+            
+            # Formatting Display
+            t1_display = f"{row.team1_player1}" + (f" / {row.team1_player2}" if row.team1_player2 and row.team1_player2 != "Visitor" else "")
+            t2_display = f"{row.team2_player1}" + (f" / {row.team2_player2}" if row.team2_player2 and row.team2_player2 != "Visitor" else "")
+            
             if row.winner == "Team 1":
-                headline = f"<span style='color:#fff500'>{row.team1_player1}/{row.team1_player2}</span> defeated <span style='color:white'>{row.team2_player1}/{row.team2_player2}</span>"
+                headline = f"<span style='color:#fff500'>{t1_display}</span> defeated <span style='color:white'>{t2_display}</span>"
             elif row.winner == "Team 2":
-                headline = f"<span style='color:#fff500'>{row.team2_player1}/{row.team2_player2}</span> defeated <span style='color:white'>{row.team1_player1}/{row.team1_player2}</span>"
+                headline = f"<span style='color:#fff500'>{t2_display}</span> defeated <span style='color:white'>{t1_display}</span>"
             else:
-                headline = f"<span style='color:white'>{row.team1_player1}/{row.team1_player2}</span> tied with <span style='color:white'>{row.team2_player1}/{row.team2_player2}</span>"
+                headline = f"<span style='color:white'>{t1_display}</span> tied with <span style='color:white'>{t2_display}</span>"
 
-            s1, s2, s3 = row.set1, row.set2, row.set3
-            if row.winner == "Team 2":
-                s1, s2, s3 = flip_score(s1), flip_score(s2), flip_score(s3)
-
-            score_line = f"{format_set_score(s1)} {f'| {format_set_score(s2)}' if s2 else ''} {f'| {format_set_score(s3)}' if s3 else ''}"
-            res_txt = f"{row.team1_player1}/{row.team1_player2} vs {row.team2_player1}/{row.team2_player2} ({score_line})"
-            share_text = urllib.parse.quote(f"MMD Match Result ({row.date.strftime('%Y-%m-%d')}):\n{res_txt}\nWinner: {row.winner}")
+            score_line = f"{row.set1 or ''} {f'| {row.set2}' if row.set2 else ''} {f'| {row.set3}' if row.set3 else ''}"
             
-            img_html_top = f'<div style="width:100%; text-align:center; background-color:black;"><img src="{row.match_image_url}" style="width:100%; max-height: 400px; object-fit: cover; border-bottom: 1px solid rgba(255,255,255,0.1);"></div>' if row.match_image_url else ""
+            img_html = f'<div style="width:100%; text-align:center;"><img src="{row.match_image_url}" style="width:100%; max-height: 350px; object-fit: cover; border-radius: 10px 10px 0 0;"></div>' if row.match_image_url else ""
             
-            match_html = f"""
-<div class="ranking-row" style="padding: 0; overflow: hidden;">
-    {img_html_top}
-    <div style="padding: 20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                <span style="font-size:0.9em; color:#aaa;">{row.date.strftime('%d %b %Y')} | {row.match_type}</span>
-        </div>
-        <div style="margin: 15px 0; font-size: 1.2em; text-align: center; line-height: 1.4;">{headline}</div>
-        <div style="text-align: center; margin-bottom:15px; font-weight: bold; font-size: 1.1em; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 5px; color: #FF7518;">{score_line}</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-            <a href="https://wa.me/?text={share_text}" target="_blank" class="whatsapp-share">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1);" /> Share Result
-            </a>
-            {f'<a href="{row.match_image_url}" target="_blank" style="color: #aaa; text-decoration: none; font-size: 0.9em;">View Full Photo 📷</a>' if row.match_image_url else ''}
-        </div>
-    </div>
-</div>"""
-            st.markdown(match_html, unsafe_allow_html=True)
+            st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
+                    {img_html}
+                    <div style="padding: 15px;">
+                        <div style="font-size: 0.8em; color: #888; margin-bottom: 10px;">{row.date.strftime('%d %b %Y')} | {row.match_type}</div>
+                        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
+                        <div class="match-score-container">
+                            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{score_line}</div>
+                            <div class="gda-label">Game Diff Avg (Winner): +{match_gda}</div>
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
     else:
         st.info("No matches recorded yet.")
 
-# --- Tab 3: Player Profile ---
+
+
+
+
+
 # --- Tab 3: Player Profile ---
 with tabs[2]:
     st.header("Player Profile")
