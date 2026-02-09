@@ -972,7 +972,7 @@ with tabs[0]:
 with tabs[1]:
     st.header("Matches")
     
-    # CSS for the Match Cards
+    # 1. Custom CSS for Cards and Images
     st.markdown("""
         <style>
         .match-score-container {
@@ -1000,6 +1000,7 @@ with tabs[1]:
             font-size: 0.9em;
             font-weight: normal;
         }
+        /* Thumbnail fix: Full image visible, no background, no truncation */
         .match-img-wrapper {
             width: 100%;
             display: flex;
@@ -1008,14 +1009,66 @@ with tabs[1]:
         }
         .match-img-content {
             width: 100%;
-            max-height: 600px;
-            object-fit: contain;
+            max-height: 550px;
+            object-fit: contain; /* Shows heads without cutting off */
             display: block;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # ... (Your Post Match and Edit Match Forms here) ...
+    # 2. Helper Logic for Category Detection
+    gender_map = dict(zip(st.session_state.players_df['name'], st.session_state.players_df['gender']))
+    
+    def auto_detect_category(row):
+        if row.match_type == "Singles":
+            return "Singles"
+        p_list = [str(row.team1_player1), str(row.team1_player2), str(row.team2_player1), str(row.team2_player2)]
+        # If any Visitor is present, it's just 'Doubles'
+        if any(p.upper() == "VISITOR" for p in p_list):
+            return "Doubles"
+        # Check M+F vs M+F
+        g1 = sorted([gender_map.get(row.team1_player1, 'U'), gender_map.get(row.team1_player2, 'U')])
+        g2 = sorted([gender_map.get(row.team2_player1, 'U'), gender_map.get(row.team2_player2, 'U')])
+        if g1 == ['F', 'M'] and g2 == ['F', 'M']:
+            return "Mixed Doubles"
+        return "Doubles"
+
+    # --- Match Posting Forms ---
+    if not st.session_state.players_df.empty:
+        names = sorted([n for n in st.session_state.players_df['name'] if n.upper() != 'VISITOR'])
+        
+        with st.expander("➕ Post Match Result", expanded=False):
+            with st.form("match_form"):
+                mtype = st.radio("Type", ["Singles", "Doubles"])
+                c1, c2 = st.columns(2)
+                if mtype == "Doubles":
+                    t1p1 = c1.selectbox("T1 P1", [""]+names)
+                    t1p2 = c1.selectbox("T1 P2", ["", "Visitor"]+names)
+                    t2p1 = c2.selectbox("T2 P1", [""]+names)
+                    t2p2 = c2.selectbox("T2 P2", ["", "Visitor"]+names)
+                else:
+                    t1p1 = c1.selectbox("P1", [""]+names)
+                    t2p1 = c2.selectbox("P2", [""]+names)
+                    t1p2, t2p2 = None, None
+                
+                date = st.date_input("Date")
+                s1 = st.selectbox("Set 1", [""]+tennis_scores())
+                s2 = st.selectbox("Set 2", [""]+tennis_scores())
+                s3 = st.selectbox("Set 3", [""]+tennis_scores())
+                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"])
+                img = st.file_uploader("Upload Image", type=["jpg","png"])
+                
+                if st.form_submit_button("Submit"):
+                    mid = generate_match_id(st.session_state.matches_df, pd.to_datetime(date))
+                    url = upload_image_to_github(img, mid) if img else ""
+                    new_match = {
+                        "match_id": mid, "date": date.isoformat(), "match_type": mtype,
+                        "team1_player1": t1p1, "team1_player2": t1p2, "team2_player1": t2p1, "team2_player2": t2p2,
+                        "set1": s1, "set2": s2, "set3": s3, "winner": winner, "match_image_url": url
+                    }
+                    st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
+                    save_matches(st.session_state.matches_df)
+                    st.success("Saved!"); st.rerun()
 
     # --- Match History ---
     st.subheader("History")
@@ -1025,78 +1078,57 @@ with tabs[1]:
         m_hist = m_hist.sort_values('date', ascending=False)
         
         for row in m_hist.itertuples():
+            # 1. Automatic Type Detection
+            display_type = auto_detect_category(row)
+            
+            # 2. Score & GDA Calculation
             t1_total, t2_total, sets_count = 0, 0, 0
             display_scores = []
-
-            # 1. Parsing Logic
             for s in [row.set1, row.set2, row.set3]:
                 if s and str(s).strip() and str(s).lower() != 'nan':
                     nums = re.findall(r'\d+', str(s))
                     if len(nums) >= 2:
                         g1, g2 = int(nums[0]), int(nums[1])
-                        t1_total += g1
-                        t2_total += g2
-                        sets_count += 1
-                        is_tb = "Tie Break" in str(s) or (abs(g1-g2) == 1 and (g1 > 5 or g2 > 5))
-                        if is_tb:
-                            display_scores.append(f"7-6 (Tie Break {g1}-{g2})")
-                        else:
-                            display_scores.append(f"{g1}-{g2}")
+                        t1_total, t2_total, sets_count = t1_total+g1, t2_total+g2, sets_count+1
+                        display_scores.append(f"{g1}-{g2}" if not ("Tie Break" in str(s)) else f"7-6 (TB {g1}-{g2})")
 
-            # 2. GDA Math
-            match_margin = abs(t1_total - t2_total)
-            match_gda = round(match_margin / sets_count, 2) if sets_count > 0 else 0
+            match_gda = round(abs(t1_total - t2_total) / sets_count, 2) if sets_count > 0 else 0
             
-            # 3. Team Name Logic
-            def get_team_html(p1, p2, mtype):
-                p1_s = str(p1).strip() if p1 and str(p1) != 'nan' else ""
-                p2_s = str(p2).strip() if p2 and str(p2) != 'nan' else ""
-                if mtype == "Doubles":
-                    if not p2_s or p2_s.upper() == "VISITOR":
-                        return f"<span class='player-name-bold'>{p1_s} / VISITOR</span>"
-                    if not p1_s or p1_s.upper() == "VISITOR":
-                        return f"<span class='player-name-bold'>VISITOR / {p2_s}</span>"
-                    return f"<span class='player-name-bold'>{p1_s} / {p2_s}</span>"
-                return f"<span class='player-name-bold'>{p1_s}</span>"
+            # 3. Header formatting
+            def fmt_team(p1, p2):
+                p1s, p2s = str(p1), str(p2)
+                if display_type in ["Doubles", "Mixed Doubles"]:
+                    return f"<span class='player-name-bold'>{p1s} / {p2s}</span>"
+                return f"<span class='player-name-bold'>{p1s}</span>"
 
-            t1_html = get_team_html(row.team1_player1, row.team1_player2, row.match_type)
-            t2_html = get_team_html(row.team2_player1, row.team2_player2, row.match_type)
-            
-            # 4. Headline Logic
+            t1_h, t2_h = fmt_team(row.team1_player1, row.team1_player2), fmt_team(row.team2_player1, row.team2_player2)
             if row.winner == "Team 1":
-                headline = f"{t1_html} <span class='status-text-grey'>defeated</span> {t2_html}"
-                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
+                headline = f"{t1_h} <span class='status-text-grey'>defeated</span> {t2_h}"
             elif row.winner == "Team 2":
-                headline = f"{t2_html} <span class='status-text-grey'>defeated</span> {t1_html}"
-                gda_text = f"Game Diff Avg (Winner): +{match_gda}"
+                headline = f"{t2_h} <span class='status-text-grey'>defeated</span> {t1_h}"
             else:
-                headline = f"{t1_html} <span class='status-text-grey'>tied with</span> {t2_html}"
-                gda_text = f"Net Game Margin Avg: +{match_gda}"
+                headline = f"{t1_h} <span class='status-text-grey'>tied with</span> {t2_h}"
 
-            score_line = " | ".join(display_scores)
-            
-            # 5. Image HTML
+            # 4. Image HTML (Transparent background, no crop)
             img_html = f'<div class="match-img-wrapper"><img src="{row.match_image_url}" class="match-img-content"></div>' if row.match_image_url else ""
             
-            # 6. Final Render
-            # We use a single f-string to ensure Streamlit treats it as one block of HTML
-            card_content = f"""
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; overflow: hidden;">
+            # 5. Final Card Rendering
+            card_html = f"""
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
                     {img_html}
                     <div style="padding: 15px;">
-                        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {row.match_type}</div>
-                        <div style="font-size: 1.15em; text-align: center; margin: 10px 0;">{headline}</div>
+                        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+                        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
                         <div class="match-score-container">
-                            <div style="font-size: 1.25em; font-weight: bold; color: #FF7518;">{score_line}</div>
-                            <div class="gda-label">{gda_text}</div>
+                            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
+                            <div class="gda-label">Game Diff Avg: +{match_gda}</div>
                         </div>
                     </div>
                 </div>
             """
-            st.markdown(card_content, unsafe_allow_html=True)
+            st.markdown(card_html, unsafe_allow_html=True)
     else:
-        st.info("No matches recorded yet.")
-
+        st.info("No matches recorded.")
 
 # --- Tab 4: Maps ---
 with tabs[3]:
