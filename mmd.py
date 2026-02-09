@@ -211,8 +211,10 @@ def delete_match_from_db(match_id):
     st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != match_id]
     fetch_data.clear()
 
+
 def upload_image_to_github(file, file_name, image_type="match"):
-    if not file: return ""
+    if not file: 
+        return ""
     try:
         token = st.secrets["github"]["token"]
         repo = st.secrets["github"]["repo"]
@@ -230,22 +232,40 @@ def upload_image_to_github(file, file_name, image_type="match"):
     path_in_repo = f"{folder}/{file_name}.jpg"
 
     try:
+        # 1. Read the file into bytes
         content_bytes = file.getvalue()
+        if not content_bytes:
+            return ""
+
+        # 2. Open and transpose image (fixes rotation issues from phones)
         img = Image.open(io.BytesIO(content_bytes))
         img = ImageOps.exif_transpose(img)
         
-        # Resize logic
+        # 3. Ensure image is in RGB mode (required for JPEG saving)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        
+        # 4. Resize logic for match photos to prevent GitHub API timeouts
         if image_type == "match" and (img.width > 1200 or img.height > 1200):
             img.thumbnail((1200, 1200), Image.LANCZOS)
         
+        # 5. Save to buffer and encode
         buffer = io.BytesIO()
-        img.save(buffer, format=img.format or "JPEG", quality=85)
-        content_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        # Explicitly use JPEG to ensure the buffer is written correctly
+        img.save(buffer, format="JPEG", quality=85)
         
+        # Get the byte value and check if it's empty before decoding
+        image_data = buffer.getvalue()
+        if not image_data:
+            raise ValueError("The image buffer is empty. Save operation failed.")
+            
+        content_b64 = base64.b64encode(image_data).decode("utf-8")
+        
+        # 6. GitHub API communication
         api_url = f"https://api.github.com/repos/{repo}/contents/{path_in_repo}"
         headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
         
-        # Check existing
+        # Check if file already exists to get its SHA (required for updates)
         sha = None
         resp = requests.get(api_url, headers=headers)
         if resp.status_code == 200:
@@ -256,17 +276,18 @@ def upload_image_to_github(file, file_name, image_type="match"):
             "branch": branch,
             "content": content_b64
         }
-        if sha: payload["sha"] = sha
+        if sha: 
+            payload["sha"] = sha
         
         requests.put(api_url, headers=headers, json=payload).raise_for_status()
         
         # URL encode the path to handle spaces safely in the return URL
         encoded_path = urllib.parse.quote(path_in_repo)
         return f"https://raw.githubusercontent.com/{repo}/{branch}/{encoded_path}"
+        
     except Exception as e:
         st.error(f"Upload failed: {e}")
         return ""
-
 # --- Business Logic ---
 
 def tennis_scores():
