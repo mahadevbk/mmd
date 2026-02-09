@@ -1054,7 +1054,7 @@ with tabs[1]:
         names = sorted([n for n in st.session_state.players_df['name'] if n.upper() != 'VISITOR'])
         
         # A. POST MATCH FORM
-        with st.expander("➕ Post Match Result", expanded=False, icon="➡️):
+        with st.expander("➕ Post Match Result", expanded=False, icon="➡️"):
             with st.form("match_form"):
                 mtype = st.radio("Type", ["Singles", "Doubles"])
                 c1, c2 = st.columns(2)
@@ -1084,7 +1084,50 @@ with tabs[1]:
                     save_matches(st.session_state.matches_df)
                     st.success("Saved!"); st.rerun()
 
+        # B. EDIT MATCH FORM (Restored)
+        with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
+            if not st.session_state.matches_df.empty:
+                m_df = st.session_state.matches_df.sort_values('date', ascending=False)
+                match_options = {f"{r.date[:10]} | {r.team1_player1} vs {r.team2_player1}": r.match_id for r in m_df.itertuples()}
+                sel_label = st.selectbox("Select Match to Edit", list(match_options.keys()))
+                
+                if sel_label:
+                    mid_edit = match_options[sel_label]
+                    row_edit = m_df[m_df['match_id'] == mid_edit].iloc[0]
+                    
+                    with st.form("edit_match_form"):
+                        em_type = st.radio("Type", ["Singles", "Doubles"], index=0 if row_edit.match_type=="Singles" else 1)
+                        ec1, ec2 = st.columns(2)
+                        
+                        def get_idx(val, opt): 
+                            try: return opt.index(val) 
+                            except: return 0
 
+                        if em_type == "Doubles":
+                            et1p1 = ec1.selectbox("T1 P1", [""]+names, index=get_idx(row_edit.team1_player1, [""]+names))
+                            et1p2 = ec1.selectbox("T1 P2", ["", "Visitor"]+names, index=get_idx(row_edit.team1_player2, ["", "Visitor"]+names))
+                            et2p1 = ec2.selectbox("T2 P1", [""]+names, index=get_idx(row_edit.team2_player1, [""]+names))
+                            et2p2 = ec2.selectbox("T2 P2", ["", "Visitor"]+names, index=get_idx(row_edit.team2_player2, ["", "Visitor"]+names))
+                        else:
+                            et1p1 = ec1.selectbox("P1", [""]+names, index=get_idx(row_edit.team1_player1, [""]+names))
+                            et2p1 = ec2.selectbox("P2", [""]+names, index=get_idx(row_edit.team2_player1, [""]+names))
+                            et1p2, et2p2 = None, None
+                        
+                        edate = st.date_input("Date", value=pd.to_datetime(row_edit.date))
+                        es1 = st.selectbox("Set 1", [""]+tennis_scores(), index=get_idx(row_edit.set1, [""]+tennis_scores()))
+                        es2 = st.selectbox("Set 2", [""]+tennis_scores(), index=get_idx(row_edit.set2, [""]+tennis_scores()))
+                        es3 = st.selectbox("Set 3", [""]+tennis_scores(), index=get_idx(row_edit.set3, [""]+tennis_scores()))
+                        ewinner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=get_idx(row_edit.winner, ["Team 1", "Team 2", "Tie"]))
+                        
+                        if st.form_submit_button("Update"):
+                            upd = {
+                                "match_id": mid_edit, "date": edate.isoformat(), "match_type": em_type,
+                                "team1_player1": et1p1, "team1_player2": et1p2, "team2_player1": et2p1, "team2_player2": et2p2,
+                                "set1": es1, "set2": es2, "set3": es3, "winner": ewinner, "match_image_url": row_edit.match_image_url
+                            }
+                            st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df['match_id'] != mid_edit]
+                            st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([upd])], ignore_index=True)
+                            save_matches(st.session_state.matches_df); st.success("Updated!"); st.rerun()
 
     # --- Match History ---
     st.subheader("History")
@@ -1137,53 +1180,6 @@ with tabs[1]:
             st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
-
-        # B. EDIT MATCH FORM (Restored)
-        with st.expander("✏️ Edit Match Result",expanded=False, icon="➡️):
-            if not st.session_state.matches_df.empty:
-                m_df = st.session_state.matches_df.sort_values('date', ascending=False)
-                match_options = {f"{r.date[:10]} | {r.team1_player1} vs {r.team2_player1}": r.match_id for r in m_df.itertuples()}
-                sel_label = st.selectbox("Select Match to Edit", list(match_options.keys()))
-                
-                if sel_label:
-                    mid_edit = match_options[sel_label]
-                    row_edit = m_df[m_df['match_id'] == mid_edit].iloc[0]
-                    
-                    with st.form("edit_match_form"):
-                        em_type = st.radio("Type", ["Singles", "Doubles"], index=0 if row_edit.match_type=="Singles" else 1)
-                        ec1, ec2 = st.columns(2)
-                        
-                        def get_idx(val, opt): 
-                            try: return opt.index(val) 
-                            except: return 0
-
-                        if em_type == "Doubles":
-                            et1p1 = ec1.selectbox("T1 P1", [""]+names, index=get_idx(row_edit.team1_player1, [""]+names))
-                            et1p2 = ec1.selectbox("T1 P2", ["", "Visitor"]+names, index=get_idx(row_edit.team1_player2, ["", "Visitor"]+names))
-                            et2p1 = ec2.selectbox("T2 P1", [""]+names, index=get_idx(row_edit.team2_player1, [""]+names))
-                            et2p2 = ec2.selectbox("T2 P2", ["", "Visitor"]+names, index=get_idx(row_edit.team2_player2, ["", "Visitor"]+names))
-                        else:
-                            et1p1 = ec1.selectbox("P1", [""]+names, index=get_idx(row_edit.team1_player1, [""]+names))
-                            et2p1 = ec2.selectbox("P2", [""]+names, index=get_idx(row_edit.team2_player1, [""]+names))
-                            et1p2, et2p2 = None, None
-                        
-                        edate = st.date_input("Date", value=pd.to_datetime(row_edit.date))
-                        es1 = st.selectbox("Set 1", [""]+tennis_scores(), index=get_idx(row_edit.set1, [""]+tennis_scores()))
-                        es2 = st.selectbox("Set 2", [""]+tennis_scores(), index=get_idx(row_edit.set2, [""]+tennis_scores()))
-                        es3 = st.selectbox("Set 3", [""]+tennis_scores(), index=get_idx(row_edit.set3, [""]+tennis_scores()))
-                        ewinner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=get_idx(row_edit.winner, ["Team 1", "Team 2", "Tie"]))
-                        
-                        if st.form_submit_button("Update"):
-                            upd = {
-                                "match_id": mid_edit, "date": edate.isoformat(), "match_type": em_type,
-                                "team1_player1": et1p1, "team1_player2": et1p2, "team2_player1": et2p1, "team2_player2": et2p2,
-                                "set1": es1, "set2": es2, "set3": es3, "winner": ewinner, "match_image_url": row_edit.match_image_url
-                            }
-                            st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df['match_id'] != mid_edit]
-                            st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([upd])], ignore_index=True)
-                            save_matches(st.session_state.matches_df); st.success("Updated!"); st.rerun()
-        
-
 
 
 
