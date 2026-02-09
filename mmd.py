@@ -669,6 +669,125 @@ def save_bookings(df):
     except Exception as e:
         st.error(f"Save bookings error: {e}")
 
+
+#----------------------HALL OF FAME FUNCTION ---------------------------------------------
+
+
+
+
+def display_hall_of_fame():
+    """
+    Fetches and displays detailed Hall of Fame data from Supabase.
+    This version uses min-height to allow cards to dynamically resize.
+    """
+    st.header("🏆 Hall of Fame")
+
+    def season_to_date(season_str):
+        if not season_str:
+            return datetime(1900, 1, 1)
+        match = re.match(r'Q(\d) (\d{4})', season_str)
+        if match:
+            q = int(match.group(1))
+            year = int(match.group(2))
+            month = (q - 1) * 3 + 3  # Q1:3, Q2:6, Q3:9, Q4:12
+            return datetime(year, month, 1)
+        return datetime(1900, 1, 1)
+
+    try:
+        response = supabase.table(hall_of_fame_table_name).select("*").order("Season", desc=True).order("Rank", desc=False).execute()
+        hof_data = response.data
+
+        if not hof_data:
+            st.info("The Hall of Fame is still empty. Add some top players from past seasons!")
+            return
+
+        # Using a set for faster unique lookups
+        seasons = sorted(list(set(p['Season'] for p in hof_data)), key=season_to_date, reverse=True)
+
+        for season in seasons:
+            st.subheader(f"🏅 Season: {season}")
+            
+            season_players = [p for p in hof_data if p['Season'] == season]
+
+            cols = st.columns(len(season_players) if len(season_players) <= 3 else 3)
+            col_index = 0
+
+            for player in season_players:
+                with cols[col_index]:
+                    # --- Robust Data Conversion & Handling ---
+                    try:
+                        rank = int(player.get('Rank', 0))
+                        rank_emoji = '🥇' if rank == 1 else '🥈' if rank == 2 else '🥉'
+                    except (ValueError, TypeError):
+                        rank = player.get('Rank', 'N/A')
+                        rank_emoji = '🏆'
+
+                    try:
+                        points_display = f"{float(player.get('Points', 0)):.2f}"
+                    except (ValueError, TypeError):
+                        points_display = player.get('Points', 'N/A')
+                    try:
+                        Games_won_display = f"{float(player.get('Games_won', 0)):.2f}"
+                    except (ValueError, TypeError):
+                        Games_won_display = player.get('Games_won', 'N/A')
+                    try:
+                        cumulative_GD_display = f"{float(player.get('cumulative_GD', 0)):.2f}"
+                    except (ValueError, TypeError):
+                        cumulative_GD_display = player.get('cumulative_GD', 'N/A')
+
+                        
+                    try:
+                        gda_display = f"{float(player.get('GDA', 0)):.2f}"
+                    except (ValueError, TypeError):
+                        gda_display = player.get('GDA', 'N/A')
+
+                    try:
+                        win_rate_display = f"{float(player.get('WinRate', 0)):.1f}%"
+                    except (ValueError, TypeError):
+                        win_rate_display = f"{player.get('WinRate', 'N/A')}%"
+
+                    matches_played = player.get('Matches', 'N/A')
+                    performance_score = player.get('Performance_score', 'N/A')
+                    profile_image = player.get('profile_image', '')
+                    player_name = player.get('Player', 'N/A')
+
+                    # --- Display Card ---
+                    st.markdown(
+                        f"""
+                        <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid #fff500;">
+                                <p style="font-size: 1.5em; font-weight: bold; color: #fff500; margin-top: 10px;">{player_name}</p>
+                                <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
+                                    {rank_emoji} Rank <span style="font-weight: bold; color: #FFFF00;">{rank}</span>
+                                </p>
+                            </div>
+                            <div style="text-align: left; font-size: 0.95em; padding: 0 10px;">
+                                <p><strong>Data for the Season:</strong></p>
+                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: #FFFF00;">{points_display}</span></p>
+                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: #FFFF00;">{Games_won_display}</span></p>
+                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: #FFFF00;">{win_rate_display}</span></p>
+                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: #FFFF00;">{matches_played}</span></p>
+                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: #FFFF00;">{gda_display}</span></p>
+                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: #FFFF00;">{cumulative_GD_display}</span></p>
+                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: #FFFF00;">{performance_score}</span></p>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                col_index = (col_index + 1) % 3
+
+            st.markdown("<hr>", unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {str(e)}")
+        st.error("Please double-check your Supabase table name and column names for any typos.")
+
+
+
+
+
 # --- Initial Load ---
 load_players()
 load_matches()
@@ -1225,61 +1344,92 @@ with tabs[4]:
     else:
         st.info("No upcoming bookings.")
 
-# --- Tab 6: Hall of Fame ---
+# ...START OF TAB 5 HALL OF FAME -------------------------------------------------------------------------
 with tabs[5]:
-    st.header("🏆 Hall of Fame")
-    if not rank_df.empty:
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            best_win = rank_df.sort_values("Win %", ascending=False).iloc[0]
-            st.success(f"**Highest Win Rate**\n\n{best_win['Player']} ({best_win['Win %']}%)")
-        with c2:
-            most_games = rank_df.sort_values("Games Won", ascending=False).iloc[0]
-            st.warning(f"**Most Games Won**\n\n{most_games['Player']} ({most_games['Games Won']})")
-        with c3:
-            most_matches = rank_df.sort_values("Matches", ascending=False).iloc[0]
-            st.info(f"**Most Active**\n\n{most_matches['Player']} ({most_matches['Matches']} matches)")
-            
-        st.subheader("League Records")
-        # Example records
-        st.write("Longest Winning Streak: TBD")
-        st.write("Biggest Upset: TBD")
+    #st.header("Hall of Fame")
+    display_hall_of_fame()
 
-# --- Tab 7: Mini Tourney ---
+
+
+
+#--MINI TOURNEY -----------------------
 with tabs[6]:
-    st.header("Mini Tournament Generator")
-    players = st.multiselect("Select Players (4+)", sorted(st.session_state.players_df['name'].unique()))
-    if len(players) >= 4:
-        if st.button("Generate Bracket"):
-            random.shuffle(players)
-            t1 = (players[0], players[1])
-            t2 = (players[2], players[3])
-            st.write(f"**Semi Final 1:** {t1[0]}/{t1[1]} vs {t2[0]}/{t2[1]}")
-            if len(players) >= 8:
-                 t3 = (players[4], players[5])
-                 t4 = (players[6], players[7])
-                 st.write(f"**Semi Final 2:** {t3[0]}/{t3[1]} vs {t4[0]}/{t4[1]}")
-    else:
-        st.info("Select at least 4 players to generate a draw.")
+    st.header("Mini Tournaments Organiser")
+    st.info("Tournament Ograniser is moved to https://tournament-organiser.streamlit.app/")
+    st.info("App may be dormant and need to be 'woken up'.")
 
-# --- Tab 8: MMD AI ---
+
+
+
+#----MINI TOURNEY--------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
 with tabs[7]:
-    st.header("MMD Tennis Assistant")
-    st.caption("Ask about rules, stats, or schedule")
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    st.header("📊 Analyze League Data with Google Gemini")
+    st.markdown("""
+    Get instant insights, charts, and answers about your tennis league.
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    Click below to:
+    1. Download the latest `matches.csv`
+    2. Open **Google Gemini** in a new tab
+    3. Upload the CSV and ask questions like:
+       - "Who has the most wins?"
+       - "Show a chart of player points over time"
+       - "Which players have the best win percentage?"
+       - "Suggest balanced teams for next week"
+    """)
 
-    if prompt := st.chat_input("How can I help you?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    if not st.session_state.matches_df.empty:
+        # Prepare CSV data
+        matches_csv_bytes = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
+        current_time = datetime.now().strftime("%Y%m%d-%H%M")
 
-        with st.chat_message("assistant"):
-            response = "I am a simple AI for now. I can help you find court locations or check the rankings!"
-            st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            st.download_button(
+                label="📥 Download matches.csv",
+                data=matches_csv_bytes,
+                file_name=f"mmd-matches-{current_time}.csv",
+                mime="text/csv",
+                key=f"gemini_csv_download_{uuid.uuid4().hex}",
+                help="Download the latest match data to upload to Gemini"
+            )
+
+        with col2:
+            st.markdown("""
+            <a href="https://gemini.google.com/app" target="_blank">
+                <button style="
+                    background-color: #fff500;
+                    color: #031827;
+                    padding: 14px 20px;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    width: 100%;
+                    margin-top: 0;
+                ">
+                    🚀 Open Google Gemini 
+                </button>
+            </a>
+            """, unsafe_allow_html=True)
+
+        st.info("""
+        **How to use:**
+        1. Click **Download matches.csv**
+        2. Click **Open Google Gemini**
+        3. In Gemini, click the 📎 (paperclip) icon → Upload the CSV
+        4. Ask any question about the league!
+        """)
+
+        st.success("Gemini is excellent at tennis stats — it will even generate beautiful charts automatically! 🎾📈")
+    else:
+        st.warning("No match data available yet. Add some matches first!")
