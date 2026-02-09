@@ -551,6 +551,145 @@ def calculate_rankings(matches_to_rank):
     return df, partner_stats
 
 
+# ==============================================================================
+# START: NEW COMPLEX ODDS CALCULATION FUNCTIONS
+# ==============================================================================
+
+def _calculate_performance_score(player_stats, full_dataset):
+    """
+    Calculates a weighted performance score for a player based on normalized stats.
+    """
+    # Define weights for each component
+    w_wp = 0.50  # Win Percentage
+    w_agd = 0.35 # Average Game Difference
+    w_ef = 0.15  # Experience Factor (Matches Played)
+
+    # --- 1. Normalize Win Percentage (WP) ---
+    max_wp = full_dataset['Win %'].max()
+    wp_norm = player_stats['Win %'] / max_wp if max_wp > 0 else 0
+
+    # --- 2. Normalize Average Game Difference (AGD) ---
+    max_agd = full_dataset['Game Diff Avg'].max()
+    min_agd = full_dataset['Game Diff Avg'].min()
+    if max_agd == min_agd:
+        agd_norm = 0.5 # Avoid division by zero if all values are the same
+    else:
+        agd_norm = (player_stats['Game Diff Avg'] - min_agd) / (max_agd - min_agd)
+
+    # --- 3. Normalize Experience Factor (EF) ---
+    max_matches = full_dataset['Matches'].max()
+    ef_norm = player_stats['Matches'] / max_matches if max_matches > 0 else 0
+
+    # --- 4. Calculate Final Performance Score ---
+    performance_score = (w_wp * wp_norm) + (w_agd * agd_norm) + (w_ef * ef_norm)
+    
+    return performance_score
+
+def calculate_enhanced_doubles_odds(players, doubles_rank_df):
+    """
+    Calculates balanced teams and odds for a doubles match using a multi-factor Performance Score.
+    """
+    if len(players) != 4 or "" in players or doubles_rank_df.empty:
+        return ("Please select four players with doubles match history.", None, None)
+
+    player_scores = {}
+    for player in players:
+        player_data = doubles_rank_df[doubles_rank_df["Player"] == player]
+        if not player_data.empty:
+            # Calculate performance score for this player
+            player_scores[player] = _calculate_performance_score(player_data.iloc[0], doubles_rank_df)
+        else:
+            # Player has no doubles history, assign a baseline score (e.g., 0)
+            player_scores[player] = 0
+
+    # Find the most balanced pairing based on the new Performance Score
+    min_diff = float('inf')
+    best_pairing = None
+    
+    for team1_combo in combinations(players, 2):
+        team2_combo = tuple(p for p in players if p not in team1_combo)
+        
+        team1_score = sum(player_scores.get(p, 0) for p in team1_combo)
+        team2_score = sum(player_scores.get(p, 0) for p in team2_combo)
+        
+        diff = abs(team1_score - team2_score)
+        
+        if diff < min_diff:
+            min_diff = diff
+            best_pairing = (team1_combo, team2_combo)
+
+    if not best_pairing:
+        return ("Could not determine a balanced pairing.", None, None)
+
+    team1, team2 = best_pairing
+    team1_total_score = sum(player_scores.get(p, 0) for p in team1)
+    team2_total_score = sum(player_scores.get(p, 0) for p in team2)
+    total_match_score = team1_total_score + team2_total_score
+
+    team1_odds = (team1_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
+    team2_odds = (team2_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
+
+    # Styled output
+    t1p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[0]}</span>"
+    t1p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[1]}</span>"
+    t2p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[0]}</span>"
+    t2p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
+    pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
+    
+    return (pairing_text, team1_odds, team2_odds)
+
+def calculate_enhanced_singles_odds(players, singles_rank_df):
+    """
+    Calculates odds for a singles match using a multi-factor Performance Score.
+    """
+    if len(players) != 2 or "" in players or singles_rank_df.empty:
+        return (None, None)
+
+    player_scores = {}
+    for player in players:
+        player_data = singles_rank_df[singles_rank_df["Player"] == player]
+        if not player_data.empty:
+            player_scores[player] = _calculate_performance_score(player_data.iloc[0], singles_rank_df)
+        else:
+            player_scores[player] = 0
+
+    p1_score = player_scores.get(players[0], 0)
+    p2_score = player_scores.get(players[1], 0)
+    total_score = p1_score + p2_score
+
+    p1_odds = (p1_score / total_score) * 100 if total_score > 0 else 50.0
+    p2_odds = (p2_score / total_score) * 100 if total_score > 0 else 50.0
+
+    return (p1_odds, p2_odds)
+
+# ==============================================================================
+# UPDATED: Original functions now call the new enhanced versions
+# ==============================================================================
+
+def suggest_balanced_pairing(players, doubles_rank_df):
+    """Suggests balanced doubles teams. This function now calls the enhanced odds calculation."""
+    if len(players) != 4 or "" in players:
+        return ("Please select all four players for a doubles match.", None, None)
+    
+    return calculate_enhanced_doubles_odds(players, doubles_rank_df)
+
+def suggest_singles_odds(players, singles_rank_df):
+    """Calculates winning odds for a singles match. This function now calls the enhanced odds calculation."""
+    if len(players) != 2 or "" in players:
+        return (None, None)
+        
+    return calculate_enhanced_singles_odds(players, singles_rank_df)
+
+# ==============================================================================
+# END: NEW COMPLEX ODDS CALCULATION FUNCTIONS
+# ==============================================================================
+
+
+
+
+
+
+
 def detect_match_category(row, gender_map):
     """
     Automated detection: 
