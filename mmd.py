@@ -685,14 +685,21 @@ def suggest_singles_odds(players, singles_rank_df):
 # ==============================================================================
 
 
-def generate_ics_for_booking(row):
+def generate_ics_for_booking(row, plain_suggestion=""):
     try:
-        # Create a simple ICS format string
+        # Create a summary for the calendar event
         summary = f"Tennis: {row['match_type']} at {row['court_name']}"
-        dt_start = datetime.strptime(f"{row['date']} {row['time']}", "%Y-%m-%d %H:%M")
-        dt_end = dt_start + timedelta(hours=1.5) # Default 1.5 hour match
+        
+        # Combine date and time (Time is usually HH:MM:SS from your DB)
+        dt_str = f"{row['date']} {row['time']}"
+        dt_start = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+        dt_end = dt_start + timedelta(hours=1.5)  # Matches usually last 1.5 hours
         
         ics_format = "%Y%MT%H%M%S"
+        
+        # We include the 'plain_suggestion' (the odds/pairings) in the description
+        description = f"MMD Tennis Match\\n{plain_suggestion}"
+        
         ics_content = f"""BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//MMD Tennis League//EN
@@ -701,13 +708,12 @@ SUMMARY:{summary}
 DTSTART:{dt_start.strftime(ics_format)}
 DTEND:{dt_end.strftime(ics_format)}
 LOCATION:{row['court_name']}
-DESCRIPTION:MMD Tennis Match
+DESCRIPTION:{description}
 END:VEVENT
 END:VCALENDAR"""
         return ics_content, None
     except Exception as e:
         return None, str(e)
-
 
 
 
