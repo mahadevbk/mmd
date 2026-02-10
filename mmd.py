@@ -2774,3 +2774,7 @@ with tabs[7]:
         st.success("Gemini is excellent at tennis stats — it will even generate beautiful charts automatically! 🎾📈")
     else:
         st.warning("No match data available yet. Add some matches first!")
+
+
+st.markdown("----")
+st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
