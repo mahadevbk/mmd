@@ -1221,66 +1221,57 @@ with tabs[0]:
        
        
        
+        
         # --- B. Detailed Player Cards ---
-        for _, row in display_rank_df.iterrows():
-            # Use a single container for the card
-            with st.container():
-                # Combine everything into one HTML block to ensure consistent rendering
-                # and avoid the 'border=True' container from exposing raw strings.
-                
-                badges_html = ' '.join([
-                    f'<span title="{b}" style="font-size:16px; cursor: help; margin-left: 5px;">{b.split()[0]}</span>' 
-                    for b in row.get('Badges', [])
-                ])
-
-                profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
-                trend = row.get('Recent Trend', row.get('Trend', 'No Trend'))
-
-                # The Header and Top Stats
+        for idx, row in display_rank_df.iterrows():
+            with st.container(border=True):
+                # BLOCK 1: THE HEADER (Name, Rank, Trend)
+                # We use idx in the key to prevent the Duplicate ID error
                 st.markdown(f"""
-                <div style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%); 
-                            border: 1px solid rgba(255, 245, 0, 0.2); border-radius: 15px; padding: 15px; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="display: flex; align-items: center;">
-                            <img src="{profile_pic}" 
-                                 style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
-                            <div>
-                                <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
-                                <div style="font-size: 11px; color: #00ff88; margin-top: 2px;">{trend}</div>
-                            </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center;">
+                        <img src="{row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'}" 
+                             style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
+                            <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{row.get('Recent Trend', '')}</div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="background: #fff500; color: #041136; font-weight: bold; border-radius: 6px; padding: 2px 8px; font-size: 14px; display: inline-block;">
-                                {row['Rank']}
-                            </div>
-                            <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="background: #fff500; color: #041136; font-weight: bold; border-radius: 6px; padding: 2px 8px; font-size: 14px; display: inline-block;">
+                            {row['Rank']}
                         </div>
+                        <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Split the middle section into Chart and Stats
+                # BLOCK 2: THE CONTENT (Chart and Stats)
                 col_chart, col_stats = st.columns([1.3, 1])
                 
                 with col_chart:
-                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
+                    st.plotly_chart(
+                        create_radar_chart(row), 
+                        config={'displayModeBar': False}, 
+                        use_container_width=True,
+                        key=f"radar_{row['Player']}_{idx}" # Unique key fixes the crash
+                    )
                     
                 with col_stats:
+                    # ALL stats must be inside this ONE markdown block
                     st.markdown(f"""
-                        <div style="text-align: right; padding-right: 10px;">
-                            <div style="font-size: 10px; color: #888; letter-spacing: 1px; margin-top: 10px;">WIN RATE</div>
+                        <div style="text-align: right; padding-right: 5px;">
+                            <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
                             <div style="font-size: 22px; font-weight: bold; color: #fff500; line-height: 1;">{row['Win %']}%</div>
                             
                             <div style="margin-top: 12px; font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
                             <div style="font-size: 16px; font-weight: bold; color: #eee; line-height: 1;">{row['Game Diff Avg']}</div>
                             
                             <div style="margin-top: 12px;">
-                                {badges_html}
+                                {' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row.get('Badges', [])])}
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
-                
-                st.markdown("---") # Visual separator between players
 
 
 
