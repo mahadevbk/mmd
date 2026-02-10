@@ -2701,7 +2701,7 @@ with tabs[6]:
 
 
     # --- 1. Fetch Photos Dynamically from GitHub ---
-    @st.cache_data(ttl=3600)  # Cache for 1 hour to avoid hitting API limits
+    @st.cache_data(ttl=3600)
     def get_tournament_photos():
         owner = "mahadevbk"
         repo = "mmd"
@@ -2709,10 +2709,10 @@ with tabs[6]:
         api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
         
         try:
+            # Note: Ensure 'requests' is imported at the top of your file
             response = requests.get(api_url)
             if response.status_code == 200:
                 files = response.json()
-                # Filter for common image extensions
                 image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
                 photo_urls = [
                     file['download_url'] for file in files 
@@ -2725,41 +2725,49 @@ with tabs[6]:
 
     photos = get_tournament_photos()
 
-    # --- 2. Carousel / Slideshow Logic ---
+    # --- 2. Carousel / Slideshow UI ---
     if photos:
-        # Initialize index in session state if not exists
         if 'carousel_index' not in st.session_state:
             st.session_state.carousel_index = 0
 
-        # Controls for the Carousel
+        # We wrap the carousel in a specific div class "tourney-container"
+        st.markdown('<div class="tourney-container">', unsafe_allow_html=True)
+        
+        # Navigation Buttons
         col_prev, col_mid, col_next = st.columns([1, 4, 1])
         
         with col_prev:
-            st.write("") # Spacer
-            if st.button("⬅️ Prev", use_container_width=True):
+            st.write("###") # Vertical alignment
+            if st.button("⬅️ Prev", key="prev_btn"):
                 st.session_state.carousel_index = (st.session_state.carousel_index - 1) % len(photos)
 
         with col_next:
-            st.write("") # Spacer
-            if st.button("Next ➡️", use_container_width=True):
+            st.write("###") # Vertical alignment
+            if st.button("Next ➡️", key="next_btn"):
                 st.session_state.carousel_index = (st.session_state.carousel_index + 1) % len(photos)
 
         with col_mid:
-            # Display current image
             current_img = photos[st.session_state.carousel_index]
-            st.image(current_img, use_container_width=True)
-            st.caption(f"Image {st.session_state.carousel_index + 1} of {len(photos)}")
+            # Use a container to target THIS image only
+            tourney_img_placeholder = st.empty()
+            tourney_img_placeholder.image(current_img, use_container_width=True)
+            st.caption(f"📸 Tournament Highlight {st.session_state.carousel_index + 1} of {len(photos)}")
 
-        # Custom Styling to enforce height of 800px on the image
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # --- 3. Scoped CSS (Targets ONLY this tab's container) ---
         st.markdown(
             f"""
             <style>
-                [data-testid="stImage"] img {{
-                    height: 800px;
-                    object-fit: contain;
-                    border-radius: 15px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-                    background-color: #031827;
+                /* Targets only images inside the tourney-container */
+                .tourney-container [data-testid="stImage"] img {{
+                    height: 800px !important;
+                    width: auto !important;
+                    object-fit: contain !important;
+                    margin-left: auto;
+                    margin-right: auto;
+                    display: block;
+                    border-radius: 10px;
                 }}
             </style>
             """,
@@ -2768,6 +2776,9 @@ with tabs[6]:
     else:
         st.info("No photos found in the tournament gallery.")
 
+    st.markdown("---")
+    st.info("Tournament Organiser is moved to https://tournament-organiser.streamlit.app/")
+    st.info("App may be dormant and need to be 'woken up'.")
   
 
 
