@@ -461,13 +461,10 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
-    # Stats template with real tracking keys
     stats = defaultdict(lambda: {
         'matches': 0, 'wins': 0, 'losses': 0, 'gd_sum': 0,
-        'tiebreaks_won': 0, 'three_set_matches': 0, 'three_set_wins': 0,
-        'recent_results': [], 'badges': []
+        'clutch_factor': 0, 'consistency': 0, 'trend': "Settling In", 'badges': []
     })
-    
     elo_ratings = defaultdict(lambda: 1200.0)
     last_elo_changes = defaultdict(float)
     K_FACTOR = 32 
@@ -476,107 +473,86 @@ def calculate_rankings(matches_to_rank):
     profile_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
     if not matches_to_rank.empty:
-        # Sort chronologically to ensure Elo and Trends are accurate
         matches_to_rank = matches_to_rank.sort_values('date')
 
     for row in matches_to_rank.itertuples(index=False):
         # 1. Standardize Match Type
-        m_type = str(row.match_type).strip().title()
+        m_type = str(row.match_type).strip().upper()
         
-        # 2. Extract Players (Filtering out Visitors)
-        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
-        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
+        # 2. Identify Teams
+        # We clean the names to ensure matching works
+        t1 = [str(p).strip() for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
+        t2 = [str(p).strip() for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
+        
         if not t1 or not t2: continue
 
-        # 3. Elo Calculations
+        # 3. Elo Probability Math
         t1_elo_avg = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo_avg = sum(elo_ratings[p] for p in t2) / len(t2)
         def get_elo_expected(ra, rb): return 1 / (1 + 10 ** ((rb - ra) / 400))
 
-        def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
-            actual_elo_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
-            expected = get_elo_expected(own_elo_avg, opp_elo_avg)
-            elo_change = K_FACTOR * (actual_elo_score - expected)
+        # 4. Awarding Points Logic (The "Lisa Rule")
+        def apply_match_results(winners, losers, is_tie=False):
+            # Calculate Elo Change
+            actual_elo = 0.5 if is_tie else 1.0
+            w_avg = sum(elo_ratings[p] for p in winners) / len(winners)
+            l_avg = sum(elo_ratings[p] for p in losers) / len(losers)
             
-            for p in players:
-                # Update Elo
+            w_expected = get_elo_expected(w_avg, l_avg)
+            elo_change = K_FACTOR * (actual_elo - w_expected)
+
+            # Apply to Winners
+            for p in winners:
                 elo_ratings[p] += elo_change
                 last_elo_changes[p] = round(elo_change)
-                
-                # Update Core Stats
                 stats[p]['matches'] += 1
-                stats[p]['recent_results'].append("W" if outcome == 'win' else "L")
-                
-                # --- YOUR SCORING RULES ---
-                if outcome == 'win':
-                    stats[p]['wins'] += 1
-                    if "Mixed" in m_type:
-                        scores[p] += 3.0
-                    else:
-                        scores[p] += 2.0
-                elif outcome == 'tie':
+                if is_tie:
                     scores[p] += 1.5
-                elif outcome == 'loss':
+                else:
+                    stats[p]['wins'] += 1
+                    # AWARD 3.0 FOR ANY MIXED MATCH, 2.0 FOR OTHERS
+                    scores[p] += 3.0 if "MIXED" in m_type else 2.0
+
+            # Apply to Losers
+            for p in losers:
+                elo_ratings[p] -= elo_change # Zero-sum
+                last_elo_changes[p] = -round(elo_change)
+                stats[p]['matches'] += 1
+                if is_tie:
+                    scores[p] += 1.5
+                else:
                     stats[p]['losses'] += 1
-                    scores[p] += 1.0
+                    scores[p] += 1.0 # 1 point for a loss
 
-                # Game Difference & Clutch Logic
-                try:
-                    # GDA Calculation
-                    g_diff = abs(row.team1_score - row.team2_score)
-                    stats[p]['gd_sum'] += g_diff if outcome == 'win' else -g_diff
-                    
-                    # Clutch Detection (3rd sets or Tiebreaks)
-                    is_clutch = False
-                    if hasattr(row, 'set3_score') and pd.notna(row.set3_score):
-                        is_clutch = True
-                        if outcome == 'win': stats[p]['three_set_wins'] += 1
-                    if "TB" in str(row.set_scores).upper() or "7-6" in str(row.set_scores):
-                        is_clutch = True
-                        if outcome == 'win': stats[p]['tiebreaks_won'] += 1
-                except: pass
-
-        # 4. Determine Match Outcome
-        if row.winner == "Team 1":
-            update_player_metrics(t1, 'win', t2_elo_avg, t1_elo_avg)
-            update_player_metrics(t2, 'loss', t1_elo_avg, t2_elo_avg)
-        elif row.winner == "Team 2":
-            update_player_metrics(t2, 'win', t1_elo_avg, t2_elo_avg)
-            update_player_metrics(t1, 'loss', t2_elo_avg, t1_elo_avg)
-        else:
-            update_player_metrics(t1, 'tie', t2_elo_avg, t1_elo_avg)
-            update_player_metrics(t2, 'tie', t1_elo_avg, t2_elo_avg)
-
-    # --- 5. Final Aggregation ---
+        # 5. Determine the Winner (Handling multiple ways the data might store it)
+        win_val = str(row.winner).strip().upper()
+        
+        if "TIE" in win_val or "DRAW" in win_val:
+            apply_match_results(t1, t2, is_tie=True)
+        elif win_val == "TEAM 1" or (t1[0].upper() in win_val):
+            apply_match_results(t1, t2)
+        elif win_val == "TEAM 2" or (t2[0].upper() in win_val):
+            apply_match_results(t2, t1)
+            
+    # --- 6. Aggregation ---
     rank_data = []
-    for p, s in stats.items():
+    for p in set(list(scores.keys()) + list(elo_ratings.keys())):
+        s = stats[p]
         if s['matches'] == 0: continue
         
-        # Calculate Real Metrics
-        win_pct = round((s['wins']/s['matches'])*100, 1)
-        gda = round(s['gd_sum']/s['matches'], 2)
-        
-        # Clutch = (Wins in TB/3rd Sets) / Total Matches (Simplified for league play)
-        clutch = int(((s['three_set_wins'] + s['tiebreaks_won']) / s['matches']) * 100) if s['matches'] > 0 else 0
-        
-        # Trend Logic
-        recent = s['recent_results'][-3:]
-        trend = "🔥 On Fire" if recent.count("W") == 3 else ("📈 Improving" if recent.count("W") >= 2 else "📉 Cooling Off")
-        if s['matches'] < 5: trend = "Settling In"
-
         rank_data.append({
             "Player": p, 
             "Points": scores[p],
             "Elo": round(elo_ratings[p]),
             "Last Change": last_elo_changes.get(p, 0),
-            "Win %": win_pct,
+            "Win %": round((s['wins']/s['matches'])*100, 1) if s['matches'] > 0 else 0,
             "Matches": s['matches'], 
             "Wins": s['wins'], 
             "Losses": s['losses'],
-            "Game Diff Avg": gda,
-            "Clutch Factor": min(clutch, 100), # Cap at 100
-            "Consistency Index": 10 - abs(gda), # Simple logic: closer to high GDA = more consistent winner
-            "Recent Trend": trend,
+            "Game Diff Avg": round(s['gd_sum']/s['matches'], 2) if s['matches'] > 0 else 0,
+            "Clutch Factor": s['clutch_factor'],
+            "Consistency Index": s['consistency'],
+            "Recent Trend": s['trend'],
             "Badges": s['badges'],
             "Profile": profile_map.get(p, "")
         })
@@ -587,7 +563,6 @@ def calculate_rankings(matches_to_rank):
         df["Rank"] = [str(i+1) for i in range(len(df))]
         
     return df, {}
-
 
 
 
