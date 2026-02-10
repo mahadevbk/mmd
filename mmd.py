@@ -1202,6 +1202,35 @@ with tabs[0]:
     metric_col = "Elo" if use_elo else "Points"
     metric_label = "ELO" if use_elo else "PTS"
     
+    # 2.5 New: Elo Explanation Panel
+    if use_elo:
+            with st.expander("❓ How do Elo Skill Ratings work? (Detailed Guide)", expanded=False, icon="➡️"):
+                st.markdown("""
+                ### 🏆 The Elo Skill Rating System
+                
+                Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your relative skill level against the rest of the league. It is a "zero-sum" system where points are transferred between players based on the difficulty of the match.
+
+                #### 1. The Underdog vs. The Favorite
+                The amount of points you win or lose depends on the **probability** of the outcome:
+                
+                * **The "Surprise" Win (Underdog):** If a lower-rated player beats a higher-rated player, the system realizes the ratings were inaccurate. The winner gains a **massive boost** (e.g., +40 points) and the loser drops significantly.
+                * **The "Expected" Win (Favorite):** If a high-ranked player beats a beginner, the system isn't surprised. The winner gets a **tiny reward** (e.g., +5 points) because they were supposed to win.
+                
+                #### 2. How Doubles & Mixed Math Works
+                For doubles, your **Team Rating** is the average of you and your partner.
+                * If you are a high-ranked player paired with a newcomer, your "Team Average" is lower. 
+                * Because your team is now "weaker" on paper, you actually stand to gain **more points** for a win than if you played with a pro partner!
+
+                #### 3. The Zero-Sum Exchange
+                Points are never created; they are only traded. If you see your Elo go up by **18**, it means your opponent's Elo went down by exactly **18**. This creates a perfectly balanced ecosystem where the average league rating stays around 1200.
+
+                #### 4. Getting Started
+                Everyone starts at **1200**. Your rating will be "volatile" (changing rapidly) for your first 5–10 matches while the algorithm "finds" your true placement. After that, your rank will stabilize and reflect your consistent performance level.
+                """)
+                
+                st.caption("Note: Elo is calculated chronologically. The order in which matches were played affects the current standings.")
+
+
     # 3. Handle Empty Data
     if display_rank_df.empty:
         st.info("No matches recorded for this category yet.")
