@@ -1227,7 +1227,7 @@ with tabs[0]:
                              style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
                         <div>
                             <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
-                            <div style="font-size: 11px; color: #00ff88; margin-top: 2px;">{row['Recent Trend']}</div>
+                            <div style="font-size: 11px; color: #00ff88; margin-top: 2px;">{row.get('Recent Trend', row.get('Trend', 'No Trend'))}</div>
                         </div>
                     </div>
                     <div style="text-align: right;">
