@@ -1216,10 +1216,10 @@ with tabs[0]:
 
         # --- B. Detailed Player Cards ---
         # Note: We iterate over display_rank_df (the filtered list)
+        
         for _, row in display_rank_df.iterrows():
-         
             with st.container(border=True):
-                # Header: Rank, Name, Image, Points
+                # 1. HEADER (HTML)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display: flex; align-items: center;">
@@ -1227,7 +1227,7 @@ with tabs[0]:
                              style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
                         <div>
                             <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
-                            <div style="font-size: 11px; color: #00ff88; margin-top: 2px;">{row.get('Recent Trend', row.get('Trend', 'No Trend'))}</div>
+                            <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{row.get('Recent Trend', '')}</div>
                         </div>
                     </div>
                     <div style="text-align: right;">
@@ -1237,17 +1237,16 @@ with tabs[0]:
                         <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True) # <--- IMPORTANT: This must be here
                 
-                # Body: Radar Chart (Left) + Stats (Right)
+                # 2. BODY (Plotly + HTML Stats)
                 col_chart, col_stats = st.columns([1.3, 1])
                 
                 with col_chart:
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
                     
-                
                 with col_stats:
-                    # We use st.markdown with unsafe_allow_html=True to render the styles
+                    # RENDER STATS AS HTML
                     st.markdown(f"""
                         <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
                             <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
@@ -1260,7 +1259,7 @@ with tabs[0]:
                                 {' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row['Badges']])}
                             </div>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True) # <--- IMPORTANT: This must be here 
 
 
 
