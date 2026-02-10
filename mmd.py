@@ -1221,7 +1221,6 @@ with tabs[0]:
        
        
        
-      
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
@@ -1236,22 +1235,24 @@ with tabs[0]:
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" 
-                             style="width: 55px; 
-                                    height: 55px; 
-                                    border-radius: 10px; 
-                                    margin-right: 12px; 
+                             style="width: 110px; 
+                                    height: 110px; 
+                                    border-radius: 12px; 
+                                    margin-right: 15px; 
                                     object-fit: contain; 
                                     background: transparent; 
-                                    border: 2px solid #CCFF00; 
-                                    box-shadow: 0 0 10px rgba(204, 255, 0, 0.4);">
+                                    border: 3px solid #CCFF00; 
+                                    box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         <div>
-                            <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
-                            <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{trend}</div>
+                            <div style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1;">{row['Player']}</div>
+                            <div style="font-size: 13px; color: #00ff88; margin-top: 5px; font-weight: 500;">{trend}</div>
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="background: #fff500; color: #041136; font-weight: bold; border-radius: 6px; padding: 2px 8px; font-size: 14px; display: inline-block;">{row['Rank']}</div>
-                        <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
+                        <div style="background: #CCFF00; color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
+                            #{row['Rank']}
+                        </div>
+                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">{row['Points']} PTS</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1265,35 +1266,35 @@ with tabs[0]:
                 with col_stats:
                     stats_html = f"""
                         <div style="text-align: right; padding-right: 5px;">
-                            <div style="margin-bottom: 10px;">
-                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">WIN RATE</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #fff500;">{row['Win %']}%</div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 24px; font-weight: bold; color: #CCFF00;">{row['Win %']}%</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">MATCHES</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Matches']}</div>
+                                    <div style="font-size: 9px; color: #888;">MATCHES</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">W/L</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 9px; color: #888;">W/L</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
-                            <div style="margin-bottom: 10px;">
-                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">AVG GDA</div>
-                                <div style="font-size: 15px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">CLUTCH</div>
-                                    <div style="font-size: 12px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
+                                    <div style="font-size: 9px; color: #888;">CLUTCH</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">CONSISTENCY</div>
-                                    <div style="font-size: 12px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
+                                    <div style="font-size: 9px; color: #888;">CONSISTENCY</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
                                 </div>
                             </div>
-                            <div style="margin-top: 5px;">{badges_html}</div>
+                            <div style="margin-top: 8px;">{badges_html}</div>
                         </div>
                     """
                     st.markdown(stats_html, unsafe_allow_html=True)
