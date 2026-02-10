@@ -1224,14 +1224,13 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Variables and Data Prep
+                # 1. Prepare Data
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
-                # Ensure badges are handled safely
                 badges_list = row.get('Badges', [])
-                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list]) if badges_list else ""
-                
-                # 2. Render Header (Rank, Name, Points, Trend)
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
+
+                # 2. Header Block
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
@@ -1248,26 +1247,20 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Middle Section: Radar Chart and Statistics
+                # 3. Middle Section
                 col_chart, col_stats = st.columns([1.2, 1])
                 
                 with col_chart:
-                    st.plotly_chart(
-                        create_radar_chart(row), 
-                        config={'displayModeBar': False}, 
-                        use_container_width=True, 
-                        key=f"radar_{row['Player']}_{idx}"
-                    )
+                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
-                    # MAKE SURE THIS st.markdown CALL IS EXACTLY LIKE THIS:
-                    st.markdown(f"""
-                        <div style="text-align: right; padding-right: 5px; font-family: sans-serif;">
+                    # ALL stats consolidated into one variable to prevent "leaking"
+                    stats_html = f"""
+                        <div style="text-align: right; padding-right: 5px;">
                             <div style="margin-bottom: 10px;">
                                 <div style="font-size: 9px; color: #888; letter-spacing: 1px;">WIN RATE</div>
                                 <div style="font-size: 20px; font-weight: bold; color: #fff500;">{row['Win %']}%</div>
                             </div>
-                            
                             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 10px;">
                                 <div>
                                     <div style="font-size: 8px; color: #888;">MATCHES</div>
@@ -1278,12 +1271,10 @@ with tabs[0]:
                                     <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
-
                             <div style="margin-bottom: 10px;">
                                 <div style="font-size: 9px; color: #888; letter-spacing: 1px;">AVG GDA</div>
                                 <div style="font-size: 15px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
                             </div>
-
                             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
                                 <div>
                                     <div style="font-size: 8px; color: #888;">CLUTCH</div>
@@ -1294,10 +1285,11 @@ with tabs[0]:
                                     <div style="font-size: 12px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
                                 </div>
                             </div>
-
                             <div style="margin-top: 5px;">{badges_html}</div>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """
+                    # CRITICAL: This line renders the HTML
+                    st.markdown(stats_html, unsafe_allow_html=True)
 
 
 
