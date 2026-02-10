@@ -1060,7 +1060,7 @@ if not st.session_state.matches_df.empty:
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings", "Hall of Fame", "Mini Tourney", "MMD AI"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings", "Hall of Fame", "Mini Tourney", "AI Data"]
 tabs = st.tabs(tab_names)
 
 
