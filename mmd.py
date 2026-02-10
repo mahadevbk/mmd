@@ -1222,54 +1222,48 @@ with tabs[0]:
        
        
         
+      
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # BLOCK 1: THE HEADER (Name, Rank, Trend)
-                # We use idx in the key to prevent the Duplicate ID error
+                # 1. Prepare variables
+                profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
+                trend = row.get('Recent Trend', '')
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
+                
+                # 2. Render Header (HTML)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                     <div style="display: flex; align-items: center;">
-                        <img src="{row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'}" 
-                             style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
+                        <img src="{profile_pic}" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
                         <div>
                             <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
-                            <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{row.get('Recent Trend', '')}</div>
+                            <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{trend}</div>
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="background: #fff500; color: #041136; font-weight: bold; border-radius: 6px; padding: 2px 8px; font-size: 14px; display: inline-block;">
-                            {row['Rank']}
-                        </div>
+                        <div style="background: #fff500; color: #041136; font-weight: bold; border-radius: 6px; padding: 2px 8px; font-size: 14px; display: inline-block;">{row['Rank']}</div>
                         <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-                
-                # BLOCK 2: THE CONTENT (Chart and Stats)
+
+                # 3. Create Columns for Chart and Stats
                 col_chart, col_stats = st.columns([1.3, 1])
                 
                 with col_chart:
-                    st.plotly_chart(
-                        create_radar_chart(row), 
-                        config={'displayModeBar': False}, 
-                        use_container_width=True,
-                        key=f"radar_{row['Player']}_{idx}" # Unique key fixes the crash
-                    )
+                    # Added unique key to fix the chart error
+                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
-                    # ALL stats must be inside this ONE markdown block
+                    # Consolidated Stats Block (Ensures NO code leaks outside)
                     st.markdown(f"""
-                        <div style="text-align: right; padding-right: 5px;">
+                        <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
                             <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
                             <div style="font-size: 22px; font-weight: bold; color: #fff500; line-height: 1;">{row['Win %']}%</div>
-                            
                             <div style="margin-top: 12px; font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
                             <div style="font-size: 16px; font-weight: bold; color: #eee; line-height: 1;">{row['Game Diff Avg']}</div>
-                            
-                            <div style="margin-top: 12px;">
-                                {' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row.get('Badges', [])])}
-                            </div>
+                            <div style="margin-top: 12px;">{badges_html}</div>
                         </div>
                     """, unsafe_allow_html=True)
 
