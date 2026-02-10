@@ -1221,27 +1221,22 @@ with tabs[0]:
        
        
        
+        
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Variables and Data Prep
+                # Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
-                badges_list = row.get('Badges', [])
-                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
                 
-                # 2. Render Header (Rank, Name, Points, Trend)
+                # Header remains the same
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" 
-                             style="width: 110px; 
-                                    height: 110px; 
-                                    border-radius: 12px; 
-                                    margin-right: 15px; 
-                                    object-fit: contain; 
-                                    background: transparent; 
-                                    border: 3px solid #CCFF00; 
+                             style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; 
+                                    object-fit: contain; background: transparent; border: 3px solid #CCFF00; 
                                     box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         <div>
                             <div style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1;">{row['Player']}</div>
@@ -1257,44 +1252,52 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Content Section (Radar + Stats)
-                col_chart, col_stats = st.columns([1.2, 1])
+                # --- NEW RATIO: 1.8 for chart, 1 for stats ---
+                col_chart, col_stats = st.columns([1.8, 1])
                 
                 with col_chart:
-                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
+                    fig = create_radar_chart(row)
+                    # This removes the "dead air" around the graph to make it appear much larger
+                    fig.update_layout(
+                        margin=dict(l=10, r=10, t=10, b=10),
+                        height=250, # Fixed height to keep card size stable
+                        autosize=True
+                    )
+                    st.plotly_chart(fig, config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
+                    # Stats column slightly tightened to make room for the graph
                     stats_html = f"""
-                        <div style="text-align: right; padding-right: 5px;">
-                            <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
-                                <div style="font-size: 24px; font-weight: bold; color: #CCFF00;">{row['Win %']}%</div>
+                        <div style="text-align: right; padding-right: 2px; margin-top: 10px;">
+                            <div style="margin-bottom: 8px;">
+                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 22px; font-weight: bold; color: #CCFF00;">{row['Win %']}%</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 8px;">
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">MATCHES</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Matches']}</div>
+                                    <div style="font-size: 8px; color: #888;">MATCHES</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">W/L</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 8px; color: #888;">W/L</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
-                            <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
-                                <div style="font-size: 18px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
+                            <div style="margin-bottom: 8px;">
+                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px;">
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">CLUTCH</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
+                                    <div style="font-size: 8px; color: #888;">CLUTCH</div>
+                                    <div style="font-size: 12px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">CONSISTENCY</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
+                                    <div style="font-size: 8px; color: #888;">CONSISTENCY</div>
+                                    <div style="font-size: 12px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
                                 </div>
                             </div>
-                            <div style="margin-top: 8px;">{badges_html}</div>
+                            <div style="margin-top: 5px;">{badges_html}</div>
                         </div>
                     """
                     st.markdown(stats_html, unsafe_allow_html=True)
