@@ -1246,8 +1246,14 @@ with tabs[0]:
                 
                 with col_chart:
                     # Plotly handles its own rendering
-                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
-                    
+                    #st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
+                    st.plotly_chart(
+                        create_radar_chart(row), 
+                        config={'displayModeBar': False}, 
+                        use_container_width=True,
+                        key=f"radar_{row['Player']}_{row['Rank']}" # This makes every chart unique
+                    )
+
                 with col_stats:
                     # 3. Stats (Rendered as HTML)
                     st.markdown(f"""
