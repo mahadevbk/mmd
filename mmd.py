@@ -453,23 +453,22 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 
 
 
-
-
-
-
-
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
-    # --- 1. Initialization (Airtight) ---
+    # --- 1. Initialization ---
     scores = defaultdict(float)
     stats = defaultdict(get_player_stats_template)
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
-    elo_ratings = defaultdict(lambda: 1200.0)
-    last_elo_changes = defaultdict(float) 
-    K_FACTOR = 32 
     
+    # NEW: Elo Rating Initialization (Starting at 1200)
+    elo_ratings = defaultdict(lambda: 1200.0)
+    K_FACTOR = 32  # Standard K-factor for Elo
+    
+    # Track performance breakdown
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
+
+    # Prepare gender mapping
     players_df = st.session_state.players_df
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
@@ -478,36 +477,35 @@ def calculate_rankings(matches_to_rank):
 
     # --- 2. Main Match Processing Loop ---
     for row in matches_to_rank.itertuples(index=False):
-        # Normalize match type for comparison
-        m_type_str = str(row.match_type).strip().title()
+        match_type = row.match_type
         
+        # Identify players (Excluding Visitors)
         t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
         t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
-        if not t1 or not t2: continue
+        
+        if not t1 or not t2: 
+            continue
 
-        # --- UPDATED MIXED DETECTION (The "Lisa Fix") ---
+        # Automated Mixed Detection
         is_mixed = False
-        # Check 1: Does the label say Mixed?
-        if "Mixed" in m_type_str:
-            is_mixed = True
-        # Check 2: Physical Gender Check (Fallback)
-        elif len(t1) == 2 and len(t2) == 2:
+        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
             g1 = sorted([gender_map.get(p, 'U') for p in t1]) 
             g2 = sorted([gender_map.get(p, 'U') for p in t2])
             if g1 == ['F', 'M'] and g2 == ['F', 'M']:
                 is_mixed = True
 
-        w_points = 3.0 if is_mixed else 2.0
-        
-        # --- Game/Set/Clutch Logic (Your Original) ---
         match_gd = 0
         is_clutch = False
-        sets = [getattr(row, 'set1', None), getattr(row, 'set2', None), getattr(row, 'set3', None)]
+        sets = [row.set1, row.set2, row.set3]
+        winner_code = row.winner
+
+        # Game and Set Logic
         for s in sets:
             if not s or str(s).lower() == 'nan': continue
             s_str = str(s)
             t1_g, t2_g = 0, 0
-            if "Tie Break" in s_str or "TB" in s_str.upper():
+            
+            if "Tie Break" in s_str:
                 is_clutch = True
                 nums = [int(x) for x in re.findall(r'\d+', s_str)]
                 if len(nums) >= 2:
@@ -530,72 +528,132 @@ def calculate_rankings(matches_to_rank):
                 stats[p]['gd_sum'] -= diff
                 stats[p]['gd_list'].append(-diff)
 
-        if getattr(row, 'set3', None) and str(row.set3).strip() and str(row.set3).lower() != 'nan': 
+        if row.set3 and str(row.set3).strip() and str(row.set3).lower() != 'nan': 
             is_clutch = True
         
-        # --- Elo & Points Update ---
+        # --- 3. Update Traditional Metrics & Elo ---
+        w_points = 3 if is_mixed else 2
+        
+        # Elo Helper inside the loop
+        def get_elo_expected(ra, rb):
+            return 1 / (1 + 10 ** ((rb - ra) / 400))
+
+        # Calculate Team Averages for Elo
         t1_elo = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo = sum(elo_ratings[p] for p in t2) / len(t2)
 
         def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
-            # Elo Logic
+            # 1. Elo Update Logic
             actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
-            expected = 1 / (1 + 10 ** ((opp_elo_avg - own_elo_avg) / 400))
+            expected = get_elo_expected(own_elo_avg, opp_elo_avg)
             elo_change = K_FACTOR * (actual_score - expected)
             
             for p in players:
+                # Apply Elo Change
                 elo_ratings[p] += elo_change
-                last_elo_changes[p] = round(elo_change)
+                
+                # Standard Stats
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
                 
+                if match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
+                else: perf_breakdown[p]['doubles_m'] += 1
+
                 if outcome == 'win':
-                    scores[p] += w_points # Awarding 3.0 or 2.0
+                    scores[p] += w_points
                     stats[p]['wins'] += 1
                     if is_clutch: stats[p]['clutch_wins'] += 1
+                    if match_type == 'Singles': perf_breakdown[p]['singles_w'] += 1
+                    else: perf_breakdown[p]['doubles_w'] += 1
+                    if current_streaks[p] < 0: current_streaks[p] = 0
+                    current_streaks[p] += 1
                 elif outcome == 'loss':
-                    scores[p] += 1.0 # Loss Point
+                    scores[p] += 1 # Participation Point
                     stats[p]['losses'] += 1
+                    if current_streaks[p] > 0: current_streaks[p] = 0
+                    current_streaks[p] -= 1
                 else: # Tie
                     scores[p] += 1.5
+                    current_streaks[p] = 0
 
-        # Run Update
-        winner_code = str(row.winner).strip().title()
-        if "Team 1" in winner_code:
+        # Run updates based on winner
+        if winner_code == "Team 1":
             update_player_metrics(t1, 'win', t2_elo, t1_elo)
             update_player_metrics(t2, 'loss', t1_elo, t2_elo)
-        elif "Team 2" in winner_code:
+        elif winner_code == "Team 2":
             update_player_metrics(t2, 'win', t1_elo, t2_elo)
             update_player_metrics(t1, 'loss', t2_elo, t1_elo)
         else:
             update_player_metrics(t1, 'tie', t2_elo, t1_elo)
             update_player_metrics(t2, 'tie', t1_elo, t2_elo)
 
-    # --- 4. Final Aggregation ---
-    # (Rest of aggregation code same as your original to preserve Trend Dots)
+        # Partner Stats (For analytics)
+        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
+            for team, code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
+                p1, p2 = team[0], team[1]
+                for a, b in [(p1, p2), (p2, p1)]:
+                    ps = partner_stats[a][b]
+                    ps['matches'] += 1
+                    ps['game_diff_sum'] += gd_val
+                    if winner_code == "Tie": ps['ties'] += 1
+                    elif (winner_code == "Team 1" and code == 1) or (winner_code == "Team 2" and code == 2):
+                        ps['wins'] += 1
+                    else: ps['losses'] += 1
+
+    # --- 4. Ranking Data Aggregation ---
     rank_data = []
     img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
+    
     for p, s in stats.items():
         m_played = s['matches']
         if m_played == 0: continue
+        
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
+        consistency = np.std(s['gd_list']) if s['gd_list'] else 0
+        
+        pb = perf_breakdown[p]
+        s_perf = (pb['singles_w'] / pb['singles_m'] * 100) if pb['singles_m'] > 0 else 0
+        d_perf = (pb['doubles_w'] / pb['doubles_m'] * 100) if pb['doubles_m'] > 0 else 0
+
+        # Recent Trend
         p_gd_list = s['gd_list'][-5:]
         trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else "dot-l"}"></span>' for gd in p_gd_list])
+
+        badges = []
+        if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Clutch")
+        if consistency < 2.5 and m_played >= 5: badges.append("📉 Steady")
+        if current_streaks[p] >= 3: badges.append("🔥 Hot")
         
         rank_data.append({
-            "Player": p, "Points": scores[p], "Elo": round(elo_ratings[p]),
-            "Last Change": last_elo_changes.get(p, 0), "Win %": round((s['wins']/m_played)*100, 1),
-            "Recent Trend": trend_html, "Matches": m_played, "Wins": s['wins'], "Losses": s['losses'],
-            "Game Diff Avg": round(s['gd_sum']/m_played, 2), "Clutch Factor": round(clutch_pct, 1),
-            "Consistency Index": round(np.std(s['gd_list']), 2) if s['gd_list'] else 0,
-            "Badges": [], "Profile": img_map.get(p, "")
+            "Player": p, 
+            "Points": scores[p], 
+            "Elo": round(elo_ratings[p]), # NEW: Rounded Elo Rating
+            "Win %": round((s['wins']/m_played)*100, 1),
+            "Recent Trend": trend_html,
+            "Matches": m_played, 
+            "Wins": s['wins'], 
+            "Losses": s['losses'],
+            "Games Won": s['games_won'], 
+            "Game Diff Avg": round(s['gd_sum']/m_played, 2),
+            "Clutch Factor": round(clutch_pct, 1), 
+            "Consistency Index": round(consistency, 2),
+            "Singles Perf": round(s_perf, 1), 
+            "Doubles Perf": round(d_perf, 1),
+            "Badges": badges, 
+            "Profile": img_map.get(p, "")
         })
-    return pd.DataFrame(rank_data).sort_values("Points", ascending=False).reset_index(drop=True), partner_stats
-
-
-
-
-
+        
+    df = pd.DataFrame(rank_data)
+    
+    if not df.empty:
+        # Default Sorting for Main Leaderboard
+        df = df.sort_values(
+            by=["Points", "Win %", "Elo", "Game Diff Avg", "Player"], 
+            ascending=[False, False, False, False, True] 
+        ).reset_index(drop=True)
+        df["Rank"] = [f"🏆 {i+1}" for i in df.index]
+        
+    return df, partner_stats
 
 # ==============================================================================
 # START: NEW COMPLEX ODDS CALCULATION FUNCTIONS
@@ -1116,7 +1174,7 @@ tabs = st.tabs(tab_names)
 with tabs[0]:
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     
-    # 1. Filter Selection (Elo Rankings added to your original list)
+    # 1. Filter Selection (Elo Rankings added)
     ranking_view = st.radio(
         "View", 
         ["Combined", "Doubles", "Singles", "Elo Rankings", "Table View"], 
@@ -1137,7 +1195,6 @@ with tabs[0]:
         elif ranking_view == "Elo Rankings":
             # Sort primarily by Elo for this view
             display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
-            # Use a star for Elo ranks to distinguish from traditional points
             display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
 
     # Define dynamic labels based on view
@@ -1145,27 +1202,34 @@ with tabs[0]:
     metric_col = "Elo" if use_elo else "Points"
     metric_label = "ELO" if use_elo else "PTS"
     
-    # --- 2.5 Tennis Specific Elo Expander ---
+    # 2.5 New: Elo Explanation Panel
     if use_elo:
-        with st.expander("❓ How do Elo Skill Ratings work? (Tennis Pro Logic)", expanded=False, icon="➡️"):
-            st.markdown("""
-            ### 🎾 The "Gold Standard" for Tennis Skill
-            The **Elo Rating System** is functionally similar to the **UTR (Universal Tennis Rating)** and models used to predict **ATP and WTA** winners. Unlike **Traditional Points**, it cares about **who** you beat.
+            with st.expander("❓ How do Elo Skill Ratings work? (Detailed Guide)", expanded=False, icon="➡️"):
+                st.markdown("""
+                ### 🏆 The Elo Skill Rating System
+                
+                Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your relative skill level against the rest of the league. It is a "zero-sum" system where points are transferred between players based on the difficulty of the match.
 
-            #### 1. The "Upset" vs. The "Hold"
-            * **The Upset (Underdog Win):** If a lower-rated player beats a top-seed, they receive a **massive boost** (e.g., +40 points).
-            * **The Hold (Favorite Win):** If a high-ranked player beats a beginner, they get a **tiny reward** (e.g., +5 points).
-            
-            #### 2. Doubles & "Carrying" Logic
-            If you are a strong player paired with a lower-rated partner, your "Team Average" drops. Winning this "harder" match rewards you with extra points for carrying the team.
+                #### 1. The Underdog vs. The Favorite
+                The amount of points you win or lose depends on the **probability** of the outcome:
+                
+                * **The "Surprise" Win (Underdog):** If a lower-rated player beats a higher-rated player, the system realizes the ratings were inaccurate. The winner gains a **massive boost** (e.g., +40 points) and the loser drops significantly.
+                * **The "Expected" Win (Favorite):** If a high-ranked player beats a beginner, the system isn't surprised. The winner gets a **tiny reward** (e.g., +5 points) because they were supposed to win.
+                
+                #### 2. How Doubles & Mixed Math Works
+                For doubles, your **Team Rating** is the average of you and your partner.
+                * If you are a high-ranked player paired with a newcomer, your "Team Average" is lower. 
+                * Because your team is now "weaker" on paper, you actually stand to gain **more points** for a win than if you played with a pro partner!
 
-            #### 3. The Zero-Sum Exchange
-            Points are "stolen," not created. If you gain 22 points, your opponents lost exactly 22.
+                #### 3. The Zero-Sum Exchange
+                Points are never created; they are only traded. If you see your Elo go up by **18**, it means your opponent's Elo went down by exactly **18**. This creates a perfectly balanced ecosystem where the average league rating stays around 1200.
 
-            #### 4. The 1200 Baseline
-            Everyone starts at **1200**. Your rating moves rapidly during your first 10 matches while the system calibrates.
-            """)
-            st.caption("Note: Elo is calculated chronologically based on match date.")
+                #### 4. Getting Started
+                Everyone starts at **1200**. Your rating will be "volatile" (changing rapidly) for your first 5–10 matches while the algorithm "finds" your true placement. After that, your rank will stabilize and reflect your consistent performance level.
+                """)
+                
+                st.caption("Note: Elo is calculated chronologically. The order in which matches were played affects the current standings.")
+
 
     # 3. Handle Empty Data
     if display_rank_df.empty:
@@ -1176,7 +1240,7 @@ with tabs[0]:
         st.dataframe(
             display_rank_df, 
             hide_index=True, 
-            width=None, 
+            width='stretch', # Updated for 2026 compatibility
             column_config={
                 "Profile": st.column_config.ImageColumn("Profile"),
                 "Win %": st.column_config.ProgressColumn("Win %", format="%.1f%%", min_value=0, max_value=100),
@@ -1194,6 +1258,7 @@ with tabs[0]:
                 {"p": top3[2], "m": "40px"}  # Rank 3
             ]
             
+            # Podium HTML
             cols_html = "".join([f"""
                 <div style="flex: 1; margin-top: {i["m"]}; min-width: 0; display: flex; flex-direction: column;">
                     <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
@@ -1214,24 +1279,24 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
+                # 1. Variables and Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
                 badges_list = row.get('Badges', [])
                 badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
                 
-                # --- Elo Change Logic ---
-                change_val = row.get('Last Change', 0)
-                change_color = "#00ff88" if change_val >= 0 else "#ff4b4b"
-                change_text = f"{'+' if change_val > 0 else ''}{int(change_val)}"
-                change_indicator = f"<span style='color: {change_color}; font-size: 11px; margin-left: 5px;'>({change_text})</span>" if use_elo else ""
-                
-                # Render Header (Rank, Name, Points, Trend, and NEW Indicator)
+                # 2. Render Header (Rank, Name, Metric, Trend)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" 
-                             style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; 
-                                    object-fit: contain; background: transparent; border: 3px solid #CCFF00; 
+                             style="width: 110px; 
+                                    height: 110px; 
+                                    border-radius: 12px; 
+                                    margin-right: 15px; 
+                                    object-fit: contain; 
+                                    background: transparent; 
+                                    border: 3px solid #CCFF00; 
                                     box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         <div>
                             <div style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1;">{row['Player']}</div>
@@ -1240,20 +1305,20 @@ with tabs[0]:
                     </div>
                     <div style="text-align: right;">
                         <div style="background: #CCFF00; color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
-                            #{row['Rank']}
+                            {row['Rank']}
                         </div>
-                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">
-                            {row[metric_col]} {metric_label} {change_indicator}
-                        </div>
+                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">{row[metric_col]} {metric_label}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
                 # 3. Content Section (Radar + Stats)
-                col_chart, col_stats = st.columns([1.2, 1])
+                col_chart, col_stats = st.columns([1.8, 1]) # Larger graph ratio as requested earlier
                 
                 with col_chart:
-                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
+                    fig = create_radar_chart(row)
+                    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=250, autosize=True)
+                    st.plotly_chart(fig, config={'displayModeBar': False}, width='stretch', key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
                     stats_html = f"""
@@ -1290,6 +1355,7 @@ with tabs[0]:
                         </div>
                     """
                     st.markdown(stats_html, unsafe_allow_html=True)
+
 
 
 
