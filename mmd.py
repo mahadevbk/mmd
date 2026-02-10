@@ -1263,7 +1263,7 @@ with tabs[0]:
                         height=250, # Fixed height to keep card size stable
                         autosize=True
                     )
-                    st.plotly_chart(fig, config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
+                    st.plotly_chart(fig, config={'displayModeBar': False}, width="stretch", key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
                     # Stats column slightly tightened to make room for the graph
@@ -2912,7 +2912,7 @@ with tabs[6]:
             current_img = photos[st.session_state.carousel_index]
             # Use a container to target THIS image only
             tourney_img_placeholder = st.empty()
-            tourney_img_placeholder.image(current_img, use_container_width=True)
+            tourney_img_placeholder.image(current_img, width="stretch")
             st.caption(f"📸 Tournament Highlight {st.session_state.carousel_index + 1} of {len(photos)}")
 
         st.markdown('</div>', unsafe_allow_html=True)
