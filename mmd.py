@@ -1246,6 +1246,8 @@ with tabs[0]:
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
                     
                 with col_stats:
+                with col_stats:
+                    # We use st.markdown with unsafe_allow_html=True to render the styles
                     st.markdown(f"""
                         <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
                             <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
