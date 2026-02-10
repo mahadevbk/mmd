@@ -1183,7 +1183,7 @@ tabs = st.tabs(tab_names)
 
 
 # --- Tab 1: Rankings ---
-# --- Tab 1: Rankings (UPDATED) ---
+# --- Tab 1: Rankings (Full Restoration with Elo Integration) ---
 with tabs[0]:
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     
@@ -1206,21 +1206,22 @@ with tabs[0]:
             m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
             display_rank_df, _ = calculate_rankings(m_sub)
         elif ranking_view == "Elo Rankings":
+            # Sort primarily by Elo for this view
             display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
             display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
 
     # Define dynamic labels
     use_elo = (ranking_view == "Elo Rankings")
     metric_col = "Elo" if use_elo else "Points"
-    metric_label = "ELO" if use_elo else "PTS"
+    metric_label = "ELO" if use_elo else "pts"
     
-    # 2.5 Elo Explanation Panel
+    # 2.5 Elo Explanation Panel (Restored)
     if use_elo:
         with st.expander("❓ How do Elo Skill Ratings work? (Detailed Guide)", expanded=False, icon="➡️"):
             st.markdown("""
             ### 🏆 The Elo Skill Rating System
-            The **Elo Rating System** measures your relative skill level against the rest of the league. It is a "zero-sum" system where points are transferred between players based on the difficulty of the match.
-            ... (Your existing markdown explanation) ...
+            Unlike **Traditional Points**—which rewards how *often* you play—**Elo** measures your relative skill level. 
+            Points are traded between players based on the difficulty of the match.
             """)
             st.caption("Note: Elo is calculated chronologically.")
 
@@ -1233,43 +1234,74 @@ with tabs[0]:
         st.dataframe(
             display_rank_df, 
             hide_index=True, 
-            width=None, 
+            width=None,
             column_config={
                 "Profile": st.column_config.ImageColumn("Profile"),
                 "Win %": st.column_config.ProgressColumn("Win %", format="%.1f%%", min_value=0, max_value=100),
             }
         )
 
-    # 5. Mobile Card View
+    # 5. Mobile Card View (Podium + Cards)
     else:
-        # --- A. Podium ---
+        # --- A. RESTORED: Podium for Top 3 ---
         if len(display_rank_df) >= 3:
-            # (Your existing podium code is fine, keep it here)
-            pass 
+            top3 = display_rank_df.head(3).to_dict('records')
+            podium_items = [
+                {"p": top3[1], "m": "40px"}, # Rank 2
+                {"p": top3[0], "m": "0px"},  # Rank 1
+                {"p": top3[2], "m": "40px"}  # Rank 3
+            ]
+            
+            # Integrated Podium Logic for Elo/Points
+            podium_html_parts = []
+            for i in podium_items:
+                p_data = i["p"]
+                
+                # Setup change indicator for podium
+                ch_val = p_data.get('Last Change', 0)
+                ch_color = "#00ff88" if ch_val >= 0 else "#ff4b4b"
+                ch_txt = f"{'+' if ch_val > 0 else ''}{int(ch_val)}"
+                ch_ind = f"<span style='color: {ch_color}; font-size: 10px;'>({ch_txt})</span>" if use_elo else ""
+                
+                # Format score display (Points use 1 decimal if .5 exists)
+                score_val = p_data[metric_col]
+                score_str = f"{int(score_val)}" if use_elo else f"{score_val:g}"
+
+                podium_html_parts.append(f"""
+                    <div style="flex: 1; margin-top: {i["m"]}; min-width: 0; display: flex; flex-direction: column;">
+                        <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                            <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{p_data["Rank"]}</div>
+                            <div style="display: flex; justify-content: center; margin-bottom: 5px;">
+                                <img src="{p_data["Profile"] or "https://via.placeholder.com/100?text=Player"}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                            </div>
+                            <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{p_data["Player"]}</div>
+                            <div style="color: white; font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_ind}</div>
+                            <div style="color: #aaa; font-size: 0.7em;">{p_data["Win %"]}% Win</div>
+                        </div>
+                    </div>
+                """)
+            
+            cols_html = "".join(podium_html_parts)
+            st.markdown(f'<div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">{cols_html}</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Variables and Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
                 badges_list = row.get('Badges', [])
                 badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
                 
-                # --- NEW: Last Change Indicator Logic ---
+                # Metric calculation for cards
                 change_val = row.get('Last Change', 0)
                 change_color = "#00ff88" if change_val >= 0 else "#ff4b4b"
                 change_text = f"{'+' if change_val > 0 else ''}{int(change_val)}"
-                
-                # Only show the indicator if we are in Elo View
                 change_indicator = f"<span style='color: {change_color}; font-size: 11px; margin-left: 5px; font-weight: normal;'>({change_text})</span>" if use_elo else ""
                 
-                # Format the main score (Decimals for Points, Integers for Elo)
-                score_display = f"{int(row[metric_col])}" if use_elo else f"{row[metric_col]:.1f}"
+                score_display = f"{int(row[metric_col])}" if use_elo else f"{row[metric_col]:g}"
 
-                # 2. Render Header
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
@@ -1290,11 +1322,9 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Content Section (Radar + Stats)
+                # Content Section (Radar + Stats)
                 col_chart, col_stats = st.columns([1.8, 1])
-                
                 with col_chart:
-                    # Using create_radar_chart safely
                     if 'create_radar_chart' in globals():
                         fig = create_radar_chart(row)
                         fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=250)
