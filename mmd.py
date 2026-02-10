@@ -2695,9 +2695,80 @@ with tabs[5]:
 
 #--MINI TOURNEY -----------------------
 with tabs[6]:
-    st.header("Mini Tournaments Organiser")
+    st.header("Mini Tournaments Organiser & Highlights")
     st.info("Tournament Ograniser is moved to https://tournament-organiser.streamlit.app/")
     st.info("App may be dormant and need to be 'woken up'.")
+
+
+    # --- 1. Fetch Photos Dynamically from GitHub ---
+    @st.cache_data(ttl=3600)  # Cache for 1 hour to avoid hitting API limits
+    def get_tournament_photos():
+        owner = "mahadevbk"
+        repo = "mmd"
+        path = "assets/minitourney"
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+        
+        try:
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                files = response.json()
+                # Filter for common image extensions
+                image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
+                photo_urls = [
+                    file['download_url'] for file in files 
+                    if file['name'].lower().endswith(image_extensions)
+                ]
+                return photo_urls
+        except Exception as e:
+            st.error(f"Error fetching photos: {e}")
+        return []
+
+    photos = get_tournament_photos()
+
+    # --- 2. Carousel / Slideshow Logic ---
+    if photos:
+        # Initialize index in session state if not exists
+        if 'carousel_index' not in st.session_state:
+            st.session_state.carousel_index = 0
+
+        # Controls for the Carousel
+        col_prev, col_mid, col_next = st.columns([1, 4, 1])
+        
+        with col_prev:
+            st.write("") # Spacer
+            if st.button("⬅️ Prev", use_container_width=True):
+                st.session_state.carousel_index = (st.session_state.carousel_index - 1) % len(photos)
+
+        with col_next:
+            st.write("") # Spacer
+            if st.button("Next ➡️", use_container_width=True):
+                st.session_state.carousel_index = (st.session_state.carousel_index + 1) % len(photos)
+
+        with col_mid:
+            # Display current image
+            current_img = photos[st.session_state.carousel_index]
+            st.image(current_img, use_container_width=True)
+            st.caption(f"Image {st.session_state.carousel_index + 1} of {len(photos)}")
+
+        # Custom Styling to enforce height of 800px on the image
+        st.markdown(
+            f"""
+            <style>
+                [data-testid="stImage"] img {{
+                    height: 800px;
+                    object-fit: contain;
+                    border-radius: 15px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                    background-color: #031827;
+                }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.info("No photos found in the tournament gallery.")
+
+  
 
 
 
