@@ -1221,6 +1221,7 @@ with tabs[0]:
        
        
        
+      
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
@@ -1235,7 +1236,14 @@ with tabs[0]:
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" 
-                             style="width: 55px; height: 55px; border-radius: 12px; margin-right: 12px; object-fit: cover; background: transparent;">
+                             style="width: 55px; 
+                                    height: 55px; 
+                                    border-radius: 10px; 
+                                    margin-right: 12px; 
+                                    object-fit: contain; 
+                                    background: transparent; 
+                                    border: 2px solid #CCFF00; 
+                                    box-shadow: 0 0 10px rgba(204, 255, 0, 0.4);">
                         <div>
                             <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
                             <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{trend}</div>
@@ -1248,7 +1256,7 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Content Section
+                # 3. Content Section (Radar + Stats)
                 col_chart, col_stats = st.columns([1.2, 1])
                 
                 with col_chart:
