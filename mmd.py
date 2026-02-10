@@ -460,70 +460,59 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
-    # --- 1. Initialization ---
     scores = defaultdict(float)
-    # Ensure templates include all keys used in the UI
     stats = defaultdict(lambda: {
         'matches': 0, 'wins': 0, 'losses': 0, 'gd_sum': 0,
-        'clutch_factor': 0, 'consistency': 0, 'trend': "", 'badges': []
+        'clutch_factor': 0, 'consistency': 0, 'trend': "Settling In", 'badges': []
     })
     elo_ratings = defaultdict(lambda: 1200.0)
     last_elo_changes = defaultdict(float)
     K_FACTOR = 32 
     
     players_df = st.session_state.players_df
-    # Pre-map profile pics for speed
     profile_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
     if not matches_to_rank.empty:
         matches_to_rank = matches_to_rank.sort_values('date')
 
-    # --- 2. Main Match Processing Loop ---
     for row in matches_to_rank.itertuples(index=False):
         match_type = row.match_type
-        # Extract players, filtering out empty names or "Visitor"
         t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
         t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
         
-        if not t1 or not t2: 
-            continue
+        if not t1 or not t2: continue
 
-        # Elo Math
         t1_elo_avg = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo_avg = sum(elo_ratings[p] for p in t2) / len(t2)
 
-        def get_elo_expected(ra, rb): 
-            return 1 / (1 + 10 ** ((rb - ra) / 400))
+        def get_elo_expected(ra, rb): return 1 / (1 + 10 ** ((rb - ra) / 400))
 
         def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
-            actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
+            actual_elo_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
             expected = get_elo_expected(own_elo_avg, opp_elo_avg)
-            elo_change = K_FACTOR * (actual_score - expected)
+            elo_change = K_FACTOR * (actual_elo_score - expected)
             
             for p in players:
                 elo_ratings[p] += elo_change
                 last_elo_changes[p] = round(elo_change)
-                
                 stats[p]['matches'] += 1
-                if outcome == 'win':
-                    # Traditional Points logic
-                    scores[p] += (3 if match_type == 'Mixed Doubles' else 2)
-                    stats[p]['wins'] += 1
-                elif outcome == 'loss':
-                    scores[p] += 1
-                    stats[p]['losses'] += 1
                 
-                # Add Game Difference logic if columns exist
+                # YOUR ORIGINAL SCORING RULES:
+                if outcome == 'win':
+                    stats[p]['wins'] += 1
+                    scores[p] += 3.0 if match_type == 'Mixed Doubles' else 2.0
+                elif outcome == 'tie':
+                    scores[p] += 1.5
+                elif outcome == 'loss':
+                    stats[p]['losses'] += 1
+                    scores[p] += 1.0
+
+                # Game Difference Logic
                 try:
                     g_diff = abs(row.team1_score - row.team2_score)
-                    if outcome == 'win':
-                        stats[p]['gd_sum'] += g_diff
-                    else:
-                        stats[p]['gd_sum'] -= g_diff
-                except:
-                    pass
+                    stats[p]['gd_sum'] += g_diff if outcome == 'win' else -g_diff
+                except: pass
 
-        # Determine Winner
         if row.winner == "Team 1":
             update_player_metrics(t1, 'win', t2_elo_avg, t1_elo_avg)
             update_player_metrics(t2, 'loss', t1_elo_avg, t2_elo_avg)
@@ -534,40 +523,32 @@ def calculate_rankings(matches_to_rank):
             update_player_metrics(t1, 'tie', t2_elo_avg, t1_elo_avg)
             update_player_metrics(t2, 'tie', t1_elo_avg, t2_elo_avg)
 
-    # --- 3. Ranking Data Aggregation ---
     rank_data = []
     for p, s in stats.items():
-        if s['matches'] == 0: 
-            continue
-            
-        win_pct = round((s['wins'] / s['matches']) * 100, 1) if s['matches'] > 0 else 0
-        
-        # This dictionary MUST match the keys used in your Tab 1 UI
+        if s['matches'] == 0: continue
         rank_data.append({
             "Player": p, 
-            "Points": int(scores[p]), 
+            "Points": scores[p], # Now correctly reflects 1.0, 1.5, 2.0, or 3.0
             "Elo": round(elo_ratings[p]),
             "Last Change": last_elo_changes.get(p, 0),
-            "Win %": win_pct,
-            "Matches": s['matches'], 
-            "Wins": s['wins'], 
-            "Losses": s['losses'],
-            "Game Diff Avg": round(s['gd_sum'] / s['matches'], 2) if s['matches'] > 0 else 0,
-            "Clutch Factor": s.get('clutch_factor', 0), # Fixed KeyError
-            "Consistency Index": s.get('consistency', 0), # Fixed KeyError
-            "Recent Trend": s.get('trend', "Settling In"), # Fixed KeyError
-            "Badges": s.get('badges', []), # Fixed KeyError
+            "Win %": round((s['wins']/s['matches'])*100, 1),
+            "Matches": s['matches'], "Wins": s['wins'], "Losses": s['losses'],
+            "Game Diff Avg": round(s['gd_sum']/s['matches'], 2),
+            "Clutch Factor": s.get('clutch_factor', 0),
+            "Consistency Index": s.get('consistency', 0),
+            "Recent Trend": s.get('trend', "Stable"),
+            "Badges": s.get('badges', []),
             "Profile": profile_map.get(p, "")
         })
         
     df = pd.DataFrame(rank_data)
-    
     if not df.empty:
-        # Default sort by points for the dataframe return
         df = df.sort_values(by=["Points", "Win %"], ascending=[False, False]).reset_index(drop=True)
-        df["Rank"] = [f"{i+1}" for i in range(len(df))]
+        df["Rank"] = [str(i+1) for i in range(len(df))]
         
-    return df, {} # Returning empty dict for partner_stats to keep it simple
+    return df, {}
+
+
 
 
 
