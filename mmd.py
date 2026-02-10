@@ -1223,17 +1223,18 @@ with tabs[0]:
        
         
       
+
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Prepare variables
+                # 1. Variables
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
-                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help; margin-left: 5px;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
                 
-                # 2. Render Header (HTML)
+                # 2. Header
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
                         <div>
@@ -1248,22 +1249,48 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Create Columns for Chart and Stats
-                col_chart, col_stats = st.columns([1.3, 1])
+                col_chart, col_stats = st.columns([1.2, 1])
                 
                 with col_chart:
-                    # Added unique key to fix the chart error
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
-                    # Consolidated Stats Block (Ensures NO code leaks outside)
+                    # 3. Expanded Stats Block (Shows everything)
                     st.markdown(f"""
-                        <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
-                            <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
-                            <div style="font-size: 22px; font-weight: bold; color: #fff500; line-height: 1;">{row['Win %']}%</div>
-                            <div style="margin-top: 12px; font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
-                            <div style="font-size: 16px; font-weight: bold; color: #eee; line-height: 1;">{row['Game Diff Avg']}</div>
-                            <div style="margin-top: 12px;">{badges_html}</div>
+                        <div style="text-align: right; padding-right: 5px; font-family: sans-serif;">
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #fff500;">{row['Win %']}%</div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-size: 8px; color: #888;">MATCHES</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Matches']}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 8px; color: #888;">W/L</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 15px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-size: 8px; color: #888;">CLUTCH</div>
+                                    <div style="font-size: 12px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 8px; color: #888;">CONSISTENCY</div>
+                                    <div style="font-size: 12px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 5px;">{badges_html}</div>
                         </div>
                     """, unsafe_allow_html=True)
 
