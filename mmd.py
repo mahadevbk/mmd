@@ -1205,30 +1205,33 @@ with tabs[0]:
     # 2.5 New: Elo Explanation Panel
     if use_elo:
             with st.expander("❓ How do Elo Skill Ratings work? (Detailed Guide)", expanded=False, icon="➡️"):
+                
                 st.markdown("""
-                ### 🏆 The Elo Skill Rating System
+                            ### 🎾 The "Gold Standard" for Tennis Skill
+                            
+                            The **Elo Rating System** is the mathematical foundation for the most respected rankings in world tennis. It is functionally similar to the **UTR (Universal Tennis Rating)** used by college scouts and pros, and the "Elo-based" models used by analysts to predict **ATP and WTA** tour winners.
+                            
+                            Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your actual level of play. It cares about **who** you beat, not just how many matches you play.
                 
-                Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your relative skill level against the rest of the league. It is a "zero-sum" system where points are transferred between players based on the difficulty of the match.
-
-                #### 1. The Underdog vs. The Favorite
-                The amount of points you win or lose depends on the **probability** of the outcome:
+                            #### 1. The "Upset" vs. The "Hold"
+                            The points exchanged after a match depend on the skill gap between the players:
+                            
+                            * **The Upset (Underdog Win):** If a lower-rated player beats a top-seed, the system realizes the underdog is better than their current rank. They receive a **massive boost** (e.g., +40 points) while the favorite's rank takes a significant hit.
+                            * **The Hold (Favorite Win):** If a high-ranked player beats a beginner, the system expected it. The winner gets a **tiny reward** (e.g., +5 points) because they didn't "prove" anything new.
+                            
+                            #### 2. Doubles & "Carrying" Logic
+                            In Doubles or Mixed, we calculate a **Combined Team Rating**.
+                            * If you are a strong player and you pair with a lower-rated partner, your "Team Rating" drops. 
+                            * This means the match is technically harder for you. If you win, you are rewarded with **extra points** for "carrying" the team against a balanced opponent.
                 
-                * **The "Surprise" Win (Underdog):** If a lower-rated player beats a higher-rated player, the system realizes the ratings were inaccurate. The winner gains a **massive boost** (e.g., +40 points) and the loser drops significantly.
-                * **The "Expected" Win (Favorite):** If a high-ranked player beats a beginner, the system isn't surprised. The winner gets a **tiny reward** (e.g., +5 points) because they were supposed to win.
+                            #### 3. The Zero-Sum Exchange
+                            In the Elo system, points are "stolen," not created. If you gain **22 points**, your opponents lost exactly **22 points**. This creates a high-stakes environment where every match directly affects the hierarchy of the league.
                 
-                #### 2. How Doubles & Mixed Math Works
-                For doubles, your **Team Rating** is the average of you and your partner.
-                * If you are a high-ranked player paired with a newcomer, your "Team Average" is lower. 
-                * Because your team is now "weaker" on paper, you actually stand to gain **more points** for a win than if you played with a pro partner!
-
-                #### 3. The Zero-Sum Exchange
-                Points are never created; they are only traded. If you see your Elo go up by **18**, it means your opponent's Elo went down by exactly **18**. This creates a perfectly balanced ecosystem where the average league rating stays around 1200.
-
-                #### 4. Getting Started
-                Everyone starts at **1200**. Your rating will be "volatile" (changing rapidly) for your first 5–10 matches while the algorithm "finds" your true placement. After that, your rank will stabilize and reflect your consistent performance level.
-                """)
-                
-                st.caption("Note: Elo is calculated chronologically. The order in which matches were played affects the current standings.")
+                            #### 4. The 1200 Baseline
+                            Every new player starts at **1200**. For your first 5–10 matches, your rating will move rapidly (High Volatility) as the system calibrates your true skill level. Once calibrated, your rank will reflect your consistent performance.
+                            """)
+                            
+                            st.caption("Note: Elo is calculated chronologically based on match date to ensure the ranking evolution is accurate.")
 
 
     # 3. Handle Empty Data
