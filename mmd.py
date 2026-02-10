@@ -543,11 +543,20 @@ def calculate_rankings(matches_to_rank):
         })
         
     df = pd.DataFrame(rank_data)
-    if not df.empty:
+    #if not df.empty:
         # Sort by primary Points, then secondary Win %
-        df = df.sort_values(by=["Points", "Win %"], ascending=[False, False]).reset_index(drop=True)
-        df["Rank"] = [f"🏆 {i+1}" for i in df.index]
+        #df = df.sort_values(by=["Points", "Win %"], ascending=[False, False]).reset_index(drop=True)
+        #df["Rank"] = [f"🏆 {i+1}" for i in df.index]
+        # The new 5-tier sorting logic
+    # The new 5-tier sorting logic
+    if not df.empty:
+        df = df.sort_values(
+            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"], 
+            ascending=[False, False, False, False, True] # Name is A-Z (True), others are High-to-Low (False)
+        ).reset_index(drop=True)
         
+        # Assigns rank based on the sorted order (1, 2, 3...)
+        df["Rank"] = [f"🏆 {i+1}" for i in df.index]
     return df, partner_stats
 
 
