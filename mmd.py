@@ -1245,7 +1245,7 @@ with tabs[0]:
                 with col_chart:
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
                     
-                with col_stats:
+                
                 with col_stats:
                     # We use st.markdown with unsafe_allow_html=True to render the styles
                     st.markdown(f"""
