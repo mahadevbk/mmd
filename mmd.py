@@ -1217,9 +1217,11 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         # Note: We iterate over display_rank_df (the filtered list)
         
+        
+        # --- B. Detailed Player Cards ---
         for _, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. HEADER (HTML)
+                # 1. Header (Rendered as HTML)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display: flex; align-items: center;">
@@ -1237,16 +1239,17 @@ with tabs[0]:
                         <div style="color: #ccc; font-size: 12px; margin-top: 4px; font-weight: bold;">{row['Points']} PTS</div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True) # <--- IMPORTANT: This must be here
+                """, unsafe_allow_html=True)
                 
-                # 2. BODY (Plotly + HTML Stats)
+                # 2. Body Columns
                 col_chart, col_stats = st.columns([1.3, 1])
                 
                 with col_chart:
+                    # Plotly handles its own rendering
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
                     
                 with col_stats:
-                    # RENDER STATS AS HTML
+                    # 3. Stats (Rendered as HTML)
                     st.markdown(f"""
                         <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
                             <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
@@ -1259,8 +1262,7 @@ with tabs[0]:
                                 {' '.join([f'<span title="{b}" style="font-size:16px; cursor: help;">{b.split()[0]}</span>' for b in row['Badges']])}
                             </div>
                         </div>
-                    """, unsafe_allow_html=True) # <--- IMPORTANT: This must be here 
-
+                    """, unsafe_allow_html=True)
 
 
 
