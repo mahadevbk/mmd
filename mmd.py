@@ -443,36 +443,50 @@ def create_radar_chart(player_data):
     )
     return fig
 
+def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
+    """
+    actual_score: 1 if A wins, 0 if B wins
+    """
+    expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
+    change = k_factor * (actual_score - expected_a)
+    return round(change)
+
 
 
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
+    # --- 1. Initialization ---
     scores = defaultdict(float)
     stats = defaultdict(get_player_stats_template)
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
     
+    # NEW: Elo Rating Initialization (Starting at 1200)
+    elo_ratings = defaultdict(lambda: 1200.0)
+    K_FACTOR = 32  # Standard K-factor for Elo
+    
     # Track performance breakdown
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
 
-    # Prepare gender mapping from the players dataframe
+    # Prepare gender mapping
     players_df = st.session_state.players_df
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
     if not matches_to_rank.empty:
         matches_to_rank = matches_to_rank.sort_values('date')
 
+    # --- 2. Main Match Processing Loop ---
     for row in matches_to_rank.itertuples(index=False):
         match_type = row.match_type
         
-        # 1. Identify valid players (Excluding Visitors from gender checks and ranking points)
+        # Identify players (Excluding Visitors)
         t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
         t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
         
         if not t1 or not t2: 
             continue
 
-        # 2. AUTOMATED MIXED DOUBLES DETECTION
+        # Automated Mixed Detection
         is_mixed = False
         if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
             g1 = sorted([gender_map.get(p, 'U') for p in t1]) 
@@ -485,7 +499,7 @@ def calculate_rankings(matches_to_rank):
         sets = [row.set1, row.set2, row.set3]
         winner_code = row.winner
 
-        # 3. Game and Set Logic
+        # Game and Set Logic
         for s in sets:
             if not s or str(s).lower() == 'nan': continue
             s_str = str(s)
@@ -517,18 +531,33 @@ def calculate_rankings(matches_to_rank):
         if row.set3 and str(row.set3).strip() and str(row.set3).lower() != 'nan': 
             is_clutch = True
         
-        # 4. POINT SYSTEM ASSIGNMENT
+        # --- 3. Update Traditional Metrics & Elo ---
         w_points = 3 if is_mixed else 2
         
-        def update_player_metrics(players, outcome):
+        # Elo Helper inside the loop
+        def get_elo_expected(ra, rb):
+            return 1 / (1 + 10 ** ((rb - ra) / 400))
+
+        # Calculate Team Averages for Elo
+        t1_elo = sum(elo_ratings[p] for p in t1) / len(t1)
+        t2_elo = sum(elo_ratings[p] for p in t2) / len(t2)
+
+        def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
+            # 1. Elo Update Logic
+            actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
+            expected = get_elo_expected(own_elo_avg, opp_elo_avg)
+            elo_change = K_FACTOR * (actual_score - expected)
+            
             for p in players:
+                # Apply Elo Change
+                elo_ratings[p] += elo_change
+                
+                # Standard Stats
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
                 
-                if match_type == 'Singles': 
-                    perf_breakdown[p]['singles_m'] += 1
-                else: 
-                    perf_breakdown[p]['doubles_m'] += 1
+                if match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
+                else: perf_breakdown[p]['doubles_m'] += 1
 
                 if outcome == 'win':
                     scores[p] += w_points
@@ -536,32 +565,31 @@ def calculate_rankings(matches_to_rank):
                     if is_clutch: stats[p]['clutch_wins'] += 1
                     if match_type == 'Singles': perf_breakdown[p]['singles_w'] += 1
                     else: perf_breakdown[p]['doubles_w'] += 1
-                    
                     if current_streaks[p] < 0: current_streaks[p] = 0
                     current_streaks[p] += 1
                 elif outcome == 'loss':
-                    scores[p] += 1
+                    scores[p] += 1 # Participation Point
                     stats[p]['losses'] += 1
                     if current_streaks[p] > 0: current_streaks[p] = 0
                     current_streaks[p] -= 1
-                else: # Tie logic
+                else: # Tie
                     scores[p] += 1.5
                     current_streaks[p] = 0
 
+        # Run updates based on winner
         if winner_code == "Team 1":
-            update_player_metrics(t1, 'win')
-            update_player_metrics(t2, 'loss')
+            update_player_metrics(t1, 'win', t2_elo, t1_elo)
+            update_player_metrics(t2, 'loss', t1_elo, t2_elo)
         elif winner_code == "Team 2":
-            update_player_metrics(t2, 'win')
-            update_player_metrics(t1, 'loss')
+            update_player_metrics(t2, 'win', t1_elo, t2_elo)
+            update_player_metrics(t1, 'loss', t2_elo, t1_elo)
         else:
-            update_player_metrics(t1, 'tie')
-            update_player_metrics(t2, 'tie')
+            update_player_metrics(t1, 'tie', t2_elo, t1_elo)
+            update_player_metrics(t2, 'tie', t1_elo, t2_elo)
 
-        # 5. PARTNER STATS
-        if match_type in ['Doubles', 'Mixed Doubles']:
+        # Partner Stats (For analytics)
+        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
             for team, code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
-                if len(team) < 2: continue
                 p1, p2 = team[0], team[1]
                 for a, b in [(p1, p2), (p2, p1)]:
                     ps = partner_stats[a][b]
@@ -572,7 +600,7 @@ def calculate_rankings(matches_to_rank):
                         ps['wins'] += 1
                     else: ps['losses'] += 1
 
-    # 6. RANKING DATA AGGREGATION
+    # --- 4. Ranking Data Aggregation ---
     rank_data = []
     img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
     
@@ -587,12 +615,9 @@ def calculate_rankings(matches_to_rank):
         s_perf = (pb['singles_w'] / pb['singles_m'] * 100) if pb['singles_m'] > 0 else 0
         d_perf = (pb['doubles_w'] / pb['doubles_m'] * 100) if pb['doubles_m'] > 0 else 0
 
-        # --- Recent Trend Logic (Fixes KeyError) ---
+        # Recent Trend
         p_gd_list = s['gd_list'][-5:]
-        trend_html = ""
-        for gd in p_gd_list:
-            dot_class = "dot-w" if gd > 0 else "dot-l"
-            trend_html += f'<span class="trend-dot {dot_class}"></span>'
+        trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else "dot-l"}"></span>' for gd in p_gd_list])
 
         badges = []
         if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Clutch")
@@ -602,8 +627,9 @@ def calculate_rankings(matches_to_rank):
         rank_data.append({
             "Player": p, 
             "Points": scores[p], 
+            "Elo": round(elo_ratings[p]), # NEW: Rounded Elo Rating
             "Win %": round((s['wins']/m_played)*100, 1),
-            "Recent Trend": trend_html, # Now explicitly included
+            "Recent Trend": trend_html,
             "Matches": m_played, 
             "Wins": s['wins'], 
             "Losses": s['losses'],
@@ -620,16 +646,14 @@ def calculate_rankings(matches_to_rank):
     df = pd.DataFrame(rank_data)
     
     if not df.empty:
-        # 5-tier sorting logic
+        # Default Sorting for Main Leaderboard
         df = df.sort_values(
-            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"], 
+            by=["Points", "Win %", "Elo", "Game Diff Avg", "Player"], 
             ascending=[False, False, False, False, True] 
         ).reset_index(drop=True)
-        
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
         
     return df, partner_stats
-
 
 # ==============================================================================
 # START: NEW COMPLEX ODDS CALCULATION FUNCTIONS
@@ -1150,10 +1174,10 @@ tabs = st.tabs(tab_names)
 with tabs[0]:
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     
-    # 1. Filter Selection
+    # 1. Filter Selection (Elo Rankings added)
     ranking_view = st.radio(
         "View", 
-        ["Combined", "Doubles", "Singles", "Table View"], 
+        ["Combined", "Doubles", "Singles", "Elo Rankings", "Table View"], 
         horizontal=True, 
         key="rank_view_radio"
     )
@@ -1168,6 +1192,15 @@ with tabs[0]:
         elif ranking_view == "Singles":
             m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
             display_rank_df, _ = calculate_rankings(m_sub)
+        elif ranking_view == "Elo Rankings":
+            # Sort primarily by Elo for this view
+            display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
+            display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
+
+    # Define dynamic labels based on view
+    use_elo = (ranking_view == "Elo Rankings")
+    metric_col = "Elo" if use_elo else "Points"
+    metric_label = "ELO" if use_elo else "PTS"
     
     # 3. Handle Empty Data
     if display_rank_df.empty:
@@ -1178,7 +1211,7 @@ with tabs[0]:
         st.dataframe(
             display_rank_df, 
             hide_index=True, 
-            width=None, # Auto width
+            width='stretch', # Updated for 2026 compatibility
             column_config={
                 "Profile": st.column_config.ImageColumn("Profile"),
                 "Win %": st.column_config.ProgressColumn("Win %", format="%.1f%%", min_value=0, max_value=100),
@@ -1205,7 +1238,7 @@ with tabs[0]:
                             <img src="{i["p"]["Profile"] or "https://via.placeholder.com/100?text=Player"}" style="width: clamp(50px, 20vw, 80px); height: clamp(50px, 20vw, 80px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
                         </div>
                         <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{i["p"]["Player"]}</div>
-                        <div style="color: white; font-weight: bold; font-size: 0.8em;">{i["p"]["Points"]} pts</div>
+                        <div style="color: white; font-weight: bold; font-size: 0.8em;">{i["p"][metric_col]} {metric_label}</div>
                         <div style="color: #aaa; font-size: 0.7em;">{i["p"]["Win %"]}% Win</div>
                     </div>
                 </div>""" for i in podium_items])
@@ -1215,28 +1248,26 @@ with tabs[0]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- B. Detailed Player Cards ---
-        # Note: We iterate over display_rank_df (the filtered list)
-        
-        
-       
-       
-       
-        
-        # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # Data Prep
+                # 1. Variables and Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
-                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
+                badges_list = row.get('Badges', [])
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
                 
-                # Header remains the same
+                # 2. Render Header (Rank, Name, Metric, Trend)
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <img src="{profile_pic}" 
-                             style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; 
-                                    object-fit: contain; background: transparent; border: 3px solid #CCFF00; 
+                             style="width: 110px; 
+                                    height: 110px; 
+                                    border-radius: 12px; 
+                                    margin-right: 15px; 
+                                    object-fit: contain; 
+                                    background: transparent; 
+                                    border: 3px solid #CCFF00; 
                                     box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         <div>
                             <div style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1;">{row['Player']}</div>
@@ -1245,63 +1276,56 @@ with tabs[0]:
                     </div>
                     <div style="text-align: right;">
                         <div style="background: #CCFF00; color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
-                            #{row['Rank']}
+                            {row['Rank']}
                         </div>
-                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">{row['Points']} PTS</div>
+                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">{row[metric_col]} {metric_label}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # --- NEW RATIO: 1.8 for chart, 1 for stats ---
-                col_chart, col_stats = st.columns([1.8, 1])
+                # 3. Content Section (Radar + Stats)
+                col_chart, col_stats = st.columns([1.8, 1]) # Larger graph ratio as requested earlier
                 
                 with col_chart:
                     fig = create_radar_chart(row)
-                    # This removes the "dead air" around the graph to make it appear much larger
-                    fig.update_layout(
-                        margin=dict(l=10, r=10, t=10, b=10),
-                        height=250, # Fixed height to keep card size stable
-                        autosize=True
-                    )
-                    st.plotly_chart(fig, config={'displayModeBar': False}, width="stretch", key=f"radar_{row['Player']}_{idx}")
+                    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=250, autosize=True)
+                    st.plotly_chart(fig, config={'displayModeBar': False}, width='stretch', key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
-                    # Stats column slightly tightened to make room for the graph
                     stats_html = f"""
-                        <div style="text-align: right; padding-right: 2px; margin-top: 10px;">
-                            <div style="margin-bottom: 8px;">
-                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">WIN RATE</div>
-                                <div style="font-size: 22px; font-weight: bold; color: #CCFF00;">{row['Win %']}%</div>
+                        <div style="text-align: right; padding-right: 5px;">
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 24px; font-weight: bold; color: #CCFF00;">{row['Win %']}%</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">MATCHES</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Matches']}</div>
+                                    <div style="font-size: 9px; color: #888;">MATCHES</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">W/L</div>
-                                    <div style="font-size: 14px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 9px; color: #888;">W/L</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
-                            <div style="margin-bottom: 8px;">
-                                <div style="font-size: 9px; color: #888; letter-spacing: 1px;">AVG GDA</div>
-                                <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #eee;">{row['Game Diff Avg']}</div>
                             </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">CLUTCH</div>
-                                    <div style="font-size: 12px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
+                                    <div style="font-size: 9px; color: #888;">CLUTCH</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #00ff88;">{row['Clutch Factor']}%</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 8px; color: #888;">CONSISTENCY</div>
-                                    <div style="font-size: 12px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
+                                    <div style="font-size: 9px; color: #888;">CONSISTENCY</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #ff4b4b;">{row['Consistency Index']}</div>
                                 </div>
                             </div>
-                            <div style="margin-top: 5px;">{badges_html}</div>
+                            <div style="margin-top: 8px;">{badges_html}</div>
                         </div>
                     """
                     st.markdown(stats_html, unsafe_allow_html=True)
-
 
 
 
@@ -2912,7 +2936,7 @@ with tabs[6]:
             current_img = photos[st.session_state.carousel_index]
             # Use a container to target THIS image only
             tourney_img_placeholder = st.empty()
-            tourney_img_placeholder.image(current_img, width="stretch")
+            tourney_img_placeholder.image(current_img, use_container_width=True)
             st.caption(f"📸 Tournament Highlight {st.session_state.carousel_index + 1} of {len(photos)}")
 
         st.markdown('</div>', unsafe_allow_html=True)
