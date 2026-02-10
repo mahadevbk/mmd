@@ -1224,17 +1224,18 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Prepare Data
+                # 1. Variables and Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
                 badges_list = row.get('Badges', [])
                 badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
-
-                # 2. Header Block
+                
+                # 2. Render Header (Rank, Name, Points, Trend)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
-                        <img src="{profile_pic}" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff500; margin-right: 12px; object-fit: cover;">
+                        <img src="{profile_pic}" 
+                             style="width: 55px; height: 55px; border-radius: 12px; margin-right: 12px; object-fit: cover; background: transparent;">
                         <div>
                             <div style="font-size: 18px; font-weight: bold; color: white; line-height: 1.2;">{row['Player']}</div>
                             <div style="font-size: 11px; color: #00ff88; margin-top: 5px;">{trend}</div>
@@ -1247,14 +1248,13 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 3. Middle Section
+                # 3. Content Section
                 col_chart, col_stats = st.columns([1.2, 1])
                 
                 with col_chart:
                     st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
                     
                 with col_stats:
-                    # ALL stats consolidated into one variable to prevent "leaking"
                     stats_html = f"""
                         <div style="text-align: right; padding-right: 5px;">
                             <div style="margin-bottom: 10px;">
@@ -1288,7 +1288,6 @@ with tabs[0]:
                             <div style="margin-top: 5px;">{badges_html}</div>
                         </div>
                     """
-                    # CRITICAL: This line renders the HTML
                     st.markdown(stats_html, unsafe_allow_html=True)
 
 
