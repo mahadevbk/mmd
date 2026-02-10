@@ -1218,10 +1218,13 @@ with tabs[0]:
         # Note: We iterate over display_rank_df (the filtered list)
         
         
+       
         # --- B. Detailed Player Cards ---
-        for _, row in display_rank_df.iterrows():
+        # Note: We iterate over display_rank_df (the filtered list)
+        for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Header (Rendered as HTML)
+                # 1. HEADER & PLAYER INFO (HTML)
+                # This must be wrapped in st.markdown with unsafe_allow_html=True
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display: flex; align-items: center;">
@@ -1241,21 +1244,21 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 2. Body Columns
+                # 2. BODY: Chart and Stats Columns
                 col_chart, col_stats = st.columns([1.3, 1])
                 
                 with col_chart:
-                    # Plotly handles its own rendering
-                    #st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True)
+                    # Added unique 'key' to fix the StreamlitDuplicateElementId error
                     st.plotly_chart(
                         create_radar_chart(row), 
                         config={'displayModeBar': False}, 
                         use_container_width=True,
-                        key=f"radar_{row['Player']}_{row['Rank']}" # This makes every chart unique
+                        key=f"radar_chart_{row['Player']}_{idx}" 
                     )
-
+                    
                 with col_stats:
-                    # 3. Stats (Rendered as HTML)
+                    # 3. STATS (HTML)
+                    # This must also be wrapped in st.markdown with unsafe_allow_html=True
                     st.markdown(f"""
                         <div style="margin-top: 15px; text-align: right; padding-right: 5px;">
                             <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
@@ -1269,7 +1272,6 @@ with tabs[0]:
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
-
 
 
 
