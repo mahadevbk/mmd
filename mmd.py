@@ -1206,32 +1206,32 @@ with tabs[0]:
     if use_elo:
             with st.expander("❓ How do Elo Skill Ratings work? (Detailed Guide)", expanded=False, icon="➡️"):
                 
-                st.markdown("""
-                            ### 🎾 The "Gold Standard" for Tennis Skill
-                            
-                            The **Elo Rating System** is the mathematical foundation for the most respected rankings in world tennis. It is functionally similar to the **UTR (Universal Tennis Rating)** used by college scouts and pros, and the "Elo-based" models used by analysts to predict **ATP and WTA** tour winners.
-                            
-                            Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your actual level of play. It cares about **who** you beat, not just how many matches you play.
-                
-                            #### 1. The "Upset" vs. The "Hold"
-                            The points exchanged after a match depend on the skill gap between the players:
-                            
-                            * **The Upset (Underdog Win):** If a lower-rated player beats a top-seed, the system realizes the underdog is better than their current rank. They receive a **massive boost** (e.g., +40 points) while the favorite's rank takes a significant hit.
-                            * **The Hold (Favorite Win):** If a high-ranked player beats a beginner, the system expected it. The winner gets a **tiny reward** (e.g., +5 points) because they didn't "prove" anything new.
-                            
-                            #### 2. Doubles & "Carrying" Logic
-                            In Doubles or Mixed, we calculate a **Combined Team Rating**.
-                            * If you are a strong player and you pair with a lower-rated partner, your "Team Rating" drops. 
-                            * This means the match is technically harder for you. If you win, you are rewarded with **extra points** for "carrying" the team against a balanced opponent.
-                
-                            #### 3. The Zero-Sum Exchange
-                            In the Elo system, points are "stolen," not created. If you gain **22 points**, your opponents lost exactly **22 points**. This creates a high-stakes environment where every match directly affects the hierarchy of the league.
-                
-                            #### 4. The 1200 Baseline
-                            Every new player starts at **1200**. For your first 5–10 matches, your rating will move rapidly (High Volatility) as the system calibrates your true skill level. Once calibrated, your rank will reflect your consistent performance.
-                            """)
-                            
-                            st.caption("Note: Elo is calculated chronologically based on match date to ensure the ranking evolution is accurate.")
+                    st.markdown("""
+                                ### 🎾 The "Gold Standard" for Tennis Skill
+                                
+                                The **Elo Rating System** is the mathematical foundation for the most respected rankings in world tennis. It is functionally similar to the **UTR (Universal Tennis Rating)** used by college scouts and pros, and the "Elo-based" models used by analysts to predict **ATP and WTA** tour winners.
+                                
+                                Unlike the **Traditional Points** system—which rewards how *often* you play—**Elo** measures your actual level of play. It cares about **who** you beat, not just how many matches you play.
+                    
+                                #### 1. The "Upset" vs. The "Hold"
+                                The points exchanged after a match depend on the skill gap between the players:
+                                
+                                * **The Upset (Underdog Win):** If a lower-rated player beats a top-seed, the system realizes the underdog is better than their current rank. They receive a **massive boost** (e.g., +40 points) while the favorite's rank takes a significant hit.
+                                * **The Hold (Favorite Win):** If a high-ranked player beats a beginner, the system expected it. The winner gets a **tiny reward** (e.g., +5 points) because they didn't "prove" anything new.
+                                
+                                #### 2. Doubles & "Carrying" Logic
+                                In Doubles or Mixed, we calculate a **Combined Team Rating**.
+                                * If you are a strong player and you pair with a lower-rated partner, your "Team Rating" drops. 
+                                * This means the match is technically harder for you. If you win, you are rewarded with **extra points** for "carrying" the team against a balanced opponent.
+                    
+                                #### 3. The Zero-Sum Exchange
+                                In the Elo system, points are "stolen," not created. If you gain **22 points**, your opponents lost exactly **22 points**. This creates a high-stakes environment where every match directly affects the hierarchy of the league.
+                    
+                                #### 4. The 1200 Baseline
+                                Every new player starts at **1200**. For your first 5–10 matches, your rating will move rapidly (High Volatility) as the system calibrates your true skill level. Once calibrated, your rank will reflect your consistent performance.
+                                """)
+                                
+                                st.caption("Note: Elo is calculated chronologically based on match date to ensure the ranking evolution is accurate.")
 
 
     # 3. Handle Empty Data
