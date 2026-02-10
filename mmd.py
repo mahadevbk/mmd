@@ -1217,7 +1217,7 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         # Note: We iterate over display_rank_df (the filtered list)
         for _, row in display_rank_df.iterrows():
-        for 
+         
             with st.container(border=True):
                 # Header: Rank, Name, Image, Points
                 st.markdown(f"""
