@@ -455,20 +455,18 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank):
-    # --- 1. Initialization ---
+    # --- 1. Initialization (Original from your file) ---
     scores = defaultdict(float)
     stats = defaultdict(get_player_stats_template)
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
     
-    # NEW: Elo Rating Initialization (Starting at 1200)
+    # Elo Rating Initialization
     elo_ratings = defaultdict(lambda: 1200.0)
-    K_FACTOR = 32  # Standard K-factor for Elo
+    last_elo_changes = defaultdict(float) # NEW: Track the change from the last match
+    K_FACTOR = 32 
     
-    # Track performance breakdown
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
-
-    # Prepare gender mapping
     players_df = st.session_state.players_df
     gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
 
@@ -486,7 +484,7 @@ def calculate_rankings(matches_to_rank):
         if not t1 or not t2: 
             continue
 
-        # Automated Mixed Detection
+        # Automated Mixed Detection (Your Original Logic)
         is_mixed = False
         if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
             g1 = sorted([gender_map.get(p, 'U') for p in t1]) 
@@ -534,25 +532,30 @@ def calculate_rankings(matches_to_rank):
         # --- 3. Update Traditional Metrics & Elo ---
         w_points = 3 if is_mixed else 2
         
-        # Elo Helper inside the loop
+        # Elo Helper
         def get_elo_expected(ra, rb):
             return 1 / (1 + 10 ** ((rb - ra) / 400))
 
-        # Calculate Team Averages for Elo
         t1_elo = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo = sum(elo_ratings[p] for p in t2) / len(t2)
 
         def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
-            # 1. Elo Update Logic
+            # 1. Elo Update
             actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
             expected = get_elo_expected(own_elo_avg, opp_elo_avg)
             elo_change = K_FACTOR * (actual_score - expected)
             
             for p in players:
-                # Apply Elo Change
                 elo_ratings[p] += elo_change
-                
-                # Standard Stats
+                # NEW: Track the change for the UI
+                if outcome == 'loss':
+                    last_elo_changes[p] = -abs(round(elo_change))
+                elif outcome == 'tie':
+                    last_elo_changes[p] = 0
+                else:
+                    last_elo_changes[p] = abs(round(elo_change))
+
+                # 2. Standard Stats (Your Original Logic)
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
                 
@@ -587,7 +590,7 @@ def calculate_rankings(matches_to_rank):
             update_player_metrics(t1, 'tie', t2_elo, t1_elo)
             update_player_metrics(t2, 'tie', t1_elo, t2_elo)
 
-        # Partner Stats (For analytics)
+        # Partner Stats (Original Logic)
         if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
             for team, code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
                 p1, p2 = team[0], team[1]
@@ -627,7 +630,8 @@ def calculate_rankings(matches_to_rank):
         rank_data.append({
             "Player": p, 
             "Points": scores[p], 
-            "Elo": round(elo_ratings[p]), # NEW: Rounded Elo Rating
+            "Elo": round(elo_ratings[p]),
+            "Last Change": last_elo_changes.get(p, 0), # NEW: Added for UI
             "Win %": round((s['wins']/m_played)*100, 1),
             "Recent Trend": trend_html,
             "Matches": m_played, 
@@ -646,7 +650,6 @@ def calculate_rankings(matches_to_rank):
     df = pd.DataFrame(rank_data)
     
     if not df.empty:
-        # Default Sorting for Main Leaderboard
         df = df.sort_values(
             by=["Points", "Win %", "Elo", "Game Diff Avg", "Player"], 
             ascending=[False, False, False, False, True] 
@@ -654,6 +657,16 @@ def calculate_rankings(matches_to_rank):
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
         
     return df, partner_stats
+
+
+
+
+
+
+
+
+
+
 
 # ==============================================================================
 # START: NEW COMPLEX ODDS CALCULATION FUNCTIONS
