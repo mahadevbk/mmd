@@ -1221,18 +1221,17 @@ with tabs[0]:
        
        
        
-        
-      
-
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
-                # 1. Variables
+                # 1. Variables and Data Prep
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 trend = row.get('Recent Trend', '')
-                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help; margin-left: 5px;">{b.split()[0]}</span>' for b in row.get('Badges', [])])
+                # Ensure badges are handled safely
+                badges_list = row.get('Badges', [])
+                badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; cursor: help; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list]) if badges_list else ""
                 
-                # 2. Header
+                # 2. Render Header (Rank, Name, Points, Trend)
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
@@ -1249,13 +1248,19 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
 
+                # 3. Middle Section: Radar Chart and Statistics
                 col_chart, col_stats = st.columns([1.2, 1])
                 
                 with col_chart:
-                    st.plotly_chart(create_radar_chart(row), config={'displayModeBar': False}, use_container_width=True, key=f"radar_{row['Player']}_{idx}")
+                    st.plotly_chart(
+                        create_radar_chart(row), 
+                        config={'displayModeBar': False}, 
+                        use_container_width=True, 
+                        key=f"radar_{row['Player']}_{idx}"
+                    )
                     
                 with col_stats:
-                    # 3. Expanded Stats Block (Shows everything)
+                    # MAKE SURE THIS st.markdown CALL IS EXACTLY LIKE THIS:
                     st.markdown(f"""
                         <div style="text-align: right; padding-right: 5px; font-family: sans-serif;">
                             <div style="margin-bottom: 10px;">
