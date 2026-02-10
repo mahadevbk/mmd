@@ -2696,8 +2696,6 @@ with tabs[5]:
 #--MINI TOURNEY -----------------------
 with tabs[6]:
     st.header("Mini Tournaments Organiser & Highlights")
-    st.info("Tournament Ograniser is moved to https://tournament-organiser.streamlit.app/")
-    st.info("App may be dormant and need to be 'woken up'.")
 
 
     # --- 1. Fetch Photos Dynamically from GitHub ---
