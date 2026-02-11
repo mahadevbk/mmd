@@ -1229,15 +1229,17 @@ with tabs[0]:
     if display_rank_df.empty:
         st.info("No matches recorded for this category yet.")
     
-    # 4. Table View
+    # 4. Table View (Classic) - FIXED WIDTH ERROR
     elif ranking_view == "Table View":
         st.dataframe(
             display_rank_df, 
             hide_index=True, 
-            width=None,
+            use_container_width=True,  # This replaces 'stretch' or width=None
             column_config={
                 "Profile": st.column_config.ImageColumn("Profile"),
                 "Win %": st.column_config.ProgressColumn("Win %", format="%.1f%%", min_value=0, max_value=100),
+                "Recent Trend": st.column_config.Column("Recent Trend", width="small"),
+                "Points": st.column_config.NumberColumn("PTS", format="%.1f"),
             }
         )
 
