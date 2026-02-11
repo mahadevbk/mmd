@@ -1229,6 +1229,7 @@ with tabs[0]:
     if display_rank_df.empty:
         st.info("No matches recorded for this category yet.")
     
+
     # 4. Table View (Classic) - FIXED WIDTH ERROR
     elif ranking_view == "Table View":
         st.dataframe(
