@@ -1230,17 +1230,36 @@ with tabs[0]:
         st.info("No matches recorded for this category yet.")
     
 
-    # 4. Table View (Classic) - FIXED WIDTH ERROR
+
+    # 4. Table View (Classic) - Fixed Column Order & Width
     elif ranking_view == "Table View":
+        # Create a clean version of the DF for the table to avoid showing raw HTML strings
+        table_df = display_rank_df.copy()
+        
+        # Convert HTML trend dots to emojis for table compatibility
+        if 'Recent Trend' in table_df.columns:
+            table_df['Recent Trend'] = table_df['Recent Trend'].str.replace(
+                '<span class="trend-dot dot-w"></span>', '🟢', regex=False
+            ).str.replace(
+                '<span class="trend-dot dot-l"></span>', '🔴', regex=False
+            ).str.replace('<[^>]*>', '', regex=True) # Remove any leftover tags
+
+        # Reorder columns: Rank, Profile, Player, the rest...
+        cols = ['Rank', 'Profile', 'Player'] + [c for c in table_df.columns if c not in ['Rank', 'Profile', 'Player']]
+        table_df = table_df[cols]
+
         st.dataframe(
-            display_rank_df, 
+            table_df, 
             hide_index=True, 
-            use_container_width=True,  # This replaces 'stretch' or width=None
+            width='stretch',  # Re-enabled per your error log requirements
             column_config={
-                "Profile": st.column_config.ImageColumn("Profile"),
+                "Rank": st.column_config.Column("Rank", width="small"),
+                "Profile": st.column_config.ImageColumn("PIC"),
+                "Player": st.column_config.Column("Name", width="medium"),
                 "Win %": st.column_config.ProgressColumn("Win %", format="%.1f%%", min_value=0, max_value=100),
-                "Recent Trend": st.column_config.Column("Recent Trend", width="small"),
+                "Recent Trend": st.column_config.Column("Trend", width="small"),
                 "Points": st.column_config.NumberColumn("PTS", format="%.1f"),
+                "Elo": st.column_config.NumberColumn("ELO", format="%d"),
             }
         )
 
