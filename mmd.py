@@ -34,7 +34,7 @@ except ImportError:
     pass
 
 # --- Configuration & Setup ---
-st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League", layout="wide")
+st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # --- Custom CSS ---
