@@ -1290,14 +1290,28 @@ with tabs[0]:
                 score_str = f"{int(player[metric_col])}" if use_elo else f"{player[metric_col]:g}"
                 photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
 
+                
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
                     <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
+                        
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                            <img src="{photo}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                            <img src="{photo}" 
+                                 style="
+                                    width: clamp(50px, 18vw, 90px); 
+                                    height: auto; 
+                                    aspect-ratio: 1 / 1; 
+                                    border-radius: 12px; 
+                                    object-fit: cover; 
+                                    object-position: center;
+                                    border: 2px solid #fff500; 
+                                    box-shadow: 0 0 15px rgba(255,245,0,0.4);
+                                    background-color: #222;
+                                 ">
                         </div>
-                        <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
+                
+                        <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px;">{player['Player']}</div>
                         <div style="color: white; font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
                         <div style="color: #aaa; font-size: 0.7em;">{player['Win %']}% Win</div>
                     </div>
