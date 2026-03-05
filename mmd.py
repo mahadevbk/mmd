@@ -1764,31 +1764,21 @@ with tabs[1]:
                 headline = f"{winner_h} <span class='status-text-grey'>{status_txt}</span> {loser_h}"
 
                 m_uid = f"match_{row.match_id}"
-                img_html = f'''
-                    <div class="match-img-wrapper">
-                        <a href="#{m_uid}">
-                            <img src="{row.match_image_url}" class="match-img-content clickable-img">
-                        </a>
-                    </div>
-                    <div id="{m_uid}" class="img-lightbox">
-                        <a href="#" class="img-lightbox-close">&times;</a>
-                        <img src="{row.match_image_url}">
-                    </div>
-                ''' if row.match_image_url else ""
+                img_html = f'<div class="match-img-wrapper"><a href="#{m_uid}"><img src="{row.match_image_url}" class="match-img-content clickable-img"></a></div><div id="{m_uid}" class="img-lightbox"><a href="#" class="img-lightbox-close">&times;</a><img src="{row.match_image_url}"></div>' if row.match_image_url else ""
                 
                 card_html = f"""
-                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
-                        {img_html}
-                        <div style="padding: 15px;">
-                            <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
-                            <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
-                            <div class="match-score-container">
-                                <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
-                                <div class="gda-label">Game Diff Avg: +{match_gda}</div>
-                            </div>
-                        </div>
-                    </div>
-                """
+<div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
+    {img_html}
+    <div style="padding: 15px;">
+        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
+        <div class="match-score-container">
+            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
+            <div class="gda-label">Game Diff Avg: +{match_gda}</div>
+        </div>
+    </div>
+</div>
+"""
                 st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
