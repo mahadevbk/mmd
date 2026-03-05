@@ -352,10 +352,47 @@ def upload_image_to_github(file, file_name, image_type="match"):
 # --- Business Logic ---
 
 def tennis_scores():
-    scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
-    for i in range(10): scores.extend([f"Tie Break 7-{i}", f"Tie Break {i}-7"])
-    for i in range(6): scores.extend([f"Tie Break 10-{i}", f"Tie Break {i}-10"])
+    # Regular set scores (excluding 7-6/6-7 because they MUST have tiebreak points)
+    scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7"]
+    
+    # Valid Tie Break scores (winner reaches 7, loser <= 5)
+    for i in range(6):
+        scores.append(f"Tie Break 7-{i}")
+        scores.append(f"Tie Break {i}-7")
+    
+    # Valid Super Tie Break scores (winner reaches 10, loser <= 8)
+    for i in range(9):
+        scores.append(f"Tie Break 10-{i}")
+        scores.append(f"Tie Break {i}-10")
+        
+    scores.extend(["Custom Tie Break", "Custom Super Tie Break"])
     return scores
+
+def validate_custom_score(score_str, score_type):
+    """
+    Validates that a custom tie break or super tie break score makes 'tennis sense'.
+    score_type: 'TB' for regular tie break (to 7), 'STB' for super tie break (to 10).
+    """
+    try:
+        nums = [int(n) for n in re.findall(r'\d+', score_str)]
+        if len(nums) != 2:
+            return False, "Format must be X-Y (e.g., 9-7)."
+        p1, p2 = nums[0], nums[1]
+        w, l = max(p1, p2), min(p1, p2)
+        
+        min_pts = 7 if score_type == "TB" else 10
+            
+        if w < min_pts:
+            return False, f"Winner must have at least {min_pts} points."
+        if w == min_pts:
+            if l > min_pts - 2:
+                return False, f"If winner has {min_pts}, loser must have {min_pts-2} or less."
+        else: # w > min_pts
+            if l != w - 2:
+                return False, f"If score goes beyond {min_pts}, the difference must be exactly 2 (e.g., {w}-{w-2})."
+        return True, ""
+    except Exception:
+        return False, "Invalid numeric format. Use X-Y."
 
 def format_set_score(s):
     if not s: return ""
@@ -1572,17 +1609,27 @@ with tabs[1]:
             
             # 4. Scores and Winner Selection
             sc1, sc2, sc3 = st.columns(3)
-            s1 = sc1.selectbox("Set 1 Score *", [""] + tennis_scores(), key="match_s1")
-            s2 = sc2.selectbox("Set 2 Score", [""] + tennis_scores(), key="match_s2")
-            s3 = sc3.selectbox("Set 3 Score", [""] + tennis_scores(), key="match_s3")
             
+            def get_set_score_ui(col, label, key_prefix):
+                sel = col.selectbox(label, [""] + tennis_scores(), key=f"{key_prefix}_sel")
+                if sel == "Custom Tie Break":
+                    val = col.text_input("TB Score (X-Y)", key=f"{key_prefix}_custom", placeholder="e.g. 9-7")
+                    return f"Tie Break {val}", "TB"
+                elif sel == "Custom Super Tie Break":
+                    val = col.text_input("Super TB (X-Y)", key=f"{key_prefix}_custom", placeholder="e.g. 14-12")
+                    return f"Tie Break {val}", "STB"
+                return sel, "REG"
+
+            s1, s1_type = get_set_score_ui(sc1, "Set 1 Score *", "match_s1")
+            s2, s2_type = get_set_score_ui(sc2, "Set 2 Score", "match_s2")
+            s3, s3_type = get_set_score_ui(sc3, "Set 3 Score", "match_s3")
+
             winner_selection = st.radio("Select Winner *", ["Team 1", "Team 2", "Tie"], horizontal=True)
             match_img = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"])
         
             # 5. Form Submission & Validation Logic
             if st.button("🚀 Post Match Result"):
                 valid = True
-                error_msg = ""
                 
                 # --- A. Basic Field Validation ---
                 selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
@@ -1603,8 +1650,19 @@ with tabs[1]:
                 elif m_type == "Singles" and len(selected_players) < 2:
                     st.error("Singles requires 2 players.")
                     valid = False
-                
-                # --- B. Winner vs Score Cross-Check Logic ---
+
+                # --- B. Custom Score Validation ---
+                if valid:
+                    for s_val, s_type, s_label in [(s1, s1_type, "Set 1"), (s2, s2_type, "Set 2"), (s3, s3_type, "Set 3")]:
+                        if s_type in ["TB", "STB"]:
+                            score_only = s_val.replace("Tie Break", "").strip()
+                            is_v, err = validate_custom_score(score_only, s_type)
+                            if not is_v:
+                                st.error(f"❌ {s_label} Error: {err}")
+                                valid = False
+                                break
+
+                # --- C. Winner vs Score Cross-Check Logic ---
                 if valid:
                     t1_sets = 0
                     t2_sets = 0
