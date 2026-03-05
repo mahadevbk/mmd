@@ -1664,12 +1664,14 @@ with tabs[1]:
                 m_df['date'] = pd.to_datetime(m_df['date'])
                 m_df = m_df.sort_values('date', ascending=False)
                 
-                # FIXED: Corrected r vs row and added str conversion for date
-                match_options = {
-                    f"{str(r.date)[:10]} | {r.team1_player1} vs {r.team2_player1}": r.match_id 
-                    for r in m_df.itertuples()
-                }
-                
+                # Update match options to show all players for doubles
+                match_options = {}
+                for r in m_df.itertuples():
+                    if r.match_type == "Singles":
+                        label = f"{str(r.date)[:10]} | {r.team1_player1} vs {r.team2_player1}"
+                    else:
+                        label = f"{str(r.date)[:10]} | {r.team1_player1}/{r.team1_player2} vs {r.team2_player1}/{r.team2_player2}"
+                    match_options[label] = r.match_id
                 sel_label = st.selectbox("Select Match to Edit", list(match_options.keys()))
                 
                 if sel_label:
