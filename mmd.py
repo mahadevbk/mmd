@@ -129,6 +129,46 @@ h3 { font-size: 16px !important; }
 .block-container { display: flex; flex-wrap: wrap; justify-content: center; }
 [data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
 [data-testid="stExpander"] i, [data-testid="stExpander"] span.icon { font-family: 'Material Icons' !important; }
+.img-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+.img-lightbox:target {
+    display: flex;
+}
+.img-lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border: 3px solid #fff500;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 245, 0, 0.5);
+    object-fit: contain;
+}
+.img-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 50px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+.clickable-img {
+    cursor: pointer;
+    transition: 0.3s;
+}
+.clickable-img:hover {
+    opacity: 0.8;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1278,7 +1318,7 @@ with tabs[0]:
             ]
             
             podium_html_content = ""
-            for item in podium_order:
+            for p_idx, item in enumerate(podium_order):
                 player = item["p"]
                 
                 # Logic for score and change indicator
@@ -1289,13 +1329,20 @@ with tabs[0]:
                 
                 score_str = f"{int(player[metric_col])}" if use_elo else f"{player[metric_col]:g}"
                 photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
+                p_uid = f"podium_{p_idx}_{player['Player'].replace(' ', '')}"
 
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
                     <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                            <img src="{photo}" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                            <a href="#{p_uid}">
+                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                            </a>
+                        </div>
+                        <div id="{p_uid}" class="img-lightbox">
+                            <a href="#" class="img-lightbox-close">&times;</a>
+                            <img src="{photo}">
                         </div>
                         <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
                         <div style="color: white; font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
@@ -1315,6 +1362,7 @@ with tabs[0]:
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
+                r_uid = f"rank_{idx}_{row['Player'].replace(' ', '')}"
                 trend = row.get('Recent Trend', '')
                 badges_list = row.get('Badges', [])
                 badges_html = ' '.join([f'<span title="{b}" style="font-size:16px; margin-left: 5px;">{b.split()[0]}</span>' for b in badges_list])
@@ -1330,7 +1378,9 @@ with tabs[0]:
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
-                        <img src="{profile_pic}" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid #CCFF00; box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
+                        <a href="#{r_uid}">
+                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid #CCFF00; box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
+                        </a>
                         <div>
                             <div style="font-size: 22px; font-weight: bold; color: white; line-height: 1.1;">{row['Player']}</div>
                             <div style="font-size: 13px; color: #00ff88; margin-top: 5px; font-weight: 500;">{trend}</div>
@@ -1344,6 +1394,10 @@ with tabs[0]:
                             {score_display} {metric_label} {change_indicator}
                         </div>
                     </div>
+                </div>
+                <div id="{r_uid}" class="img-lightbox">
+                    <a href="#" class="img-lightbox-close">&times;</a>
+                    <img src="{profile_pic}">
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1709,7 +1763,18 @@ with tabs[1]:
                 loser_h = t2_h if row.winner == "Team 1" else t1_h if row.winner == "Team 2" else t2_h
                 headline = f"{winner_h} <span class='status-text-grey'>{status_txt}</span> {loser_h}"
 
-                img_html = f'<div class="match-img-wrapper"><img src="{row.match_image_url}" class="match-img-content"></div>' if row.match_image_url else ""
+                m_uid = f"match_{row.match_id}"
+                img_html = f'''
+                    <div class="match-img-wrapper">
+                        <a href="#{m_uid}">
+                            <img src="{row.match_image_url}" class="match-img-content clickable-img">
+                        </a>
+                    </div>
+                    <div id="{m_uid}" class="img-lightbox">
+                        <a href="#" class="img-lightbox-close">&times;</a>
+                        <img src="{row.match_image_url}">
+                    </div>
+                ''' if row.match_image_url else ""
                 
                 card_html = f"""
                     <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
@@ -1934,6 +1999,7 @@ with tabs[2]:
 
     for idx, row in disp.iterrows():
         p_name = row['name']
+        p_uid_profile = f"profile_{idx}_{p_name.replace(' ', '')}"
         p_stats = rank_df[rank_df['Player'] == p_name] if not rank_df.empty else pd.DataFrame()
         has_stats = not p_stats.empty
         s = p_stats.iloc[0] if has_stats else {}
@@ -1958,11 +2024,17 @@ with tabs[2]:
                             overflow: hidden; 
                             margin: 0 auto;
                         ">
-                            <img src="{img}" style="
-                                max-width: 100%; 
-                                max-height: 100%; 
-                                object-fit: contain;
-                            ">
+                            <a href="#{p_uid_profile}">
+                                <img src="{img}" class="clickable-img" style="
+                                    max-width: 100%; 
+                                    max-height: 100%; 
+                                    object-fit: contain;
+                                ">
+                            </a>
+                        </div>
+                        <div id="{p_uid_profile}" class="img-lightbox">
+                            <a href="#" class="img-lightbox-close">&times;</a>
+                            <img src="{img}">
                         </div>
                         <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
                         <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
