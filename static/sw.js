@@ -1,13 +1,22 @@
-const CACHE_NAME = 'mmd-v3';
+const CACHE_NAME = 'mmd-v6';
 const ASSETS = [
   '/',
-  'https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png'
+  'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png',
+  'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png'
 ];
 
 self.addEventListener('install', (e) => {
+  console.log('[Service Worker] Install');
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[Service Worker] Caching all assets');
+      return cache.addAll(ASSETS);
+    })
   );
+});
+
+self.addEventListener('activate', (e) => {
+  console.log('[Service Worker] Activate');
 });
 
 self.addEventListener('fetch', (e) => {

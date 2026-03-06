@@ -8,9 +8,16 @@
   "theme_color": "#fff500",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png",
+      "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
