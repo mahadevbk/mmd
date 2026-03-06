@@ -37,7 +37,7 @@ except ImportError:
 st.set_page_config(
     page_title="MMD Mira Mixed Doubles Tennis League",
     page_icon="https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png",
-    layout="wide"
+    #layout="wide"
 )
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
