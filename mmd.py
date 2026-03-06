@@ -34,19 +34,25 @@ except ImportError:
     pass
 
 # --- Configuration & Setup ---
-st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
+st.set_page_config(
+    page_title="MMD Mira Mixed Doubles Tennis League",
+    page_icon="https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png",
+    layout="wide"
+)
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # In mmd.py
 st.markdown(
     f"""
-    <link rel="manifest" href="app/static/manifest.json?v=8">
+    <link rel="manifest" href="/app/static/manifest.json?v=9">
     <meta name="theme-color" content="#fff500">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png">
     <script>
       if ('serviceWorker' in navigator) {{
         window.addEventListener('load', function() {{
-          navigator.serviceWorker.register('app/static/sw.js?v=8', {{ scope: '/' }})
+          navigator.serviceWorker.register('/app/static/sw.js?v=9', {{ scope: '/' }})
             .then(reg => console.log('SW registered with scope:', reg.scope))
             .catch(err => console.log('SW registration failed:', err));
         }});
