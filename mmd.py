@@ -40,11 +40,15 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 # In mmd.py
 st.markdown(
     f"""
-    <link rel="manifest" href="static/manifest.json?v=5">
+    <link rel="manifest" href="static/manifest.json?v=7">
+    <meta name="theme-color" content="#fff500">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png">
     <script>
       if ('serviceWorker' in navigator) {{
         window.addEventListener('load', function() {{
-          navigator.serviceWorker.register('static/sw.js?v=5');
+          navigator.serviceWorker.register('static/sw.js?v=7', {{ scope: '/' }})
+            .then(reg => console.log('SW registered with scope:', reg.scope))
+            .catch(err => console.log('SW registration failed:', err));
         }});
       }}
     </script>
