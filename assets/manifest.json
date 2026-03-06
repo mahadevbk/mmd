@@ -1,0 +1,15 @@
+{
+  "name": "MMD Tennis League",
+  "short_name": "MMD",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#071a3d",
+  "theme_color": "#fff500",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
