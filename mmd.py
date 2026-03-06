@@ -40,11 +40,11 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 # --- PWA Implementation ---
 st.markdown(
     f"""
-    <link rel="manifest" href="static/manifest.json">
+    <link rel="manifest" href="static/manifest.json?v=3">
     <script>
       if ('serviceWorker' in navigator) {{
         window.addEventListener('load', function() {{
-          navigator.serviceWorker.register('static/sw.js');
+          navigator.serviceWorker.register('static/sw.js?v=3');
         }});
       }}
     </script>
