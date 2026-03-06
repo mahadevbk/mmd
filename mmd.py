@@ -37,14 +37,14 @@ except ImportError:
 st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
-# --- PWA Implementation ---
+# In mmd.py
 st.markdown(
     f"""
-    <link rel="manifest" href="static/manifest.json?v=3">
+    <link rel="manifest" href="static/manifest.json?v=5">
     <script>
       if ('serviceWorker' in navigator) {{
         window.addEventListener('load', function() {{
-          navigator.serviceWorker.register('static/sw.js?v=3');
+          navigator.serviceWorker.register('static/sw.js?v=5');
         }});
       }}
     </script>
