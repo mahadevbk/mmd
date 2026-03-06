@@ -795,7 +795,7 @@ def calculate_rankings(matches_to_rank):
         
         # Award #1 Rank Badge
         if not df.empty:
-            df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 King/Queen of the Court"]
+            df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 Court Dominator"]
         
     return df, partner_stats
 
