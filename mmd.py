@@ -37,6 +37,21 @@ except ImportError:
 st.set_page_config(page_title="MMD Mira Mixed Doubles Tennis League")
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
+# --- PWA Implementation ---
+st.markdown(
+    f"""
+    <link rel="manifest" href="static/manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {{
+        window.addEventListener('load', function() {{
+          navigator.serviceWorker.register('static/sw.js');
+        }});
+      }}
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 # --- Custom CSS ---
 st.markdown("""
 <style>
