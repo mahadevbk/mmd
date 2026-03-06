@@ -461,7 +461,9 @@ def generate_match_id(matches_df, match_datetime):
 # Helper functions for defaultdict to allow pickling
 def get_player_stats_template():
     return {'wins': 0, 'losses': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
-            'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': []}
+            'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': [],
+            'giant_kills': 0, 'comebacks': 0, 'daily_matches': defaultdict(int), 'sets_won': 0,
+            'tb_wins': 0, 'last_match_date': None}
 
 def get_partner_stats_inner_template():
     return {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}
@@ -616,7 +618,21 @@ def calculate_rankings(matches_to_rank):
         t1_elo = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo = sum(elo_ratings[p] for p in t2) / len(t2)
 
-        def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg):
+        # --- New Stat Logic: Giant Killer, Comeback ---
+        is_giant_kill = False
+        if winner_code == "Team 1" and (t2_elo - t1_elo) >= 100: is_giant_kill = True
+        elif winner_code == "Team 2" and (t1_elo - t2_elo) >= 100: is_giant_kill = True
+
+        is_comeback = False
+        s1 = str(row.set1)
+        if '-' in s1:
+            try:
+                s1_p1, s1_p2 = map(int, s1.split('-'))
+                if winner_code == "Team 1" and s1_p2 > s1_p1: is_comeback = True
+                elif winner_code == "Team 2" and s1_p1 > s1_p2: is_comeback = True
+            except: pass
+
+        def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg, is_winner_team):
             # 1. Elo Update
             actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
             expected = get_elo_expected(own_elo_avg, opp_elo_avg)
@@ -636,6 +652,32 @@ def calculate_rankings(matches_to_rank):
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
                 
+                # Last match date
+                stats[p]['last_match_date'] = row.date
+
+                # Sets won tracking & Tie Break wins
+                for s_val in [row.set1, row.set2, row.set3]:
+                    if not s_val: continue
+                    s_str = str(s_val)
+                    try:
+                        is_this_set_tb = "Tie Break" in s_str
+                        if is_this_set_tb:
+                            nums = [int(x) for x in re.findall(r'\d+', s_str)]
+                            if len(nums) >= 2:
+                                if is_winner_team and nums[0] > nums[1]: stats[p]['tb_wins'] += 1
+                                elif not is_winner_team and nums[1] > nums[0]: stats[p]['tb_wins'] += 1
+
+                        pts = str(s_val).split('-')
+                        if is_winner_team and int(pts[0]) > int(pts[1]): stats[p]['sets_won'] += 1
+                        elif not is_winner_team and int(pts[1]) > int(pts[0]): stats[p]['sets_won'] += 1
+                    except: pass
+
+                # Daily matches
+                stats[p]['daily_matches'][str(row.date)] += 1
+
+                if is_winner_team and is_giant_kill: stats[p]['giant_kills'] += 1
+                if is_winner_team and is_comeback: stats[p]['comebacks'] += 1
+
                 if match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
                 else: perf_breakdown[p]['doubles_m'] += 1
 
@@ -658,14 +700,14 @@ def calculate_rankings(matches_to_rank):
 
         # Run updates based on winner
         if winner_code == "Team 1":
-            update_player_metrics(t1, 'win', t2_elo, t1_elo)
-            update_player_metrics(t2, 'loss', t1_elo, t2_elo)
+            update_player_metrics(t1, 'win', t2_elo, t1_elo, True)
+            update_player_metrics(t2, 'loss', t1_elo, t2_elo, False)
         elif winner_code == "Team 2":
-            update_player_metrics(t2, 'win', t1_elo, t2_elo)
-            update_player_metrics(t1, 'loss', t2_elo, t1_elo)
+            update_player_metrics(t2, 'win', t1_elo, t2_elo, True)
+            update_player_metrics(t1, 'loss', t2_elo, t1_elo, False)
         else:
-            update_player_metrics(t1, 'tie', t2_elo, t1_elo)
-            update_player_metrics(t2, 'tie', t1_elo, t2_elo)
+            update_player_metrics(t1, 'tie', t2_elo, t1_elo, False)
+            update_player_metrics(t2, 'tie', t1_elo, t2_elo, False)
 
         # Partner Stats (Original Logic)
         if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
@@ -704,6 +746,24 @@ def calculate_rankings(matches_to_rank):
         if consistency < 2.5 and m_played >= 5: badges.append("📉 Steady")
         if current_streaks[p] >= 3: badges.append("🔥 Hot")
         
+        # New Badge Assignments
+        if s.get('giant_kills', 0) > 0: badges.append("🛡️ Giant Killer")
+        if s.get('comebacks', 0) > 0: badges.append("🔄 Comeback Kid")
+        if any(v >= 3 for v in s['daily_matches'].values()): badges.append("⛓️ Iron Player")
+        if s.get('sets_won', 0) >= 20: badges.append("🏆 Set Collector")
+        if s.get('tb_wins', 0) >= 3: badges.append("🎯 Sniper")
+        if m_played >= 50: badges.append("🎖️ Veteran")
+        if m_played >= 100: badges.append("💯 Century Club")
+        
+        # Participation Badge (Played in last 7 days)
+        try:
+            l_date = s.get('last_match_date')
+            if l_date:
+                last_dt = pd.to_datetime(l_date)
+                if (datetime.now() - last_dt).days <= 7:
+                    badges.append("🌱 Participation")
+        except: pass
+        
         rank_data.append({
             "Player": p, 
             "Points": scores[p], 
@@ -732,6 +792,10 @@ def calculate_rankings(matches_to_rank):
             ascending=[False, False, False, False, True] 
         ).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
+        
+        # Award #1 Rank Badge
+        if not df.empty:
+            df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 King/Queen of the Court"]
         
     return df, partner_stats
 
