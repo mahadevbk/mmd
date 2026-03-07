@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mmd-v10';
+const CACHE_NAME = 'mmd-v11';
 const ASSETS = [
   '/',
   'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png',
