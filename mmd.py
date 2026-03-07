@@ -25,6 +25,8 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from supabase import create_client, Client
 import textwrap
+import base64
+import json
 
 # Optional imports
 try:
@@ -42,51 +44,53 @@ st.set_page_config(
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # In mmd.py
+
+
+# Define your manifest as a dictionary
+manifest_dict = {
+    "id": "/",
+    "name": "MMD Tennis League",
+    "short_name": "MMD",
+    "description": "Mira Mixed Doubles Tennis League",
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#fff500",
+    "background_color": "#071a3d",
+    "icons": [
+        {
+            "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
+
+# Convert to Base64 to inject directly
+manifest_json = json.dumps(manifest_dict)
+manifest_base64 = base64.b64encode(manifest_json.encode()).decode()
+
 st.markdown(
     f"""
-    <script>
-      function injectManifest() {{
-        const manifestUrl = '/static/manifest.json?v=11';
-        
-        // Find or create manifest link
-        let manifestLink = document.querySelector('link[rel="manifest"]');
-        if (!manifestLink) {{
-            manifestLink = document.createElement('link');
-            manifestLink.rel = 'manifest';
-            document.head.appendChild(manifestLink);
-        }}
-        
-        // Force our manifest
-        manifestLink.href = manifestUrl;
-        console.log('Attempting to inject manifest:', manifestUrl);
-      }}
-
-      // Run immediately and again after a short delay to ensure we beat Streamlit's loader
-      injectManifest();
-      setTimeout(injectManifest, 500);
-      setTimeout(injectManifest, 2000);
-    </script>
+    <link rel="manifest" href="data:application/json;base64,{manifest_base64}">
     <meta name="theme-color" content="#fff500">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png">
     <script>
       if ('serviceWorker' in navigator) {{
         window.addEventListener('load', function() {{
-          // Try /static/sw.js instead of /app/static/sw.js
-          navigator.serviceWorker.register('/static/sw.js?v=11', {{ scope: '/' }})
-            .then(reg => console.log('SW registered with scope:', reg.scope))
-            .catch(err => {{
-                console.log('SW registration at /static/ failed, trying /app/static/...');
-                navigator.serviceWorker.register('/app/static/sw.js?v=11', {{ scope: '/' }})
-                    .then(r => console.log('SW registered at /app/static/'))
-                    .catch(e => console.log('All SW registration attempts failed:', e));
-            }});
+          // Using a raw GitHub link for the SW can sometimes bypass Streamlit's routing issues
+          navigator.serviceWorker.register('https://raw.githubusercontent.com/mahadevbk/mmd/main/static/sw.js')
+            .then(reg => console.log('SW registered'))
+            .catch(err => console.log('SW error:', err));
         }});
       }}
     </script>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 # --- Custom CSS ---
