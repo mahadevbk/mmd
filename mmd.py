@@ -45,49 +45,72 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # In mmd.py
 
-
-# Define your manifest as a dictionary
-manifest_dict = {
-    "id": "/",
+# 1. Define your Manifest
+manifest_data = {
     "name": "MMD Tennis League",
     "short_name": "MMD",
     "description": "Mira Mixed Doubles Tennis League",
     "start_url": "/",
     "display": "standalone",
+    "scope": "/",
     "theme_color": "#fff500",
     "background_color": "#071a3d",
     "icons": [
         {
             "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }
 
-# Convert to Base64 to inject directly
-manifest_json = json.dumps(manifest_dict)
-manifest_base64 = base64.b64encode(manifest_json.encode()).decode()
+manifest_string = json.dumps(manifest_data)
+manifest_base64 = base64.b64encode(manifest_string.encode()).decode()
 
+# 2. Define your Service Worker Code
+sw_code = """
+const CACHE_NAME = 'mmd-v12';
+self.addEventListener('install', (e) => {
+    self.skipWaiting();
+});
+self.addEventListener('activate', (e) => {
+    e.waitUntil(clients.claim());
+});
+self.addEventListener('fetch', (e) => {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+"""
+sw_base64 = base64.b64encode(sw_code.encode()).decode()
+
+# 3. Inject into Streamlit
 st.markdown(
     f"""
     <link rel="manifest" href="data:application/json;base64,{manifest_base64}">
-    <meta name="theme-color" content="#fff500">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <script>
-      if ('serviceWorker' in navigator) {{
-        window.addEventListener('load', function() {{
-          // Using a raw GitHub link for the SW can sometimes bypass Streamlit's routing issues
-          navigator.serviceWorker.register('https://raw.githubusercontent.com/mahadevbk/mmd/main/static/sw.js')
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.log('SW error:', err));
-        }});
-      }}
+        // Inject Service Worker via Blob to bypass file path issues
+        const swContent = atob('{sw_base64}');
+        const blob = new Blob([swContent], {{ type: 'text/javascript' }});
+        const swUrl = URL.createObjectURL(blob);
+        
+        if ('serviceWorker' in navigator) {{
+            navigator.serviceWorker.register(swUrl, {{ scope: '/' }})
+            .then(reg => console.log('Service Worker Registered via Blob'))
+            .catch(err => console.error('SW Registration Failed:', err));
+        }}
+
+        // Force the Title and Theme Color
+        document.title = "MMD Tennis League";
+        const metaTheme = document.createElement('meta');
+        metaTheme.name = "theme-color";
+        metaTheme.content = "#fff500";
+        document.getElementsByTagName('head')[0].appendChild(metaTheme);
     </script>
     """,
     unsafe_allow_html=True
