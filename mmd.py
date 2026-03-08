@@ -46,26 +46,31 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # In mmd.py
 
-import streamlit.components.v1 as components
+
 
 # --- PWA Injection ---
 def inject_pwa_meta():
     pwa_html = """
-    <link rel="manifest" href="./static/manifest.json">
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          // Point to the sw.js in your static folder
-          navigator.serviceWorker.register('./static/sw.js').then(function(registration) {
-            print('ServiceWorker registration successful');
-          }, function(err) {
-            print('ServiceWorker registration failed: ', err);
-          });
-        });
+      // Break out of the Streamlit iframe to reach the main window
+      const parentDoc = window.parent.document;
+      
+      // 1. Add Manifest Link
+      if (!parentDoc.querySelector('link[rel="manifest"]')) {
+          const manifest = parentDoc.createElement('link');
+          manifest.rel = 'manifest';
+          manifest.href = './static/manifest.json';
+          parentDoc.head.appendChild(manifest);
+      }
+
+      // 2. Register Service Worker with Root Scope
+      if ('serviceWorker' in window.navigator) {
+        window.navigator.serviceWorker.register('./static/sw.js', { scope: '/' })
+          .then(reg => console.log('SW Registered for scope:', reg.scope))
+          .catch(err => console.error('SW Registration failed:', err));
       }
     </script>
     """
-    # This renders the tags in the background
     components.html(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
