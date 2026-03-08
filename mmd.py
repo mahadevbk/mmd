@@ -53,21 +53,25 @@ def inject_pwa_meta():
     pwa_html = """
     <script>
       const parentDoc = window.parent.document;
+      
+      // Direct links to GitHub Raw to bypass Streamlit's routing issues
+      const manifestUrl = "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/manifest.json";
+      const swUrl = "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/sw.js";
 
-      // 1. Add Manifest to the parent (main) page
+      // 1. Inject Manifest
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
-          // Force look at the absolute root static folder
-          manifest.href = '/static/manifest.json';
+          manifest.setAttribute('crossorigin', 'use-credentials'); // Helps with CORS
+          manifest.href = manifestUrl;
           parentDoc.head.appendChild(manifest);
       }
 
-      // 2. Register Service Worker at the absolute root
+      // 2. Register Service Worker
       if ('serviceWorker' in window.navigator) {
-        window.navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+        window.navigator.serviceWorker.register(swUrl, { scope: '/' })
           .then(reg => {
-              console.log('MMD PWA: Service Worker Registered successfully at root');
+              console.log('MMD PWA: Service Worker Registered from GitHub');
           })
           .catch(err => {
               console.error('MMD PWA: Registration Failed:', err);
@@ -75,6 +79,7 @@ def inject_pwa_meta():
       }
     </script>
     """
+    import streamlit.components.v1 as components
     components.html(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
