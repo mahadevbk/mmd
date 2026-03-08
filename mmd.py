@@ -54,28 +54,21 @@ def inject_pwa_meta():
     <script>
       const parentDoc = window.parent.document;
       
-      // Direct links to GitHub Raw to bypass Streamlit's routing issues
-      const manifestUrl = "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/manifest.json";
-      const swUrl = "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/sw.js";
+      // Points back to your own domain (mandatory for Service Workers)
+      const manifestUrl = "/static/manifest.json";
+      const swUrl = "/static/sw.js";
 
-      // 1. Inject Manifest
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
-          manifest.setAttribute('crossorigin', 'use-credentials'); // Helps with CORS
           manifest.href = manifestUrl;
           parentDoc.head.appendChild(manifest);
       }
 
-      // 2. Register Service Worker
       if ('serviceWorker' in window.navigator) {
         window.navigator.serviceWorker.register(swUrl, { scope: '/' })
-          .then(reg => {
-              console.log('MMD PWA: Service Worker Registered from GitHub');
-          })
-          .catch(err => {
-              console.error('MMD PWA: Registration Failed:', err);
-          });
+          .then(reg => console.log('MMD PWA: Success!'))
+          .catch(err => console.error('MMD PWA: Failed', err));
       }
     </script>
     """
