@@ -1,10 +1,11 @@
-const CACHE_NAME = 'mmd-v12';
+const CACHE_NAME = 'mmd-v13';
 const ASSETS = [
   '/',
   './manifest.json',
   './mmdlogo-192.png',
   './mmdlogo-512.png'
 ];
+
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
