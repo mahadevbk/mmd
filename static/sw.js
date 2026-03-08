@@ -1,9 +1,9 @@
-const CACHE_NAME = 'mmd-v11';
+const CACHE_NAME = 'mmd-v12'; // Incremented version
 const ASSETS = [
   '/',
-  'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png',
-  'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png',
-  'https://raw.githubusercontent.com/mahadevbk/mmd/main/static/manifest.json'
+  './manifest.json',        // Relative to the sw.js location
+  './mmdlogo-192.png',
+  './mmdlogo-512.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -11,13 +11,26 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[Service Worker] Caching all assets');
-      return cache.addAll(ASSETS);
+      // Using map to catch individual errors so one failure doesn't kill the whole SW
+      return Promise.all(
+        ASSETS.map(url => {
+          return cache.add(url).catch(err => console.error('Failed to cache:', url, err));
+        })
+      );
     })
   );
 });
 
 self.addEventListener('activate', (e) => {
   console.log('[Service Worker] Activate');
+  // Clean up old caches
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(keys.map((key) => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }));
+    })
+  );
 });
 
 self.addEventListener('fetch', (e) => {
