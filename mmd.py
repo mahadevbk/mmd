@@ -27,6 +27,7 @@ from supabase import create_client, Client
 import textwrap
 import base64
 import json
+import streamlit.components.v1 as components
 
 # Optional imports
 try:
@@ -45,76 +46,29 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 # In mmd.py
 
-# 1. Define your Manifest
-manifest_data = {
-    "name": "MMD Tennis League",
-    "short_name": "MMD",
-    "description": "Mira Mixed Doubles Tennis League",
-    "start_url": "/",
-    "display": "standalone",
-    "scope": "/",
-    "theme_color": "#fff500",
-    "background_color": "#071a3d",
-    "icons": [
-        {
-            "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "https://raw.githubusercontent.com/mahadevbk/mmd/main/static/mmdlogo-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ]
-}
+import streamlit.components.v1 as components
 
-manifest_string = json.dumps(manifest_data)
-manifest_base64 = base64.b64encode(manifest_string.encode()).decode()
-
-# 2. Define your Service Worker Code
-sw_code = """
-const CACHE_NAME = 'mmd-v12';
-self.addEventListener('install', (e) => {
-    self.skipWaiting();
-});
-self.addEventListener('activate', (e) => {
-    e.waitUntil(clients.claim());
-});
-self.addEventListener('fetch', (e) => {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-});
-"""
-sw_base64 = base64.b64encode(sw_code.encode()).decode()
-
-# 3. Inject into Streamlit
-st.markdown(
-    f"""
-    <link rel="manifest" href="data:application/json;base64,{manifest_base64}">
+# --- PWA Injection ---
+def inject_pwa_meta():
+    pwa_html = """
+    <link rel="manifest" href="./static/manifest.json">
     <script>
-        // Inject Service Worker via Blob to bypass file path issues
-        const swContent = atob('{sw_base64}');
-        const blob = new Blob([swContent], {{ type: 'text/javascript' }});
-        const swUrl = URL.createObjectURL(blob);
-        
-        if ('serviceWorker' in navigator) {{
-            navigator.serviceWorker.register(swUrl, {{ scope: '/' }})
-            .then(reg => console.log('Service Worker Registered via Blob'))
-            .catch(err => console.error('SW Registration Failed:', err));
-        }}
-
-        // Force the Title and Theme Color
-        document.title = "MMD Tennis League";
-        const metaTheme = document.createElement('meta');
-        metaTheme.name = "theme-color";
-        metaTheme.content = "#fff500";
-        document.getElementsByTagName('head')[0].appendChild(metaTheme);
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          // Point to the sw.js in your static folder
+          navigator.serviceWorker.register('./static/sw.js').then(function(registration) {
+            print('ServiceWorker registration successful');
+          }, function(err) {
+            print('ServiceWorker registration failed: ', err);
+          });
+        });
+      }
     </script>
-    """,
-    unsafe_allow_html=True
-)
+    """
+    # This renders the tags in the background
+    components.html(pwa_html, height=0, width=0)
+
+inject_pwa_meta()
 
 # --- Custom CSS ---
 st.markdown("""
