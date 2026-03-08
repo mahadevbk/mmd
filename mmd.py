@@ -52,33 +52,29 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 def inject_pwa_meta():
     pwa_html = """
     <script>
-      // Force the browser to look at the root domain, not the Streamlit internal iframe path
-      const rootPath = window.location.origin;
       const parentDoc = window.parent.document;
-      
-      // 1. Add Manifest
+
+      // 1. Add Manifest to the parent (main) page
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
-          // Use absolute path to bypass iframe pathing
-          manifest.href = rootPath + '/static/manifest.json';
+          // Force look at the absolute root static folder
+          manifest.href = '/static/manifest.json';
           parentDoc.head.appendChild(manifest);
       }
 
-      // 2. Register Service Worker
+      // 2. Register Service Worker at the absolute root
       if ('serviceWorker' in window.navigator) {
-        // We point directly to the root-level static folder
-        window.navigator.serviceWorker.register(rootPath + '/static/sw.js', { scope: '/' })
+        window.navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
           .then(reg => {
-              console.log('MMD PWA: Service Worker Registered at root', reg.scope);
+              console.log('MMD PWA: Service Worker Registered successfully at root');
           })
           .catch(err => {
-              console.error('MMD PWA: Registration Failed', err);
+              console.error('MMD PWA: Registration Failed:', err);
           });
       }
     </script>
     """
-    # Use a unique key to ensure it only renders once
     components.html(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
