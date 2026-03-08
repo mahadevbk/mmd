@@ -52,22 +52,25 @@ os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 def inject_pwa_meta():
     pwa_html = """
     <script>
-      // Break out of the Streamlit iframe to reach the main window
       const parentDoc = window.parent.document;
       
-      // 1. Add Manifest Link
+      // Add Manifest
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
-          manifest.href = './static/manifest.json';
+          manifest.href = './static/manifest.json?v=1';
           parentDoc.head.appendChild(manifest);
       }
 
-      // 2. Register Service Worker with Root Scope
+      // Register Service Worker from the static folder but control the ROOT /
       if ('serviceWorker' in window.navigator) {
-        window.navigator.serviceWorker.register('./static/sw.js', { scope: '/' })
-          .then(reg => console.log('SW Registered for scope:', reg.scope))
-          .catch(err => console.error('SW Registration failed:', err));
+        window.navigator.serviceWorker.register('./static/sw.js?v=1', { scope: '/' })
+          .then(reg => {
+              console.log('MMD PWA: Service Worker Registered', reg.scope);
+          })
+          .catch(err => {
+              console.error('MMD PWA: Registration Failed', err);
+          });
       }
     </script>
     """
