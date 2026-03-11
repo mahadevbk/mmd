@@ -2161,6 +2161,7 @@ with tabs[2]:
         with st.container():
             c1, c2 = st.columns([1, 3])
 
+           
             with c1:
                 img = row['profile_image_url'] or "https://via.placeholder.com/150"
                 bday_str = f"🎂 {row['dt_birthday'].strftime('%d %b')}" if pd.notna(row['dt_birthday']) else ""
@@ -2178,17 +2179,20 @@ with tabs[2]:
                             overflow: hidden; 
                             margin: 0 auto;
                         ">
-                            <a href="#{p_uid_profile}">
+                            <a href="#{p_uid_profile}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-decoration: none;">
                                 <img src="{img}" class="clickable-img" style="
                                     max-width: 100%; 
                                     max-height: 100%; 
+                                    width: auto;
+                                    height: auto;
                                     object-fit: contain;
+                                    display: block;
                                 ">
                             </a>
                         </div>
                         <div id="{p_uid_profile}" class="img-lightbox">
                             <a href="#" class="img-lightbox-close">&times;</a>
-                            <img src="{img}">
+                            <img src="{img}" style="max-width: 90%; max-height: 90%; object-fit: contain;">
                         </div>
                         <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
                         <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
