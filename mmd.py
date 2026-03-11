@@ -1478,7 +1478,7 @@ with tabs[0]:
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
-                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: cover; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
                             </a>
                         </div>
                         <div id="{p_uid}" class="img-lightbox">
