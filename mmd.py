@@ -1820,76 +1820,89 @@ with tabs[1]:
 
 
         # B. EDIT MATCH FORM (Fixed AttributeError & Timestamp error)
+        #with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
+        # --- B. EDIT & DELETE MATCH RESULT ---
         with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
             if not st.session_state.matches_df.empty:
-                # Sort matches by date descending for the selection
-                display_df = st.session_state.matches_df.copy()
-                display_df['display_name'] = display_df.apply(lambda x: f"{x['date']} | {x['team1_p1']}/{x['team1_p2']} vs {x['team2_p1']}/{x['team2_p2']}", axis=1)
+                m_df = st.session_state.matches_df.copy()
+                m_df['date'] = pd.to_datetime(m_df['date'])
+                m_df = m_df.sort_values('date', ascending=False)
                 
-                selected_match_display = st.selectbox("Select Match to Edit", options=display_df['display_name'].tolist())
-                selected_match = display_df[display_df['display_name'] == selected_match_display].iloc[0]['match_id']
+                # Create a display label for the dropdown
+                m_df['display_label'] = m_df.apply(lambda x: f"{str(x['date'])[:10]} | {x['team1_player1']} vs {x['team2_player1']}", axis=1)
                 
-                match_data = st.session_state.matches_df[st.session_state.matches_df['match_id'] == selected_match].iloc[0]
-                match_index = st.session_state.matches_df[st.session_state.matches_df['match_id'] == selected_match].index[0]
+                selected_label = st.selectbox("Select Match to Edit/Delete", m_df['display_label'].tolist())
+                match_data = m_df[m_df['display_label'] == selected_label].iloc[0]
+                match_id = match_data['match_id']
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    e_team1_p1 = st.selectbox("Edit Team 1 - Player 1", options=st.session_state.players_df['name'].tolist(), index=st.session_state.players_df['name'].tolist().index(match_data['team1_p1']), key="et1p1")
-                    e_team1_p2 = st.selectbox("Edit Team 1 - Player 2", options=st.session_state.players_df['name'].tolist(), index=st.session_state.players_df['name'].tolist().index(match_data['team1_p2']), key="et1p2")
-                    e_score1 = st.number_input("Edit Team 1 Games", min_value=0, max_value=20, value=int(match_data['score1']))
-                with col2:
-                    e_team2_p1 = st.selectbox("Edit Team 2 - Player 1", options=st.session_state.players_df['name'].tolist(), index=st.session_state.players_df['name'].tolist().index(match_data['team2_p1']), key="et2p1")
-                    e_team2_p2 = st.selectbox("Edit Team 2 - Player 2", options=st.session_state.players_df['name'].tolist(), index=st.session_state.players_df['name'].tolist().index(match_data['team2_p2']), key="et2p2")
-                    e_score2 = st.number_input("Edit Team 2 Games", min_value=0, max_value=20, value=int(match_data['score2']))
-                
-                e_match_date = st.date_input("Edit Match Date", datetime.strptime(match_data['date'], "%Y-%m-%d"))
-                e_match_type = st.selectbox("Edit Match Type", ["Regular", "Tournament", "Friendly"], index=["Regular", "Tournament", "Friendly"].index(match_data.get('type', 'Regular')))
-                
-                # Action Buttons
-                st.markdown("---")
-                col_save, col_delete = st.columns(2)
-                
-                with col_save:
-                    if st.button("💾 Save Changes", use_container_width=True, key=f"save_{selected_match}"):
-                        if len({e_team1_p1, e_team1_p2, e_team2_p1, e_team2_p2}) < 4:
-                            st.error("All four players must be unique!")
-                        else:
+                with st.form(f"edit_form_{match_id}"):
+                    e_date = st.date_input("Edit Date", match_data['date'])
+                    e_type = st.selectbox("Edit Type", ["Doubles", "Mixed Doubles", "Singles"], 
+                                        index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']))
+                    
+                    col1, col2 = st.columns(2)
+                    players_list = sorted(st.session_state.players_df["name"].tolist())
+                    
+                    with col1:
+                        et1p1 = st.selectbox("Team 1 - P1", players_list, index=players_list.index(match_data['team1_player1']))
+                        et1p2 = st.selectbox("Team 1 - P2", [""] + players_list, 
+                                            index=(players_list.index(match_data['team1_player2']) + 1) if match_data['team1_player2'] else 0)
+                    with col2:
+                        et2p1 = st.selectbox("Team 2 - P1", players_list, index=players_list.index(match_data['team2_player1']))
+                        et2p2 = st.selectbox("Team 2 - P2", [""] + players_list, 
+                                            index=(players_list.index(match_data['team2_player2']) + 1) if match_data['team2_player2'] else 0)
+                    
+                    score_opts = [""] + tennis_scores()
+                    c1, c2, c3 = st.columns(3)
+                    es1 = st.selectbox("Set 1", score_opts, index=score_opts.index(match_data['set1']) if match_data['set1'] in score_opts else 0)
+                    es2 = st.selectbox("Set 2", score_opts, index=score_opts.index(match_data['set2']) if match_data['set2'] in score_opts else 0)
+                    es3 = st.selectbox("Set 3", score_opts, index=score_opts.index(match_data['set3']) if match_data['set3'] in score_opts else 0)
+                    
+                    e_winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if match_data['winner'] == "Team 1" else 1, horizontal=True)
+                    
+                    # Bottom Action Buttons
+                    st.markdown("---")
+                    col_save, col_delete = st.columns(2)
+                    
+                    with col_save:
+                        if st.form_submit_button("💾 Save Changes", use_container_width=True):
                             updated_match = {
-                                "match_id": selected_match,
-                                "date": e_match_date.strftime("%Y-%m-%d"),
-                                "team1_p1": e_team1_p1,
-                                "team1_p2": e_team1_p2,
-                                "team2_p1": e_team2_p1,
-                                "team2_p2": e_team2_p2,
-                                "score1": e_score1,
-                                "score2": e_score2,
-                                "type": e_match_type
+                                "match_id": match_id,
+                                "date": e_date.strftime('%Y-%m-%d'),
+                                "match_type": e_type,
+                                "team1_player1": et1p1,
+                                "team1_player2": et1p2,
+                                "team2_player1": et2p1,
+                                "team2_player2": et2p2,
+                                "set1": es1,
+                                "set2": es2,
+                                "set3": es3,
+                                "winner": e_winner,
+                                "match_image_url": match_data['match_image_url']
                             }
-                            # Update DB and Session State
-                            delete_match_from_db(selected_match) # Remove old
-                            save_match_to_db(updated_match) # Add updated
-                            st.session_state.matches_df.iloc[match_index] = updated_match
-                            st.success("Match result updated!")
+                            delete_match_from_db(match_id) # Remove old
+                            save_match_to_db(updated_match) # Save new
+                            st.success("Match updated!")
                             time.sleep(1)
                             st.rerun()
-                
-                with col_delete:
-                    delete_pw = st.text_input("Admin Password to Delete", type="password", key=f"del_pw_{selected_match}")
-                    if st.button("🗑️ Delete Match Result", use_container_width=True, key=f"del_btn_{selected_match}"):
-                        try:
-                            admin_password = st.secrets["admin"]["password"]
-                            if delete_pw == admin_password:
-                                delete_match_from_db(selected_match)
-                                st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df['match_id'] != selected_match]
-                                st.success("Match deleted successfully.")
-                                time.sleep(1)
-                                st.rerun()
-                            else:
-                                st.error("Incorrect admin password.")
-                        except KeyError:
-                            st.error("Admin password not set in secrets.")
+                            
+                # Delete logic outside the main edit form to avoid nested form issues
+                st.markdown("##### 🗑️ Danger Zone")
+                del_pw = st.text_input("Admin Password to Delete Match", type="password", key=f"del_pw_{match_id}")
+                if st.button("Delete this Match Result", use_container_width=True, type="secondary"):
+                    try:
+                        admin_pw = st.secrets["admin"]["password"]
+                        if del_pw == admin_pw:
+                            delete_match_from_db(match_id)
+                            st.success(f"Match {match_id} deleted.")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Incorrect password.")
+                    except KeyError:
+                        st.error("Admin password not configured.")
             else:
-                st.info("No matches to edit.")
+                st.info("No matches found to edit.")
 
 
     # --- Match History ---
