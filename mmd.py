@@ -1939,21 +1939,29 @@ with tabs[1]:
                     if s and str(s).strip() and str(s).lower() != 'nan':
                         nums = re.findall(r'\d+', str(s))
                         if len(nums) >= 2:
-                            g1, g2 = int(nums[0]), int(nums[1])
-                            t1_total, t2_total, sets_count = t1_total+g1, t2_total+g2, sets_count+1
+                            p1, p2 = int(nums[0]), int(nums[1])
+                            sets_count += 1
                             
-                            # Determine display order based on winner
-                            # If Team 2 won, flip the scores to match the headline which shows winner first
-                            d1, d2 = (g2, g1) if row.winner == "Team 2" else (g1, g2)
-                            
+                            # Determine Game values for GDA (matching rankings logic)
                             if "Tie Break" in str(s):
-                                if d1 >= 10 or d2 >= 10: # Super Tie Break
-                                    set_score = "1-0" if d1 > d2 else "0-1"
+                                if p1 >= 10 or p2 >= 10: # Super Tie Break
+                                    g1, g2 = (1, 0) if p1 > p2 else (0, 1)
+                                    set_score_base = "1-0" if p1 > p2 else "0-1"
                                 else: # Regular Tie Break
-                                    set_score = "7-6" if d1 > d2 else "6-7"
-                                display_scores.append(f"{set_score} (TB {d1}-{d2})")
+                                    g1, g2 = (7, 6) if p1 > p2 else (6, 7)
+                                    set_score_base = "7-6" if p1 > p2 else "6-7"
+                                
+                                # Determine display order based on match winner
+                                d1, d2 = (p2, p1) if row.winner == "Team 2" else (p1, p2)
+                                d_base = (set_score_base.split('-')[1] + "-" + set_score_base.split('-')[0]) if row.winner == "Team 2" else set_score_base
+                                display_scores.append(f"{d_base} (TB {d1}-{d2})")
                             else:
+                                g1, g2 = p1, p2
+                                d1, d2 = (p2, p1) if row.winner == "Team 2" else (p1, p2)
                                 display_scores.append(f"{d1}-{d2}")
+                            
+                            t1_total += g1
+                            t2_total += g2
 
                 match_gda = round(abs(t1_total - t2_total) / sets_count, 2) if sets_count > 0 else 0
                 
