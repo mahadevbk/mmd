@@ -1941,7 +1941,19 @@ with tabs[1]:
                         if len(nums) >= 2:
                             g1, g2 = int(nums[0]), int(nums[1])
                             t1_total, t2_total, sets_count = t1_total+g1, t2_total+g2, sets_count+1
-                            display_scores.append(f"{g1}-{g2}" if not ("Tie Break" in str(s)) else f"7-6 (TB {g1}-{g2})")
+                            
+                            # Determine display order based on winner
+                            # If Team 2 won, flip the scores to match the headline which shows winner first
+                            d1, d2 = (g2, g1) if row.winner == "Team 2" else (g1, g2)
+                            
+                            if "Tie Break" in str(s):
+                                if d1 >= 10 or d2 >= 10: # Super Tie Break
+                                    set_score = "1-0" if d1 > d2 else "0-1"
+                                else: # Regular Tie Break
+                                    set_score = "7-6" if d1 > d2 else "6-7"
+                                display_scores.append(f"{set_score} (TB {d1}-{d2})")
+                            else:
+                                display_scores.append(f"{d1}-{d2}")
 
                 match_gda = round(abs(t1_total - t2_total) / sets_count, 2) if sets_count > 0 else 0
                 
