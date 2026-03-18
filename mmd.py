@@ -1223,6 +1223,64 @@ def save_bookings(df):
     except Exception as e:
         st.error(f"Save bookings error: {e}")
 
+def create_full_backup_zip():
+    """Fetches all CSVs and all linked images to create a comprehensive backup ZIP."""
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        # 1. Fetch and add CSVs
+        tables = {
+            "players": PLAYERS_TABLE,
+            "matches": MATCHES_TABLE,
+            "bookings": BOOKINGS_TABLE,
+            "hall_of_fame": hall_of_fame_table_name,
+            "availability": AVAILABILITY_TABLE
+        }
+        
+        all_image_urls = []
+        
+        for file_name, table_name in tables.items():
+            df = fetch_data(table_name)
+            if not df.empty:
+                csv_data = df.to_csv(index=False).encode("utf-8")
+                zip_file.writestr(f"csv/{file_name}.csv", csv_data)
+                
+                # Collect image URLs for later downloading
+                for col in ["profile_image_url", "match_image_url", "screenshot_url"]:
+                    if col in df.columns:
+                        all_image_urls.extend(df[col].dropna().unique().tolist())
+        
+        # 2. Fetch and add images
+        # Filter out empty strings or non-URL values
+        valid_urls = [url for url in all_image_urls if isinstance(url, str) and url.startswith("http")]
+        unique_urls = list(set(valid_urls))
+        
+        if unique_urls:
+            # Create a progress placeholder in the UI if this is called from within a button
+            progress_text = "Downloading images... Please wait."
+            progress_bar = st.progress(0, text=progress_text)
+            
+            for i, url in enumerate(unique_urls):
+                try:
+                    # Determine folder and filename from URL
+                    # e.g., .../assets/match_images/MMDQ12026-05.jpg
+                    parts = url.split("/")
+                    folder = parts[-2] if len(parts) > 2 else "others"
+                    filename = parts[-1]
+                    
+                    response = requests.get(url, timeout=10)
+                    if response.status_code == 200:
+                        zip_file.writestr(f"images/{folder}/{filename}", response.content)
+                except Exception:
+                    continue # Skip failed images
+                
+                progress_bar.progress((i + 1) / len(unique_urls), text=f"Downloaded {i+1}/{len(unique_urls)} images")
+            
+            progress_bar.empty()
+            
+    zip_buffer.seek(0)
+    return zip_buffer
+
 
 #----------------------HALL OF FAME FUNCTION ---------------------------------------------
 
@@ -3405,12 +3463,29 @@ with tabs[7]:
                 </button>
             </a>
             """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            if st.button("📦 Prepare Full Backup (ZIP)", help="Click to bundle all CSVs and images into a ZIP"):
+                with st.spinner("Creating full backup... This will take a few moments."):
+                    zip_file = create_full_backup_zip()
+                    st.session_state['full_backup_zip'] = zip_file.getvalue()
+                    st.success("Backup ZIP is ready for download!")
+
+            if 'full_backup_zip' in st.session_state:
+                st.download_button(
+                    label="📥 Download Full Backup (.zip)",
+                    data=st.session_state['full_backup_zip'],
+                    file_name=f"mmd-full-backup-{current_time}.zip",
+                    mime="application/zip",
+                    key="full_zip_download_btn"
+                )
 
         st.info("""
         **How to use:**
-        1. Click **Download matches.csv**
+        1. Click **Download matches.csv** (or use the **Full Backup** button for all data)
         2. Click **Open Google Gemini**
-        3. In Gemini, click the 📎 (paperclip) icon → Upload the CSV
+        3. In Gemini, click the 📎 (paperclip) icon → Upload the CSV/ZIP
         4. Ask any question about the league!
         """)
 
