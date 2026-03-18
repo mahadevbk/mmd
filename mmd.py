@@ -1978,12 +1978,9 @@ with tabs[1]:
                             
                             # Determine Game values for GDA (matching rankings logic)
                             if "Tie Break" in str(s):
-                                if p1 >= 10 or p2 >= 10: # Super Tie Break
-                                    g1, g2 = (1, 0) if p1 > p2 else (0, 1)
-                                    set_score_base = "1-0" if p1 > p2 else "0-1"
-                                else: # Regular Tie Break
-                                    g1, g2 = (7, 6) if p1 > p2 else (6, 7)
-                                    set_score_base = "7-6" if p1 > p2 else "6-7"
+                                # Both regular and super tie breaks count as 7-6 or 6-7 for GD
+                                g1, g2 = (7, 6) if p1 > p2 else (6, 7)
+                                set_score_base = "7-6" if p1 > p2 else "6-7"
                                 
                                 # Determine display order based on match winner
                                 d1, d2 = (p2, p1) if row.winner == "Team 2" else (p1, p2)
