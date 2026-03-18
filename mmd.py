@@ -1730,10 +1730,34 @@ with tabs[1]:
 
             winner_selection = st.radio("Select Winner *", ["Team 1", "Team 2", "Tie"], horizontal=True)
             match_img = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"])
+            
+            # --- SOFT CHECK: Duplicate Detection ---
+            is_duplicate = False
+            if not st.session_state.matches_df.empty:
+                current_players_set = set(filter(None, [t1p1, t1p2, t2p1, t2p2]))
+                if len(current_players_set) >= 2:
+                    # Filter matches for the same date
+                    date_matches = st.session_state.matches_df[
+                        pd.to_datetime(st.session_state.matches_df['date']).dt.date == m_date
+                    ]
+                    for _, row in date_matches.iterrows():
+                        row_players = set(filter(None, [row.team1_player1, row.team1_player2, row.team2_player1, row.team2_player2]))
+                        if current_players_set == row_players:
+                            is_duplicate = True
+                            break
+            
+            confirm_duplicate = True
+            if is_duplicate:
+                st.warning("⚠️ **Double Posting Alert:** A match with these same players has already been recorded for this date.")
+                confirm_duplicate = st.checkbox("Confirm this is a NEW (second) match played on the same day", value=False)
         
             # 5. Form Submission & Validation Logic
             if st.button("🚀 Post Match Result"):
                 valid = True
+                
+                if is_duplicate and not confirm_duplicate:
+                    st.error("Please confirm this is a new match by checking the box above.")
+                    valid = False
                 
                 # --- A. Basic Field Validation ---
                 selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
