@@ -1829,7 +1829,17 @@ with tabs[1]:
                 m_df = m_df.sort_values('date', ascending=False)
                 
                 # Create a display label for the dropdown
-                m_df['display_label'] = m_df.apply(lambda x: f"{str(x['date'])[:10]} | {x['team1_player1']} vs {x['team2_player1']}", axis=1)
+                def get_edit_label(x):
+                    date_str = str(x['date'])[:10]
+                    if x['match_type'] in ["Doubles", "Mixed Doubles"]:
+                        t1 = f"{x['team1_player1']} / {x['team1_player2']}"
+                        t2 = f"{x['team2_player1']} / {x['team2_player2']}"
+                    else:
+                        t1 = x['team1_player1']
+                        t2 = x['team2_player1']
+                    return f"{date_str} | {t1} vs {t2}"
+                
+                m_df['display_label'] = m_df.apply(get_edit_label, axis=1)
                 
                 selected_label = st.selectbox("Select Match to Edit/Delete", m_df['display_label'].tolist())
                 match_data = m_df[m_df['display_label'] == selected_label].iloc[0]
