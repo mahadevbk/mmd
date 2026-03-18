@@ -3360,7 +3360,7 @@ with tabs[6]:
                     st.markdown(f"""
                         <div style="margin-bottom: 20px; text-align: center;">
                             <a href="#{img_id}">
-                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 2px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                             </a>
                         </div>
                         <div id="{img_id}" class="img-lightbox">
