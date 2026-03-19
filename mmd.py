@@ -773,7 +773,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
 
     # --- 4. Ranking Data Aggregation ---
     rank_data = []
-    img_map = pd.Series(players_df.profile_image_url.values, index=players_df.name).to_dict() if not players_df.empty else {}
+    img_map = pd.Series(players_df_input.profile_image_url.values, index=players_df_input.name).to_dict() if not players_df_input.empty else {}
     
     for p, s in stats.items():
         m_played = s['matches']
