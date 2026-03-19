@@ -1736,11 +1736,12 @@ with tabs[1]:
                 st.warning("No players available. Please add players in the Player Profile tab.")
                 st.stop()
             
+            suffix = st.session_state.form_key_suffix
             permanent_names = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"])
             
             # 2. Match Type Selection
-            m_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, horizontal=True)
-            m_date = st.date_input("Match Date *", datetime.now())
+            m_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, horizontal=True, key=f"match_type_{suffix}")
+            m_date = st.date_input("Match Date *", datetime.now(), key=f"match_date_{suffix}")
         
             # 3. Dynamic Player Selection Layout
             col1, col2 = st.columns(2)
@@ -1749,22 +1750,22 @@ with tabs[1]:
                 doubles_options = [""] + permanent_names + ["Visitor"]
                 with col1:
                     st.markdown("**Team 1**")
-                    t1p1 = st.selectbox("Player 1 *", doubles_options, key="d_t1p1")
-                    t1p2 = st.selectbox("Player 2 *", doubles_options, key="d_t1p2")
+                    t1p1 = st.selectbox("Player 1 *", doubles_options, key=f"d_t1p1_{suffix}")
+                    t1p2 = st.selectbox("Player 2 *", doubles_options, key=f"d_t1p2_{suffix}")
                 with col2:
                     st.markdown("**Team 2**")
-                    t2p1 = st.selectbox("Player 1 *", doubles_options, key="d_t2p1")
-                    t2p2 = st.selectbox("Player 2 *", doubles_options, key="d_t2p2")
+                    t2p1 = st.selectbox("Player 1 *", doubles_options, key=f"d_t2p1_{suffix}")
+                    t2p2 = st.selectbox("Player 2 *", doubles_options, key=f"d_t2p2_{suffix}")
             else:
                 # No Visitor for Singles
                 singles_options = [""] + permanent_names
                 with col1:
                     st.markdown("**Player 1 (Team 1)**")
-                    t1p1 = st.selectbox("Select Name *", singles_options, key="s_t1p1")
+                    t1p1 = st.selectbox("Select Name *", singles_options, key=f"s_t1p1_{suffix}")
                     t1p2 = ""
                 with col2:
                     st.markdown("**Player 2 (Team 2)**")
-                    t2p1 = st.selectbox("Select Name *", singles_options, key="s_t2p1")
+                    t2p1 = st.selectbox("Select Name *", singles_options, key=f"s_t2p1_{suffix}")
                     t2p2 = ""
         
             st.markdown("---")
@@ -1773,12 +1774,12 @@ with tabs[1]:
             sc1, sc2, sc3 = st.columns(3)
             
             def get_set_score_ui(col, label, key_prefix):
-                sel = col.selectbox(label, [""] + tennis_scores(), key=f"{key_prefix}_sel")
+                sel = col.selectbox(label, [""] + tennis_scores(), key=f"{key_prefix}_sel_{suffix}")
                 if sel == "Custom Tie Break":
-                    val = col.text_input("TB Score (X-Y)", key=f"{key_prefix}_custom", placeholder="e.g. 9-7")
+                    val = col.text_input("TB Score (X-Y)", key=f"{key_prefix}_custom_{suffix}", placeholder="e.g. 9-7")
                     return f"Tie Break {val}", "TB"
                 elif sel == "Custom Super Tie Break":
-                    val = col.text_input("Super TB (X-Y)", key=f"{key_prefix}_custom", placeholder="e.g. 14-12")
+                    val = col.text_input("Super TB (X-Y)", key=f"{key_prefix}_custom_stb_{suffix}", placeholder="e.g. 14-12")
                     return f"Tie Break {val}", "STB"
                 return sel, "REG"
 
@@ -1786,8 +1787,8 @@ with tabs[1]:
             s2, s2_type = get_set_score_ui(sc2, "Set 2 Score", "match_s2")
             s3, s3_type = get_set_score_ui(sc3, "Set 3 Score", "match_s3")
 
-            winner_selection = st.radio("Select Winner *", ["Team 1", "Team 2", "Tie"], horizontal=True)
-            match_img = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"])
+            winner_selection = st.radio("Select Winner *", ["Team 1", "Team 2", "Tie"], horizontal=True, key=f"winner_{suffix}")
+            match_img = st.file_uploader("Upload Match Photo *", type=["jpg", "jpeg", "png"], key=f"img_{suffix}")
             
             # --- SOFT CHECK: Duplicate Detection ---
             is_duplicate = False
@@ -1807,10 +1808,10 @@ with tabs[1]:
             confirm_duplicate = True
             if is_duplicate:
                 st.warning("⚠️ **Double Posting Alert:** A match with these same players has already been recorded for this date.")
-                confirm_duplicate = st.checkbox("Confirm this is a NEW (second) match played on the same day", value=False)
+                confirm_duplicate = st.checkbox("Confirm this is a NEW (second) match played on the same day", value=False, key=f"conf_dup_{suffix}")
         
             # 5. Form Submission & Validation Logic
-            if st.button("🚀 Post Match Result"):
+            if st.button("🚀 Post Match Result", key=f"post_btn_{suffix}"):
                 valid = True
                 
                 if is_duplicate and not confirm_duplicate:
@@ -1895,6 +1896,7 @@ with tabs[1]:
                         
                         st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
                         save_matches(st.session_state.matches_df)
+                        st.session_state.form_key_suffix += 1  # THIS CLEARS THE FORM
                         st.success("Match verified and saved!")
                         st.balloons()
                         time.sleep(1)
