@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "MMD Tennis League",
+  "short_name": "MMD",
+  "description": "Mira Mixed Doubles Tennis League",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#071a3d",
+  "theme_color": "#fff500",
+  "icons": [
+    {
+      "src": "mmdlogo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "mmdlogo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
