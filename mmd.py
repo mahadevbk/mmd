@@ -2008,66 +2008,6 @@ with tabs[1]:
                 st.info("No matches found to edit.")
 
 
-    # --- Admin: Season Reset ---
-    with st.expander("🔐 Admin: Season Reset", expanded=False):
-        st.warning("⚠️ This action will erase ALL match data for the current season. Points will reset to 0, but Elo ratings will carry over.")
-        reset_pw = st.text_input("Admin Password", type="password", key="season_reset_pw")
-        
-        try:
-            admin_pw = st.secrets["admin"]["password"]
-        except KeyError:
-            st.error("Admin password not configured.")
-            admin_pw = None
-            
-        if reset_pw == admin_pw and admin_pw is not None:
-            st.info("Step 1: Download a full backup of the current season data.")
-            if st.button("📦 Generate & Download Season Backup"):
-                with st.spinner("Preparing backup..."):
-                    zip_data = create_full_backup_zip()
-                    st.session_state['reset_backup_ready'] = zip_data.getvalue()
-                    st.success("Backup generated!")
-            
-            if 'reset_backup_ready' in st.session_state:
-                st.download_button(
-                    label="📥 Download Season Backup (.zip)",
-                    data=st.session_state['reset_backup_ready'],
-                    file_name=f"mmd-season-reset-backup-{datetime.now().strftime('%Y%m%d')}.zip",
-                    mime="application/zip"
-                )
-                
-                st.markdown("---")
-                st.error("Step 2: Wipe all matches. This cannot be undone.")
-                if st.button("🔥 WIPE ALL MATCHES & RESET SEASON"):
-                    with st.spinner("Resetting season..."):
-                        # 1. Calculate current Elo ratings from all matches
-                        # We use rank_df which is already pre-calculated at the top of the script
-                        if not rank_df.empty:
-                            # Update players_df with these final Elo values
-                            for _, row in rank_df.iterrows():
-                                p_name = row['Player']
-                                final_elo = row['Elo']
-                                st.session_state.players_df.loc[
-                                    st.session_state.players_df['name'] == p_name, 'base_elo'
-                                ] = final_elo
-                            
-                            # 2. Save players with new base_elo
-                            save_players(st.session_state.players_df)
-                        
-                        # 3. Delete all matches from Supabase
-                        # We delete everything in the matches table
-                        supabase.table(MATCHES_TABLE).delete().neq("match_id", "0").execute()
-                        
-                        # 4. Clear cache and state
-                        st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
-                        if 'reset_backup_ready' in st.session_state:
-                            del st.session_state['reset_backup_ready']
-                        
-                        fetch_data.clear()
-                        st.success("Season reset successful! All points are now 0. Elo ratings have been carried over.")
-                        st.balloons()
-                        time.sleep(2)
-                        st.rerun()
-
     # --- Match History ---
     st.subheader("Match Records")
     m_hist = st.session_state.matches_df.copy()
@@ -2156,6 +2096,66 @@ with tabs[1]:
                 st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
+    
+    # --- Admin: Season Reset ---
+    with st.expander("🔐 Admin: Season Reset", expanded=False, icon="➡️"):
+        st.warning("⚠️ This action will erase ALL match data for the current season. Points will reset to 0, but Elo ratings will carry over.")
+        reset_pw = st.text_input("Admin Password", type="password", key="season_reset_pw")
+        
+        try:
+            admin_pw = st.secrets["admin"]["password"]
+        except KeyError:
+            st.error("Admin password not configured.")
+            admin_pw = None
+            
+        if reset_pw == admin_pw and admin_pw is not None:
+            st.info("Step 1: Download a full backup of the current season data.")
+            if st.button("📦 Generate & Download Season Backup"):
+                with st.spinner("Preparing backup..."):
+                    zip_data = create_full_backup_zip()
+                    st.session_state['reset_backup_ready'] = zip_data.getvalue()
+                    st.success("Backup generated!")
+            
+            if 'reset_backup_ready' in st.session_state:
+                st.download_button(
+                    label="📥 Download Season Backup (.zip)",
+                    data=st.session_state['reset_backup_ready'],
+                    file_name=f"mmd-season-reset-backup-{datetime.now().strftime('%Y%m%d')}.zip",
+                    mime="application/zip"
+                )
+                
+                st.markdown("---")
+                st.error("Step 2: Wipe all matches. This cannot be undone.")
+                if st.button("🔥 WIPE ALL MATCHES & RESET SEASON"):
+                    with st.spinner("Resetting season..."):
+                        # 1. Calculate current Elo ratings from all matches
+                        # We use rank_df which is already pre-calculated at the top of the script
+                        if not rank_df.empty:
+                            # Update players_df with these final Elo values
+                            for _, row in rank_df.iterrows():
+                                p_name = row['Player']
+                                final_elo = row['Elo']
+                                st.session_state.players_df.loc[
+                                    st.session_state.players_df['name'] == p_name, 'base_elo'
+                                ] = final_elo
+                            
+                            # 2. Save players with new base_elo
+                            save_players(st.session_state.players_df)
+                        
+                        # 3. Delete all matches from Supabase
+                        # We delete everything in the matches table
+                        supabase.table(MATCHES_TABLE).delete().neq("match_id", "0").execute()
+                        
+                        # 4. Clear cache and state
+                        st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
+                        if 'reset_backup_ready' in st.session_state:
+                            del st.session_state['reset_backup_ready']
+                        
+                        fetch_data.clear()
+                        st.success("Season reset successful! All points are now 0. Elo ratings have been carried over.")
+                        st.balloons()
+                        time.sleep(2)
+                        st.rerun()
     
 
 
