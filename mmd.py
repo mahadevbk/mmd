@@ -231,7 +231,7 @@ AVAILABILITY_TABLE = "availability"
 
 # --- Session State Init ---
 if 'players_df' not in st.session_state:
-    st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender"])
+    st.session_state.players_df = pd.DataFrame(columns=["name", "profile_image_url", "birthday", "gender", "base_elo"])
 if 'matches_df' not in st.session_state:
     st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
 if 'bookings_df' not in st.session_state:
@@ -255,9 +255,11 @@ def fetch_data(table_name):
 def load_players():
     df = fetch_data(PLAYERS_TABLE)
     if not df.empty:
-        for col in ["name", "profile_image_url", "birthday", "gender"]:
-            if col not in df.columns: df[col] = ""
+        for col in ["name", "profile_image_url", "birthday", "gender", "base_elo"]:
+            if col not in df.columns: 
+                df[col] = 1200.0 if col == "base_elo" else ""
         df['name'] = df['name'].str.upper().str.strip()
+        df['base_elo'] = pd.to_numeric(df['base_elo'], errors='coerce').fillna(1200.0)
     st.session_state.players_df = df
 
 def save_players(players_df):
@@ -573,21 +575,28 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 
 
 @st.cache_data(show_spinner=False)
-def calculate_rankings(matches_to_rank):
-    # --- 1. Initialization (Original from your file) ---
+def calculate_rankings(matches_to_rank, players_df_input):
+    # --- 1. Initialization ---
     scores = defaultdict(float)
     stats = defaultdict(get_player_stats_template)
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
     
-    # Elo Rating Initialization
-    elo_ratings = defaultdict(lambda: 1200.0)
-    last_elo_changes = defaultdict(float) # NEW: Track the change from the last match
+    # Elo Rating Initialization from Players Table (Persistent across seasons)
+    base_elo_map = {}
+    if not players_df_input.empty:
+        # Ensure we have a clean name -> elo map
+        for _, p_row in players_df_input.iterrows():
+            p_name = str(p_row['name']).upper().strip()
+            p_elo = p_row.get('base_elo', 1200.0)
+            base_elo_map[p_name] = float(p_elo)
+    
+    elo_ratings = defaultdict(lambda: 1200.0, base_elo_map)
+    last_elo_changes = defaultdict(float)
     K_FACTOR = 32 
     
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
-    players_df = st.session_state.players_df
-    gender_map = pd.Series(players_df.gender.values, index=players_df.name).to_dict() if not players_df.empty else {}
+    gender_map = pd.Series(players_df_input.gender.values, index=players_df_input.name).to_dict() if not players_df_input.empty else {}
 
     if not matches_to_rank.empty:
         matches_to_rank = matches_to_rank.sort_values('date')
@@ -1410,7 +1419,7 @@ load_bookings()
 rank_df = pd.DataFrame()
 partner_stats_global = {}
 if not st.session_state.matches_df.empty:
-    rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df)
+    rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
 # --- Main Layout ---
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
@@ -1440,10 +1449,10 @@ with tabs[0]:
     if not st.session_state.matches_df.empty:
         if ranking_view == "Doubles":
             m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Doubles"]
-            display_rank_df, _ = calculate_rankings(m_sub)
+            display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
         elif ranking_view == "Singles":
             m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
-            display_rank_df, _ = calculate_rankings(m_sub)
+            display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
         elif ranking_view == "Elo Rankings":
             # Sort primarily by Elo for this view
             display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
@@ -1999,6 +2008,66 @@ with tabs[1]:
                 st.info("No matches found to edit.")
 
 
+    # --- Admin: Season Reset ---
+    with st.expander("🔐 Admin: Season Reset", expanded=False):
+        st.warning("⚠️ This action will erase ALL match data for the current season. Points will reset to 0, but Elo ratings will carry over.")
+        reset_pw = st.text_input("Admin Password", type="password", key="season_reset_pw")
+        
+        try:
+            admin_pw = st.secrets["admin"]["password"]
+        except KeyError:
+            st.error("Admin password not configured.")
+            admin_pw = None
+            
+        if reset_pw == admin_pw and admin_pw is not None:
+            st.info("Step 1: Download a full backup of the current season data.")
+            if st.button("📦 Generate & Download Season Backup"):
+                with st.spinner("Preparing backup..."):
+                    zip_data = create_full_backup_zip()
+                    st.session_state['reset_backup_ready'] = zip_data.getvalue()
+                    st.success("Backup generated!")
+            
+            if 'reset_backup_ready' in st.session_state:
+                st.download_button(
+                    label="📥 Download Season Backup (.zip)",
+                    data=st.session_state['reset_backup_ready'],
+                    file_name=f"mmd-season-reset-backup-{datetime.now().strftime('%Y%m%d')}.zip",
+                    mime="application/zip"
+                )
+                
+                st.markdown("---")
+                st.error("Step 2: Wipe all matches. This cannot be undone.")
+                if st.button("🔥 WIPE ALL MATCHES & RESET SEASON"):
+                    with st.spinner("Resetting season..."):
+                        # 1. Calculate current Elo ratings from all matches
+                        # We use rank_df which is already pre-calculated at the top of the script
+                        if not rank_df.empty:
+                            # Update players_df with these final Elo values
+                            for _, row in rank_df.iterrows():
+                                p_name = row['Player']
+                                final_elo = row['Elo']
+                                st.session_state.players_df.loc[
+                                    st.session_state.players_df['name'] == p_name, 'base_elo'
+                                ] = final_elo
+                            
+                            # 2. Save players with new base_elo
+                            save_players(st.session_state.players_df)
+                        
+                        # 3. Delete all matches from Supabase
+                        # We delete everything in the matches table
+                        supabase.table(MATCHES_TABLE).delete().neq("match_id", "0").execute()
+                        
+                        # 4. Clear cache and state
+                        st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
+                        if 'reset_backup_ready' in st.session_state:
+                            del st.session_state['reset_backup_ready']
+                        
+                        fetch_data.clear()
+                        st.success("Season reset successful! All points are now 0. Elo ratings have been carried over.")
+                        st.balloons()
+                        time.sleep(2)
+                        st.rerun()
+
     # --- Match History ---
     st.subheader("Match Records")
     m_hist = st.session_state.matches_df.copy()
@@ -2222,7 +2291,8 @@ with tabs[2]:
                                         "name": new_name,
                                         "profile_image_url": image_url,
                                         "birthday": f"{birthday_day:02d}-{birthday_month:02d}",
-                                        "gender": gender_edit
+                                        "gender": gender_edit,
+                                        "base_elo": player_data.get("base_elo", 1200.0)
                                     }
                                     try:
                                         # Update the specific row in the DataFrame using index
@@ -2493,7 +2563,8 @@ with tabs[4]:
                 st.subheader("Match Odds")
                 players = [t1p1, t1p2, t2p1, t2p2]
                 doubles_rank_df, _ = calculate_rankings(
-                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"]
+                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"],
+                    st.session_state.players_df
                 )
                 if all(p in doubles_rank_df["Player"].values for p in players if p):
                     pairing_text, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
@@ -2512,7 +2583,8 @@ with tabs[4]:
                 st.subheader("Match Odds")
                 if p1 and p2:
                     singles_rank_df, _ = calculate_rankings(
-                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"]
+                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"],
+                        st.session_state.players_df
                     )
                     if p1 in singles_rank_df["Player"].values and p2 in singles_rank_df["Player"].values:
                         odds1, odds2 = suggest_singles_odds([p1, p2], singles_rank_df)
