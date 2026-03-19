@@ -54,10 +54,10 @@ def inject_pwa_meta():
     <script>
       const parentDoc = window.parent.document;
       
-      // Points back to your own domain (mandatory for Service Workers)
       const manifestUrl = "/static/manifest.json";
       const swUrl = "/static/sw.js";
 
+      // Manifest
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
@@ -65,14 +65,43 @@ def inject_pwa_meta():
           parentDoc.head.appendChild(manifest);
       }
 
+      // iOS Meta Tags for PWA
+      const metaTags = [
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        { name: "apple-mobile-web-app-title", content: "MMD Tennis" },
+        { rel: "apple-touch-icon", href: "/static/mmdlogo-192.png" }
+      ];
+
+      metaTags.forEach(tag => {
+        const selector = tag.name ? `meta[name="${tag.name}"]` : `link[rel="${tag.rel}"]`;
+        if (!parentDoc.querySelector(selector)) {
+          const element = parentDoc.createElement(tag.name ? 'meta' : 'link');
+          if (tag.name) {
+            element.name = tag.name;
+            element.content = tag.content;
+          } else {
+            element.rel = tag.rel;
+            element.href = tag.href;
+          }
+          parentDoc.head.appendChild(element);
+        }
+      });
+
+      // Service Worker Registration
       if ('serviceWorker' in window.navigator) {
-        window.navigator.serviceWorker.register(swUrl, { scope: '/' })
-          .then(reg => console.log('MMD PWA: Success!'))
-          .catch(err => console.error('MMD PWA: Failed', err));
+        // Scope can only be broader than current directory if Served with Service-Worker-Allowed header.
+        // But we attempt to register and the browser handles it.
+        window.navigator.serviceWorker.register(swUrl)
+          .then(reg => {
+            console.log('MMD PWA: Service Worker Registered with scope:', reg.scope);
+          })
+          .catch(err => {
+            console.error('MMD PWA: Service Worker Registration Failed:', err);
+          });
       }
     </script>
     """
-    import streamlit.components.v1 as components
     components.html(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
