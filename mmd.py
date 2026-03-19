@@ -842,10 +842,15 @@ def calculate_rankings(matches_to_rank, players_df_input):
                     badges.append("🌱 Participation")
         except: pass
         
+        # UTR Approximation (Option 1: (Elo - 700) / 100)
+        p_elo = elo_ratings[p]
+        p_utr = round(max(1.0, (p_elo - 700) / 100), 2)
+        
         rank_data.append({
             "Player": p, 
             "Points": scores[p], 
-            "Elo": round(elo_ratings[p]),
+            "Elo": round(p_elo),
+            "UTR": p_utr,
             "Last Change": last_elo_changes.get(p, 0), # NEW: Added for UI
             "Win %": round((s['wins']/m_played)*100, 1),
             "Recent Trend": trend_html,
@@ -870,6 +875,10 @@ def calculate_rankings(matches_to_rank, players_df_input):
             ascending=[False, False, False, False, True] 
         ).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
+        
+        # Additional Ranks for Player Profile
+        df["Points Rank"] = df["Points"].rank(ascending=False, method="min").astype(int)
+        df["Elo Rank"] = df["Elo"].rank(ascending=False, method="min").astype(int)
         
         # Award #1 Rank Badge
         if not df.empty:
@@ -1537,6 +1546,7 @@ with tabs[0]:
                 "Recent Trend": st.column_config.Column("Trend", width="small"),
                 "Points": st.column_config.NumberColumn("PTS", format="%.1f"),
                 "Elo": st.column_config.NumberColumn("ELO", format="%d"),
+                "UTR": st.column_config.NumberColumn("UTR", format="%.2f"),
             }
         )
 
@@ -1564,7 +1574,8 @@ with tabs[0]:
                 ch_txt = f"{'+' if ch_val > 0 else ''}{int(ch_val)}"
                 ch_indicator = f"<span style='color: {ch_color}; font-size: 10px;'>({ch_txt})</span>" if use_elo else ""
                 
-                score_str = f"{int(player[metric_col])}" if use_elo else f"{player[metric_col]:g}"
+                utr_str = f" ({player.get('UTR', 1.0)})" if use_elo else ""
+                score_str = f"{int(player[metric_col])}{utr_str}" if use_elo else f"{player[metric_col]:g}"
                 photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
                 p_uid = f"podium_{p_idx}_{player['Player'].replace(' ', '')}"
 
@@ -1610,7 +1621,8 @@ with tabs[0]:
                 change_text = f"{'+' if change_val > 0 else ''}{int(change_val)}"
                 change_indicator = f"<span style='color: {change_color}; font-size: 11px; margin-left: 5px; font-weight: normal;'>({change_text})</span>" if use_elo else ""
                 
-                score_display = f"{int(row[metric_col])}" if use_elo else f"{row[metric_col]:g}"
+                utr_val = f" ({row.get('UTR', 1.0)})" if use_elo else ""
+                score_display = f"{int(row[metric_col])}{utr_val}" if use_elo else f"{row[metric_col]:g}"
 
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
@@ -2445,7 +2457,7 @@ with tabs[2]:
                     st.markdown(f"""
                     <div class="stat-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Rank: {s.get('Rank', 'N/A')}</span>
+                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo #{s.get('Elo Rank', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
                             <div>{badges_html}</div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
