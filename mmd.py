@@ -1982,19 +1982,28 @@ with tabs[1]:
                 with st.form(f"edit_form_{match_id}"):
                     e_date = st.date_input("Edit Date", match_data['date'])
                     e_type = st.selectbox("Edit Type", ["Doubles", "Mixed Doubles", "Singles"], 
-                                        index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']))
+                                        index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']) if match_data['match_type'] in ["Doubles", "Mixed Doubles", "Singles"] else 0)
                     
                     col1, col2 = st.columns(2)
-                    players_list = sorted(st.session_state.players_df["name"].tolist())
+                    # Ensure all players in match_data are in players_list to avoid .index() errors
+                    players_list = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
+                    match_players = [match_data.get('team1_player1'), match_data.get('team1_player2'), 
+                                   match_data.get('team2_player1'), match_data.get('team2_player2')]
+                    for p in match_players:
+                        if pd.notnull(p) and str(p).strip() and p not in players_list:
+                            players_list.append(p)
+                    players_list.sort()
                     
                     with col1:
-                        et1p1 = st.selectbox("Team 1 - P1", players_list, index=players_list.index(match_data['team1_player1']))
+                        et1p1 = st.selectbox("Team 1 - P1", players_list, 
+                                            index=players_list.index(match_data['team1_player1']) if pd.notnull(match_data['team1_player1']) and match_data['team1_player1'] in players_list else 0)
                         et1p2 = st.selectbox("Team 1 - P2", [""] + players_list, 
-                                            index=(players_list.index(match_data['team1_player2']) + 1) if match_data['team1_player2'] else 0)
+                                            index=(players_list.index(match_data['team1_player2']) + 1) if pd.notnull(match_data['team1_player2']) and match_data['team1_player2'] in players_list else 0)
                     with col2:
-                        et2p1 = st.selectbox("Team 2 - P1", players_list, index=players_list.index(match_data['team2_player1']))
+                        et2p1 = st.selectbox("Team 2 - P1", players_list, 
+                                            index=players_list.index(match_data['team2_player1']) if pd.notnull(match_data['team2_player1']) and match_data['team2_player1'] in players_list else 0)
                         et2p2 = st.selectbox("Team 2 - P2", [""] + players_list, 
-                                            index=(players_list.index(match_data['team2_player2']) + 1) if match_data['team2_player2'] else 0)
+                                            index=(players_list.index(match_data['team2_player2']) + 1) if pd.notnull(match_data['team2_player2']) and match_data['team2_player2'] in players_list else 0)
                     
                     score_opts = [""] + tennis_scores()
                     c1, c2, c3 = st.columns(3)
