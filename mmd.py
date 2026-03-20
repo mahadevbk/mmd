@@ -3533,19 +3533,135 @@ with tabs[6]:
 
 
 
+# --- Tab 8: AI Data & Analytics ---
 with tabs[7]:
-    st.header("📊 Analyze League Data with Google Gemini")
-    st.markdown("""
-    Get instant insights, charts, and answers about your tennis league.
+    st.header("🧠 AI Data & Visual Analytics")
+    st.markdown("Dive deep into the league's stats with these automated visual insights!")
+    
+    # --- SECTION 1: VISUAL ANALYTICS DASHBOARD ---
+    if not rank_df.empty and not st.session_state.matches_df.empty:
+        
+        # 1. High-Level League KPIs
+        st.subheader("📊 League Overview")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Ranked Players", len(rank_df))
+        col2.metric("Total Matches Played", len(st.session_state.matches_df))
+        col3.metric("Highest Elo Rating", int(rank_df['Elo'].max()))
+        col4.metric("Avg League Win Rate", f"{rank_df['Win %'].mean():.1f}%")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 2. Bubble Chart: Skill vs. Success
+        st.subheader("🎯 Skill vs. Success (Elo vs Win %)")
+        fig1 = px.scatter(
+            rank_df, x="Win %", y="Elo", 
+            color="Game Diff Avg", size="Matches",
+            hover_name="Player", text="Player",
+            color_continuous_scale="Viridis",
+            title="Player Skill (Elo) vs Success Rate (Win %) - Sized by Matches Played"
+        )
+        fig1.update_traces(textposition='top center')
+        fig1.update_layout(height=500, template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig1, use_container_width=True)
+        
+        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+        
+        col_a, col_b = st.columns(2)
+        
+        with col_a:
+            # 3. Bar Chart: Clutch Factor Leaders
+            st.subheader("🧊 Most Clutch Players")
+            clutch_df = rank_df[rank_df['Matches'] >= 3].sort_values(by="Clutch Factor", ascending=False).head(10)
+            fig2 = px.bar(
+                clutch_df, x="Player", y="Clutch Factor", 
+                color="Clutch Factor", color_continuous_scale="Reds",
+                title="Top 10 Clutch Factors (Min. 3 Matches)"
+            )
+            fig2.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig2, use_container_width=True)
 
-    Click below to:
-    1. Download the latest `matches.csv`
+        with col_b:
+            # 4. Histogram: Elo Distribution
+            st.subheader("📈 League Elo Distribution")
+            fig3 = px.histogram(
+                rank_df, x="Elo", nbins=10, 
+                color_discrete_sequence=["#CCFF00"], # Matches your optic yellow theme
+                title="Spread of Player Elo Ratings"
+            )
+            fig3.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig3, use_container_width=True)
+
+        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+
+        # 5. Line Chart: League Activity Over Time
+        st.subheader("📅 Match Activity Timeline")
+        matches_time = st.session_state.matches_df.copy()
+        matches_time['date'] = pd.to_datetime(matches_time['date']).dt.date
+        activity_df = matches_time.groupby('date').size().reset_index(name='Matches Played')
+        
+        fig4 = px.line(
+            activity_df, x='date', y='Matches Played', 
+            markers=True, line_shape="spline",
+            title="Matches Played Over Time",
+            color_discrete_sequence=["#00ff88"]
+        )
+        fig4.update_layout(template="plotly_dark", xaxis_title="Date", yaxis_title="Number of Matches", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig4, use_container_width=True)
+
+        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+
+        # 6. Interactive Radar Chart Comparison Tool
+        st.subheader("🕸️ Player Stat Comparison Tool")
+        st.info("Select up to 3 players below to overlay and compare their core metrics.")
+        compare_players = st.multiselect("Select Players to Compare", rank_df['Player'].tolist(), max_selections=3)
+        
+        if compare_players:
+            fig5 = go.Figure()
+            categories = ['Win %', 'Clutch Factor', 'Consistency Index', 'Game Diff Avg']
+            
+            for player in compare_players:
+                p_data = rank_df[rank_df['Player'] == player].iloc[0]
+                
+                # Normalize values so they map well to a 0-100 radar chart
+                consistency_score = max(0, 100 - (p_data.get('Consistency Index', 0) * 10))
+                gda_score = min(100, max(0, (p_data.get('Game Diff Avg', 0) + 1) * 25))
+                
+                values = [p_data['Win %'], p_data['Clutch Factor'], consistency_score, gda_score]
+                values += values[:1] # Close the polygon
+                cat_closed = categories + [categories[0]]
+                
+                fig5.add_trace(go.Scatterpolar(
+                    r=values, theta=cat_closed, fill='toself', name=player
+                ))
+                
+            fig5.update_layout(
+                polar=dict(
+                    radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"),
+                    angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")
+                ),
+                template="plotly_dark",
+                title="Normalized Stat Comparison (Scale 0-100)",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig5, use_container_width=True)
+
+    else:
+        st.warning("Not enough data to generate visual analytics. Add some matches first!")
+        
+    st.markdown("<hr style='border: 2px solid #fff500;'>", unsafe_allow_html=True)
+
+    # --- SECTION 2: AI EXPORT & FULL BACKUP SYSTEM (Original Code) ---
+    st.header("🤖 Analyze League Data with Google Gemini")
+    st.markdown("""
+    Want even deeper insights? Export your raw data to AI! 
+    
+    1. Click **Download matches.csv** (or use the **Full Backup** button for all data)
     2. Open **Google Gemini** in a new tab
-    3. Upload the CSV and ask questions like:
-       - "Who has the most wins?"
-       - "Show a chart of player points over time"
-       - "Which players have the best win percentage?"
-       - "Suggest balanced teams for next week"
+    3. Upload the CSV/ZIP and ask questions like:
+       - *"Who has the most wins?"*
+       - *"Suggest balanced teams for next week"*
+       - *"Who plays the best under pressure based on these stats?"*
     """)
 
     if not st.session_state.matches_df.empty:
@@ -3581,11 +3697,11 @@ with tabs[7]:
                     width: 100%;
                     margin-top: 0;
                 ">
-                    🚀 Open Google Gemini 
+                    🚀 Open Google Gemini
                 </button>
             </a>
             """, unsafe_allow_html=True)
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
 
             if st.button("📦 Prepare Full Backup (ZIP)", help="Click to bundle all CSVs and images into a ZIP"):
@@ -3602,18 +3718,16 @@ with tabs[7]:
                     mime="application/zip",
                     key="full_zip_download_btn"
                 )
-
-        st.info("""
-        **How to use:**
-        1. Click **Download matches.csv** (or use the **Full Backup** button for all data)
-        2. Click **Open Google Gemini**
-        3. In Gemini, click the 📎 (paperclip) icon → Upload the CSV/ZIP
-        4. Ask any question about the league!
-        """)
-
-        st.success("Gemini is excellent at tennis stats — it will even generate beautiful charts automatically! 🎾📈")
+        
+        st.success("Gemini is excellent at tennis stats — it will even generate custom charts and models based on this data! 🎾📈")
     else:
         st.warning("No match data available yet. Add some matches first!")
+
+
+st.markdown("----")
+st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
+
+
 
 
 st.markdown("----")
