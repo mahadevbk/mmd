@@ -1953,135 +1953,6 @@ with tabs[1]:
                         st.rerun()     
 
 
-        # B. EDIT MATCH FORM (Fixed AttributeError & Timestamp error)
-        #with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
-        # --- B. EDIT & DELETE MATCH RESULT ---
-        with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
-            if not st.session_state.matches_df.empty:
-                m_df = st.session_state.matches_df.copy()
-                m_df['date'] = pd.to_datetime(m_df['date'])
-                m_df = m_df.sort_values('date', ascending=False)
-                
-                # Create a display label for the dropdown
-                def get_edit_label(x):
-                    date_str = str(x['date'])[:10]
-                    if x['match_type'] in ["Doubles", "Mixed Doubles"]:
-                        t1 = f"{x['team1_player1']} / {x['team1_player2']}"
-                        t2 = f"{x['team2_player1']} / {x['team2_player2']}"
-                    else:
-                        t1 = x['team1_player1']
-                        t2 = x['team2_player1']
-                    return f"{date_str} | {t1} vs {t2}"
-                
-                m_df['display_label'] = m_df.apply(get_edit_label, axis=1)
-                
-                selected_label = st.selectbox("Select Match to Edit/Delete", m_df['display_label'].tolist())
-                match_data = m_df[m_df['display_label'] == selected_label].iloc[0]
-                match_id = match_data['match_id']
-
-                with st.form(f"edit_form_{match_id}"):
-                    e_date = st.date_input("Edit Date", match_data['date'])
-                    e_type = st.selectbox("Edit Type", ["Doubles", "Mixed Doubles", "Singles"], 
-                                        index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']) if match_data['match_type'] in ["Doubles", "Mixed Doubles", "Singles"] else 0)
-                    
-                    col1, col2 = st.columns(2)
-                    # Ensure all players in match_data are in players_list to avoid .index() errors
-                    players_list = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
-                    match_players = [match_data.get('team1_player1'), match_data.get('team1_player2'), 
-                                   match_data.get('team2_player1'), match_data.get('team2_player2')]
-                    for p in match_players:
-                        if pd.notnull(p) and str(p).strip() and p not in players_list:
-                            players_list.append(p)
-                    players_list.sort()
-                    
-                    with col1:
-                        et1p1 = st.selectbox("Team 1 - P1", players_list, 
-                                            index=players_list.index(match_data['team1_player1']) if pd.notnull(match_data['team1_player1']) and match_data['team1_player1'] in players_list else 0)
-                        et1p2 = st.selectbox("Team 1 - P2", [""] + players_list, 
-                                            index=(players_list.index(match_data['team1_player2']) + 1) if pd.notnull(match_data['team1_player2']) and match_data['team1_player2'] in players_list else 0)
-                    with col2:
-                        et2p1 = st.selectbox("Team 2 - P1", players_list, 
-                                            index=players_list.index(match_data['team2_player1']) if pd.notnull(match_data['team2_player1']) and match_data['team2_player1'] in players_list else 0)
-                        et2p2 = st.selectbox("Team 2 - P2", [""] + players_list, 
-                                            index=(players_list.index(match_data['team2_player2']) + 1) if pd.notnull(match_data['team2_player2']) and match_data['team2_player2'] in players_list else 0)
-                    
-                    score_opts = [""] + tennis_scores()
-                    c1, c2, c3 = st.columns(3)
-                    es1 = st.selectbox("Set 1", score_opts, index=score_opts.index(match_data['set1']) if match_data['set1'] in score_opts else 0)
-                    es2 = st.selectbox("Set 2", score_opts, index=score_opts.index(match_data['set2']) if match_data['set2'] in score_opts else 0)
-                    es3 = st.selectbox("Set 3", score_opts, index=score_opts.index(match_data['set3']) if match_data['set3'] in score_opts else 0)
-                    
-                    e_winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if match_data['winner'] == "Team 1" else 1, horizontal=True)
-                    
-                    # Bottom Action Buttons
-                    st.markdown("---")
-                    col_save, col_delete = st.columns(2)
-                    
-                    with col_save:
-                        if st.form_submit_button("💾 Save Changes", use_container_width=True):
-                            # --- Validation in Edit Form ---
-                            valid_edit = True
-                            selected_edit_players = [p for p in [et1p1, et1p2, et2p1, et2p2] if p and p.strip() != ""]
-                            visitor_count_edit = sum(1 for p in selected_edit_players if str(p).upper() == "VISITOR")
-                            
-                            if e_type == "Singles":
-                                if len(selected_edit_players) != 2:
-                                    st.error("Singles requires exactly 2 players.")
-                                    valid_edit = False
-                                elif visitor_count_edit > 0:
-                                    st.error("Visitors are not allowed in Singles matches.")
-                                    valid_edit = False
-                            else: # Doubles or Mixed Doubles
-                                if len(selected_edit_players) != 4:
-                                    st.error(f"{e_type} requires exactly 4 players.")
-                                    valid_edit = False
-                                elif visitor_count_edit > 1:
-                                    st.error("Only ONE Visitor allowed in Doubles matches.")
-                                    valid_edit = False
-                                elif not es2:
-                                    st.error("Doubles requires at least 2 sets.")
-                                    valid_edit = False
-
-                            if valid_edit:
-                                updated_match = {
-                                    "match_id": match_id,
-                                    "date": e_date.strftime('%Y-%m-%d'),
-                                    "match_type": e_type,
-                                    "team1_player1": et1p1,
-                                    "team1_player2": et1p2,
-                                    "team2_player1": et2p1,
-                                    "team2_player2": et2p2,
-                                    "set1": es1,
-                                    "set2": es2,
-                                    "set3": es3,
-                                    "winner": e_winner,
-                                    "match_image_url": match_data['match_image_url']
-                                }
-                                delete_match_from_db(match_id) # Remove old
-                                save_match_to_db(updated_match) # Save new
-                                st.success("Match updated!")
-                                time.sleep(1)
-                                st.rerun()
-                            
-                # Delete logic outside the main edit form to avoid nested form issues
-                st.markdown("##### 🗑️ Danger Zone")
-                del_pw = st.text_input("Admin Password to Delete Match", type="password", key=f"del_pw_{match_id}")
-                if st.button("Delete this Match Result", use_container_width=True, type="secondary"):
-                    try:
-                        admin_pw = st.secrets["admin"]["password"]
-                        if del_pw == admin_pw:
-                            delete_match_from_db(match_id)
-                            st.success(f"Match {match_id} deleted.")
-                            time.sleep(1)
-                            st.rerun()
-                        else:
-                            st.error("Incorrect password.")
-                    except KeyError:
-                        st.error("Admin password not configured.")
-            else:
-                st.info("No matches found to edit.")
-
-
     # --- Match History ---
     st.subheader("Match Records")
     m_hist = st.session_state.matches_df.copy()
@@ -2170,6 +2041,133 @@ with tabs[1]:
                 st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
+    
+    # --- B. EDIT & DELETE MATCH RESULT ---
+    with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
+        if not st.session_state.matches_df.empty:
+            m_df = st.session_state.matches_df.copy()
+            m_df['date'] = pd.to_datetime(m_df['date'])
+            m_df = m_df.sort_values('date', ascending=False)
+            
+            # Create a display label for the dropdown
+            def get_edit_label(x):
+                date_str = str(x['date'])[:10]
+                if x['match_type'] in ["Doubles", "Mixed Doubles"]:
+                    t1 = f"{x['team1_player1']} / {x['team1_player2']}"
+                    t2 = f"{x['team2_player1']} / {x['team2_player2']}"
+                else:
+                    t1 = x['team1_player1']
+                    t2 = x['team2_player1']
+                return f"{date_str} | {t1} vs {t2}"
+            
+            m_df['display_label'] = m_df.apply(get_edit_label, axis=1)
+            
+            selected_label = st.selectbox("Select Match to Edit/Delete", m_df['display_label'].tolist())
+            match_data = m_df[m_df['display_label'] == selected_label].iloc[0]
+            match_id = match_data['match_id']
+
+            with st.form(f"edit_form_{match_id}"):
+                e_date = st.date_input("Edit Date", match_data['date'])
+                e_type = st.selectbox("Edit Type", ["Doubles", "Mixed Doubles", "Singles"], 
+                                    index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']) if match_data['match_type'] in ["Doubles", "Mixed Doubles", "Singles"] else 0)
+                
+                col1, col2 = st.columns(2)
+                # Ensure all players in match_data are in players_list to avoid .index() errors
+                players_list = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
+                match_players = [match_data.get('team1_player1'), match_data.get('team1_player2'), 
+                               match_data.get('team2_player1'), match_data.get('team2_player2')]
+                for p in match_players:
+                    if pd.notnull(p) and str(p).strip() and p not in players_list:
+                        players_list.append(p)
+                players_list.sort()
+                
+                with col1:
+                    et1p1 = st.selectbox("Team 1 - P1", players_list, 
+                                        index=players_list.index(match_data['team1_player1']) if pd.notnull(match_data['team1_player1']) and match_data['team1_player1'] in players_list else 0)
+                    et1p2 = st.selectbox("Team 1 - P2", [""] + players_list, 
+                                        index=(players_list.index(match_data['team1_player2']) + 1) if pd.notnull(match_data['team1_player2']) and match_data['team1_player2'] in players_list else 0)
+                with col2:
+                    et2p1 = st.selectbox("Team 2 - P1", players_list, 
+                                        index=players_list.index(match_data['team2_player1']) if pd.notnull(match_data['team2_player1']) and match_data['team2_player1'] in players_list else 0)
+                    et2p2 = st.selectbox("Team 2 - P2", [""] + players_list, 
+                                        index=(players_list.index(match_data['team2_player2']) + 1) if pd.notnull(match_data['team2_player2']) and match_data['team2_player2'] in players_list else 0)
+                
+                score_opts = [""] + tennis_scores()
+                c1, c2, c3 = st.columns(3)
+                es1 = st.selectbox("Set 1", score_opts, index=score_opts.index(match_data['set1']) if match_data['set1'] in score_opts else 0)
+                es2 = st.selectbox("Set 2", score_opts, index=score_opts.index(match_data['set2']) if match_data['set2'] in score_opts else 0)
+                es3 = st.selectbox("Set 3", score_opts, index=score_opts.index(match_data['set3']) if match_data['set3'] in score_opts else 0)
+                
+                e_winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if match_data['winner'] == "Team 1" else 1, horizontal=True)
+                
+                # Bottom Action Buttons
+                st.markdown("---")
+                col_save, col_delete = st.columns(2)
+                
+                with col_save:
+                    if st.form_submit_button("💾 Save Changes", use_container_width=True):
+                        # --- Validation in Edit Form ---
+                        valid_edit = True
+                        selected_edit_players = [p for p in [et1p1, et1p2, et2p1, et2p2] if p and p.strip() != ""]
+                        visitor_count_edit = sum(1 for p in selected_edit_players if str(p).upper() == "VISITOR")
+                        
+                        if e_type == "Singles":
+                            if len(selected_edit_players) != 2:
+                                st.error("Singles requires exactly 2 players.")
+                                valid_edit = False
+                            elif visitor_count_edit > 0:
+                                st.error("Visitors are not allowed in Singles matches.")
+                                valid_edit = False
+                        else: # Doubles or Mixed Doubles
+                            if len(selected_edit_players) != 4:
+                                st.error(f"{e_type} requires exactly 4 players.")
+                                valid_edit = False
+                            elif visitor_count_edit > 1:
+                                st.error("Only ONE Visitor allowed in Doubles matches.")
+                                valid_edit = False
+                            elif not es2:
+                                st.error("Doubles requires at least 2 sets.")
+                                valid_edit = False
+
+                        if valid_edit:
+                            updated_match = {
+                                "match_id": match_id,
+                                "date": e_date.strftime('%Y-%m-%d'),
+                                "match_type": e_type,
+                                "team1_player1": et1p1,
+                                "team1_player2": et1p2,
+                                "team2_player1": et2p1,
+                                "team2_player2": et2p2,
+                                "set1": es1,
+                                "set2": es2,
+                                "set3": es3,
+                                "winner": e_winner,
+                                "match_image_url": match_data['match_image_url']
+                            }
+                            delete_match_from_db(match_id) # Remove old
+                            save_match_to_db(updated_match) # Save new
+                            st.success("Match updated!")
+                            time.sleep(1)
+                            st.rerun()
+                        
+            # Delete logic outside the main edit form to avoid nested form issues
+            st.markdown("##### 🗑️ Danger Zone")
+            del_pw = st.text_input("Admin Password to Delete Match", type="password", key=f"del_pw_{match_id}")
+            if st.button("Delete this Match Result", use_container_width=True, type="secondary"):
+                try:
+                    admin_pw = st.secrets["admin"]["password"]
+                    if del_pw == admin_pw:
+                        delete_match_from_db(match_id)
+                        st.success(f"Match {match_id} deleted.")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Incorrect password.")
+                except KeyError:
+                    st.error("Admin password not configured.")
+        else:
+            st.info("No matches found to edit.")
+
     
     # --- Admin: Season Reset ---
     with st.expander("🔐 Admin: Season Reset", expanded=False, icon="➡️"):
