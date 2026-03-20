@@ -2019,25 +2019,49 @@ with tabs[1]:
                     
                     with col_save:
                         if st.form_submit_button("💾 Save Changes", use_container_width=True):
-                            updated_match = {
-                                "match_id": match_id,
-                                "date": e_date.strftime('%Y-%m-%d'),
-                                "match_type": e_type,
-                                "team1_player1": et1p1,
-                                "team1_player2": et1p2,
-                                "team2_player1": et2p1,
-                                "team2_player2": et2p2,
-                                "set1": es1,
-                                "set2": es2,
-                                "set3": es3,
-                                "winner": e_winner,
-                                "match_image_url": match_data['match_image_url']
-                            }
-                            delete_match_from_db(match_id) # Remove old
-                            save_match_to_db(updated_match) # Save new
-                            st.success("Match updated!")
-                            time.sleep(1)
-                            st.rerun()
+                            # --- Validation in Edit Form ---
+                            valid_edit = True
+                            selected_edit_players = [p for p in [et1p1, et1p2, et2p1, et2p2] if p and p.strip() != ""]
+                            visitor_count_edit = sum(1 for p in selected_edit_players if str(p).upper() == "VISITOR")
+                            
+                            if e_type == "Singles":
+                                if len(selected_edit_players) != 2:
+                                    st.error("Singles requires exactly 2 players.")
+                                    valid_edit = False
+                                elif visitor_count_edit > 0:
+                                    st.error("Visitors are not allowed in Singles matches.")
+                                    valid_edit = False
+                            else: # Doubles or Mixed Doubles
+                                if len(selected_edit_players) != 4:
+                                    st.error(f"{e_type} requires exactly 4 players.")
+                                    valid_edit = False
+                                elif visitor_count_edit > 1:
+                                    st.error("Only ONE Visitor allowed in Doubles matches.")
+                                    valid_edit = False
+                                elif not es2:
+                                    st.error("Doubles requires at least 2 sets.")
+                                    valid_edit = False
+
+                            if valid_edit:
+                                updated_match = {
+                                    "match_id": match_id,
+                                    "date": e_date.strftime('%Y-%m-%d'),
+                                    "match_type": e_type,
+                                    "team1_player1": et1p1,
+                                    "team1_player2": et1p2,
+                                    "team2_player1": et2p1,
+                                    "team2_player2": et2p2,
+                                    "set1": es1,
+                                    "set2": es2,
+                                    "set3": es3,
+                                    "winner": e_winner,
+                                    "match_image_url": match_data['match_image_url']
+                                }
+                                delete_match_from_db(match_id) # Remove old
+                                save_match_to_db(updated_match) # Save new
+                                st.success("Match updated!")
+                                time.sleep(1)
+                                st.rerun()
                             
                 # Delete logic outside the main edit form to avoid nested form issues
                 st.markdown("##### 🗑️ Danger Zone")
