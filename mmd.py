@@ -3475,7 +3475,7 @@ with tabs[7]:
         )
         fig1.update_traces(textposition='top center')
         fig1.update_layout(height=500, template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width="stretch")
         
         st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
         
@@ -3491,7 +3491,7 @@ with tabs[7]:
                 title="Top 10 Clutch Factors (Min. 3 Matches)"
             )
             fig2.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width="stretch")
 
         with col_b:
             # 4. Histogram: Elo Distribution
@@ -3502,7 +3502,7 @@ with tabs[7]:
                 title="Spread of Player Elo Ratings"
             )
             fig3.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig3, use_container_width=True)
+            st.plotly_chart(fig3, width="stretch")
 
         st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
 
@@ -3519,7 +3519,7 @@ with tabs[7]:
             color_discrete_sequence=["#00ff88"]
         )
         fig4.update_layout(template="plotly_dark", xaxis_title="Date", yaxis_title="Number of Matches", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
         st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
 
@@ -3557,7 +3557,7 @@ with tabs[7]:
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig5, use_container_width=True)
+            st.plotly_chart(fig5, width="stretch")
 
     else:
         st.warning("Not enough data to generate visual analytics. Add some matches first!")
