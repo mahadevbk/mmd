@@ -3048,6 +3048,169 @@ with tabs[4]:
     
     
     st.markdown("---")
+    
+    with st.expander("Edit Existing Booking", expanded=False, icon="➡️"):
+        st.subheader("Edit Existing Booking")
+        if 'edit_booking_key' not in st.session_state:
+            st.session_state.edit_booking_key = 0
+        unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
+
+        if bookings_df.empty:
+            st.info("No bookings available to manage.")
+        else:
+            duplicate_ids = bookings_df[bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
+            if len(duplicate_ids) > 0:
+                st.warning(f"Found duplicate booking_id values: {duplicate_ids.tolist()}. Please remove duplicates in Supabase before editing.")
+            else:
+                booking_options = []
+
+                def format_time_safe(time_str):
+                    if not time_str or str(time_str).lower() in ["nat", "nan", "none"]:
+                        return "Unknown Time"
+                    t = str(time_str).strip()
+                    for fmt in ["%H:%M", "%H:%M:%S"]:
+                        try:
+                            return datetime.strptime(t, fmt).strftime("%I:%M %p").lstrip('0')
+                        except ValueError:
+                            continue
+                    return "Unknown Time"
+
+                for _, row in bookings_df.iterrows():
+                    date_str = pd.to_datetime(row['date'], errors="coerce").strftime('%A, %d %b') if row['date'] else "Unknown Date"
+                    time_ampm = format_time_safe(row['time'])
+                    players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                    players_str = ", ".join(players) if players else "No players"
+                    standby_str = row.get('standby_player', "None")
+                    desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
+                    booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
+
+                selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
+                if selected_booking:
+                    booking_id = selected_booking.split(" | Booking ID: ")[-1]
+                    booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
+                    booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
+
+                    with st.expander("Edit Booking Details", expanded=True):
+                        date_edit = st.date_input(
+                            "Booking Date *",
+                            value=pd.to_datetime(booking_row["date"], errors="coerce").date(),
+                            key=f"edit_booking_date_{booking_id}"
+                        )
+
+                        current_time_ampm = format_time_safe(booking_row["time"])
+                        hours = []
+                        hours.append(datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:00 AM
+                        hours.append(datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:30 AM
+                        hours.append(datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 7:30 AM
+                        for h in range(7, 22):  # From 7 AM to 9 PM
+                            hours.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))
+                        time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
+                        time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                        match_type_edit = st.radio("Match Type", ["Doubles", "Singles"],
+                                                   index=0 if booking_row["match_type"] == "Doubles" else 1,
+                                                   key=f"edit_booking_match_type_{booking_id}")
+
+                        if match_type_edit == "Doubles":
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
+                                                       index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                                                       key=f"edit_t1p1_{booking_id}")
+                                p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
+                                                       index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0,
+                                                       key=f"edit_t1p2_{booking_id}")
+                            with col2:
+                                p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players,
+                                                       index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                                                       key=f"edit_t2p1_{booking_id}")
+                                p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players,
+                                                       index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0,
+                                                       key=f"edit_t2p2_{booking_id}")
+                        else:
+                            p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                                                   key=f"edit_s1p1_{booking_id}")
+                            p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
+                                                   index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                                                   key=f"edit_s1p2_{booking_id}")
+                            p2_edit = ""
+                            p4_edit = ""
+
+                        standby_initial_index = 0
+                        if "standby_player" in booking_row and booking_row["standby_player"] and booking_row["standby_player"] in available_players:
+                            standby_initial_index = available_players.index(booking_row["standby_player"]) + 1
+
+                        standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players,
+                                                    index=standby_initial_index, key=f"edit_standby_{booking_id}")
+                        court_edit = st.selectbox("Court Name *", [""] + court_names,
+                                                  index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0,
+                                                  key=f"edit_court_{booking_id}")
+                        screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)",
+                                                           type=["jpg", "jpeg", "png", "gif", "bmp", "webp"],
+                                                           key=f"edit_screenshot_{booking_id}")
+                        st.markdown("*Required fields", unsafe_allow_html=True)
+
+                        col_save, col_delete = st.columns(2)
+                        with col_save:
+                            if st.button("Save Changes", key=f"save_booking_changes_{booking_id}"):
+                                if not court_edit:
+                                    st.error("Court name is required.")
+                                elif not date_edit or not time_edit:
+                                    st.error("Booking date and time are required.")
+                                else:
+                                    players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit] if p]
+                                    if len(set(players_edit)) != len(players_edit):
+                                        st.error("Please select different players for each position.")
+                                    else:
+                                        screenshot_url_edit = booking_row["screenshot_url"]
+                                        if screenshot_edit:
+                                            screenshot_url_edit = upload_image_to_github(screenshot_edit, booking_id, image_type="booking")
+
+                                        time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M:%S")
+                                        updated_booking = {
+                                            "booking_id": booking_id,
+                                            "date": date_edit.isoformat(),
+                                            "time": time_24hr_edit,
+                                            "match_type": match_type_edit,
+                                            "court_name": court_edit,
+                                            "player1": p1_edit if p1_edit else None,
+                                            "player2": p2_edit if p2_edit else None,
+                                            "player3": p3_edit if p3_edit else None,
+                                            "player4": p4_edit if p4_edit else None,
+                                            "standby_player": standby_edit if standby_edit else None,
+                                            "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
+                                        }
+                                        try:
+                                            st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
+                                            expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name',
+                                                                'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                            bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
+                                            for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+                                                bookings_to_save[col] = bookings_to_save[col].replace("", None)
+                                            bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
+                                            save_bookings(bookings_to_save)
+                                            load_bookings()
+                                            st.success("Booking updated successfully.")
+                                            st.session_state.edit_booking_key += 1
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Failed to save booking: {str(e)}")
+                                            st.session_state.edit_booking_key += 1
+                                            st.rerun()
+                        with col_delete:
+                            if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
+                                try:
+                                    delete_booking_from_db(booking_id)
+                                    load_bookings()
+                                    st.success("Booking deleted.")
+                                    st.session_state.edit_booking_key += 1
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Failed to delete booking: {str(e)}")
+                                    st.session_state.edit_booking_key += 1
+                                    st.rerun()
+
+    st.markdown("---")
     st.subheader("👥 Player Availability")
     st.markdown("""
     *Players can indicate their availability for the next 10 days. This helps in scheduling matches more efficiently.*
@@ -3284,479 +3447,5 @@ with tabs[4]:
                 save_availability(st.session_state.availability_df)
         else:
             st.info("No availability to manage.")
-    
-    st.markdown("---")
-    # Continue with the existing bookings_df processing below this point...
-
-
-
-    
-
-
-
-    
-
-        
-
-    
-
-
-
-
-
-
-    #----------end of new calendar
-    
-    with st.expander("Edit Existing Booking", expanded=False, icon="➡️"):
-        st.subheader("Edit Existing Booking")
-        if 'edit_booking_key' not in st.session_state:
-            st.session_state.edit_booking_key = 0
-        unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
-
-        if bookings_df.empty:
-            st.info("No bookings available to manage.")
-        else:
-            duplicate_ids = bookings_df[bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
-            if len(duplicate_ids) > 0:
-                st.warning(f"Found duplicate booking_id values: {duplicate_ids.tolist()}. Please remove duplicates in Supabase before editing.")
-            else:
-                booking_options = []
-
-                def format_time_safe(time_str):
-                    if not time_str or str(time_str).lower() in ["nat", "nan", "none"]:
-                        return "Unknown Time"
-                    t = str(time_str).strip()
-                    for fmt in ["%H:%M", "%H:%M:%S"]:
-                        try:
-                            return datetime.strptime(t, fmt).strftime("%I:%M %p").lstrip('0')
-                        except ValueError:
-                            continue
-                    return "Unknown Time"
-
-                for _, row in bookings_df.iterrows():
-                    date_str = pd.to_datetime(row['date'], errors="coerce").strftime('%A, %d %b') if row['date'] else "Unknown Date"
-                    time_ampm = format_time_safe(row['time'])
-                    players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-                    players_str = ", ".join(players) if players else "No players"
-                    standby_str = row.get('standby_player', "None")
-                    desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
-                    booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
-
-                selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
-                if selected_booking:
-                    booking_id = selected_booking.split(" | Booking ID: ")[-1]
-                    booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
-                    booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
-
-                    with st.expander("Edit Booking Details", expanded=True):
-                        date_edit = st.date_input(
-                            "Booking Date *",
-                            value=pd.to_datetime(booking_row["date"], errors="coerce").date(),
-                            key=f"edit_booking_date_{booking_id}"
-                        )
-
-                        current_time_ampm = format_time_safe(booking_row["time"])
-                        hours = []
-                        hours.append(datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:00 AM
-                        hours.append(datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:30 AM
-                        hours.append(datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 7:30 AM
-                        for h in range(7, 22):  # From 7 AM to 9 PM
-                            hours.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))
-                        time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
-                        time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
-                        match_type_edit = st.radio("Match Type", ["Doubles", "Singles"],
-                                                   index=0 if booking_row["match_type"] == "Doubles" else 1,
-                                                   key=f"edit_booking_match_type_{booking_id}")
-
-                        if match_type_edit == "Doubles":
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
-                                                       key=f"edit_t1p1_{booking_id}")
-                                p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0,
-                                                       key=f"edit_t1p2_{booking_id}")
-                            with col2:
-                                p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
-                                                       key=f"edit_t2p1_{booking_id}")
-                                p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0,
-                                                       key=f"edit_t2p2_{booking_id}")
-                        else:
-                            p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
-                                                   index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
-                                                   key=f"edit_s1p1_{booking_id}")
-                            p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
-                                                   index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
-                                                   key=f"edit_s1p2_{booking_id}")
-                            p2_edit = ""
-                            p4_edit = ""
-
-                        standby_initial_index = 0
-                        if "standby_player" in booking_row and booking_row["standby_player"] and booking_row["standby_player"] in available_players:
-                            standby_initial_index = available_players.index(booking_row["standby_player"]) + 1
-
-                        standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players,
-                                                    index=standby_initial_index, key=f"edit_standby_{booking_id}")
-                        court_edit = st.selectbox("Court Name *", [""] + court_names,
-                                                  index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0,
-                                                  key=f"edit_court_{booking_id}")
-                        screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)",
-                                                           type=["jpg", "jpeg", "png", "gif", "bmp", "webp"],
-                                                           key=f"edit_screenshot_{booking_id}")
-                        st.markdown("*Required fields", unsafe_allow_html=True)
-
-                        col_save, col_delete = st.columns(2)
-                        with col_save:
-                            if st.button("Save Changes", key=f"save_booking_changes_{booking_id}"):
-                                if not court_edit:
-                                    st.error("Court name is required.")
-                                elif not date_edit or not time_edit:
-                                    st.error("Booking date and time are required.")
-                                else:
-                                    players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit] if p]
-                                    if len(set(players_edit)) != len(players_edit):
-                                        st.error("Please select different players for each position.")
-                                    else:
-                                        screenshot_url_edit = booking_row["screenshot_url"]
-                                        if screenshot_edit:
-                                            screenshot_url_edit = upload_image_to_github(screenshot_edit, booking_id, image_type="booking")
-
-                                        time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M:%S")
-                                        updated_booking = {
-                                            "booking_id": booking_id,
-                                            "date": date_edit.isoformat(),
-                                            "time": time_24hr_edit,
-                                            "match_type": match_type_edit,
-                                            "court_name": court_edit,
-                                            "player1": p1_edit if p1_edit else None,
-                                            "player2": p2_edit if p2_edit else None,
-                                            "player3": p3_edit if p3_edit else None,
-                                            "player4": p4_edit if p4_edit else None,
-                                            "standby_player": standby_edit if standby_edit else None,
-                                            "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
-                                        }
-                                        try:
-                                            st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
-                                            expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name',
-                                                                'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                                            bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
-                                            for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
-                                                bookings_to_save[col] = bookings_to_save[col].replace("", None)
-                                            bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
-                                            save_bookings(bookings_to_save)
-                                            load_bookings()
-                                            st.success("Booking updated successfully.")
-                                            st.session_state.edit_booking_key += 1
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"Failed to save booking: {str(e)}")
-                                            st.session_state.edit_booking_key += 1
-                                            st.rerun()
-                        with col_delete:
-                            if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
-                                try:
-                                    delete_booking_from_db(booking_id)
-                                    load_bookings()
-                                    st.success("Booking deleted.")
-                                    st.session_state.edit_booking_key += 1
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Failed to delete booking: {str(e)}")
-                                    st.session_state.edit_booking_key += 1
-                                    st.rerun()
-    st.markdown("---")
-    st.markdown("Odds Calculation Logic process uploaded at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
-
-
-
-
-
-
-
-
-
-
-
-# ...START OF TAB 5 HALL OF FAME -------------------------------------------------------------------------
-with tabs[5]:
-    #st.header("Hall of Fame")
-    display_hall_of_fame()
-
-
-
-
-#--MINI TOURNEY -----------------------
-with tabs[6]:
-    st.header("Mini Tournaments Organiser & Highlights")
-
-
-    # --- 1. Fetch Photos Dynamically from GitHub ---
-    @st.cache_data(ttl=3600)
-    def get_tournament_photos():
-        owner = "mahadevbk"
-        repo = "mmd"
-        path = "assets/minitourney"
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        
-        try:
-            # Note: Ensure 'requests' is imported at the top of your file
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                files = response.json()
-                image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
-                photo_urls = [
-                    file['download_url'] for file in files 
-                    if file['name'].lower().endswith(image_extensions)
-                ]
-                return photo_urls
-        except Exception as e:
-            st.error(f"Error fetching photos: {e}")
-        return []
-
-    photos = get_tournament_photos()
-
-    # --- 2. Thumbnail Grid with Lightbox ---
-    if photos:
-        st.subheader("Tournament Gallery")
-        
-        # Grid layout (3 columns)
-        cols_per_row = 3
-        for i in range(0, len(photos), cols_per_row):
-            row_photos = photos[i : i + cols_per_row]
-            st_cols = st.columns(cols_per_row)
-            for j, img_url in enumerate(row_photos):
-                idx = i + j
-                img_id = f"tourney_img_{idx}"
-                with st_cols[j]:
-                    st.markdown(f"""
-                        <div style="margin-bottom: 20px; text-align: center;">
-                            <a href="#{img_id}">
-                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-                            </a>
-                        </div>
-                        <div id="{img_id}" class="img-lightbox">
-                            <a href="#" class="img-lightbox-close">&times;</a>
-                            <img src="{img_url}">
-                        </div>
-                    """, unsafe_allow_html=True)
-    else:
-        st.info("No photos found in the tournament gallery.")
-
-    st.markdown("---")
-    st.info("Tournament Organiser is moved to https://tournament-organiser.streamlit.app/")
-    st.info("App may be dormant and need to be 'woken up'.")
-  
-
-
-
-
-#----MINI TOURNEY--------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-# --- Tab 8: AI Data & Analytics ---
-with tabs[7]:
-    st.header("🧠 AI Data & Visual Analytics")
-    st.markdown("Dive deep into the league's stats with these automated visual insights!")
-    
-    # --- SECTION 1: VISUAL ANALYTICS DASHBOARD ---
-    if not rank_df.empty and not st.session_state.matches_df.empty:
-        
-        # 1. High-Level League KPIs
-        st.subheader("📊 League Overview")
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Ranked Players", len(rank_df))
-        col2.metric("Total Matches Played", len(st.session_state.matches_df))
-        col3.metric("Highest Elo Rating", int(rank_df['Elo'].max()))
-        col4.metric("Avg League Win Rate", f"{rank_df['Win %'].mean():.1f}%")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # 2. Bubble Chart: Skill vs. Success
-        st.subheader("🎯 Skill vs. Success (Elo vs Win %)")
-        fig1 = px.scatter(
-            rank_df, x="Win %", y="Elo", 
-            color="Game Diff Avg", size="Matches",
-            hover_name="Player", text="Player",
-            color_continuous_scale="Viridis",
-            title="Player Skill (Elo) vs Success Rate (Win %) - Sized by Matches Played"
-        )
-        fig1.update_traces(textposition='top center')
-        fig1.update_layout(height=500, template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig1, use_container_width=True)
-        
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
-        
-        col_a, col_b = st.columns(2)
-        
-        with col_a:
-            # 3. Bar Chart: Clutch Factor Leaders
-            st.subheader("🧊 Most Clutch Players")
-            clutch_df = rank_df[rank_df['Matches'] >= 3].sort_values(by="Clutch Factor", ascending=False).head(10)
-            fig2 = px.bar(
-                clutch_df, x="Player", y="Clutch Factor", 
-                color="Clutch Factor", color_continuous_scale="Reds",
-                title="Top 10 Clutch Factors (Min. 3 Matches)"
-            )
-            fig2.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig2, use_container_width=True)
-
-        with col_b:
-            # 4. Histogram: Elo Distribution
-            st.subheader("📈 League Elo Distribution")
-            fig3 = px.histogram(
-                rank_df, x="Elo", nbins=10, 
-                color_discrete_sequence=["#CCFF00"], # Matches your optic yellow theme
-                title="Spread of Player Elo Ratings"
-            )
-            fig3.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig3, use_container_width=True)
-
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
-
-        # 5. Line Chart: League Activity Over Time
-        st.subheader("📅 Match Activity Timeline")
-        matches_time = st.session_state.matches_df.copy()
-        matches_time['date'] = pd.to_datetime(matches_time['date']).dt.date
-        activity_df = matches_time.groupby('date').size().reset_index(name='Matches Played')
-        
-        fig4 = px.line(
-            activity_df, x='date', y='Matches Played', 
-            markers=True, line_shape="spline",
-            title="Matches Played Over Time",
-            color_discrete_sequence=["#00ff88"]
-        )
-        fig4.update_layout(template="plotly_dark", xaxis_title="Date", yaxis_title="Number of Matches", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig4, use_container_width=True)
-
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
-
-        # 6. Interactive Radar Chart Comparison Tool
-        st.subheader("🕸️ Player Stat Comparison Tool")
-        st.info("Select up to 3 players below to overlay and compare their core metrics.")
-        compare_players = st.multiselect("Select Players to Compare", rank_df['Player'].tolist(), max_selections=3)
-        
-        if compare_players:
-            fig5 = go.Figure()
-            categories = ['Win %', 'Clutch Factor', 'Consistency Index', 'Game Diff Avg']
-            
-            for player in compare_players:
-                p_data = rank_df[rank_df['Player'] == player].iloc[0]
-                
-                # Normalize values so they map well to a 0-100 radar chart
-                consistency_score = max(0, 100 - (p_data.get('Consistency Index', 0) * 10))
-                gda_score = min(100, max(0, (p_data.get('Game Diff Avg', 0) + 1) * 25))
-                
-                values = [p_data['Win %'], p_data['Clutch Factor'], consistency_score, gda_score]
-                values += values[:1] # Close the polygon
-                cat_closed = categories + [categories[0]]
-                
-                fig5.add_trace(go.Scatterpolar(
-                    r=values, theta=cat_closed, fill='toself', name=player
-                ))
-                
-            fig5.update_layout(
-                polar=dict(
-                    radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"),
-                    angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")
-                ),
-                template="plotly_dark",
-                title="Normalized Stat Comparison (Scale 0-100)",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
-            )
-            st.plotly_chart(fig5, use_container_width=True)
-
-    else:
-        st.warning("Not enough data to generate visual analytics. Add some matches first!")
-        
-    st.markdown("<hr style='border: 2px solid #fff500;'>", unsafe_allow_html=True)
-
-    # --- SECTION 2: AI EXPORT & FULL BACKUP SYSTEM (Original Code) ---
-    st.header("🤖 Analyze League Data with Google Gemini")
-    st.markdown("""
-    Want even deeper insights? Export your raw data to AI! 
-    
-    1. Click **Download matches.csv** (or use the **Full Backup** button for all data)
-    2. Open **Google Gemini** in a new tab
-    3. Upload the CSV/ZIP and ask questions like:
-       - *"Who has the most wins?"*
-       - *"Suggest balanced teams for next week"*
-       - *"Who plays the best under pressure based on these stats?"*
-    """)
-
-    if not st.session_state.matches_df.empty:
-        # Prepare CSV data
-        matches_csv_bytes = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-        current_time = datetime.now().strftime("%Y%m%d-%H%M")
-
-        col1, col2 = st.columns([1, 1])
-
-        with col1:
-            st.download_button(
-                label="📥 Download matches.csv",
-                data=matches_csv_bytes,
-                file_name=f"mmd-matches-{current_time}.csv",
-                mime="text/csv",
-                key=f"gemini_csv_download_{uuid.uuid4().hex}",
-                help="Download the latest match data to upload to Gemini"
-            )
-
-        with col2:
-            st.markdown("""
-            <a href="https://gemini.google.com/app" target="_blank">
-                <button style="
-                    background-color: #fff500;
-                    color: #031827;
-                    padding: 14px 20px;
-                    border: none;
-                    border-radius: 10px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    width: 100%;
-                    margin-top: 0;
-                ">
-                    🚀 Open Google Gemini
-                </button>
-            </a>
-            """, unsafe_allow_html=True)
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            if st.button("📦 Prepare Full Backup (ZIP)", help="Click to bundle all CSVs and images into a ZIP"):
-                with st.spinner("Creating full backup... This will take a few moments."):
-                    zip_file = create_full_backup_zip()
-                    st.session_state['full_backup_zip'] = zip_file.getvalue()
-                    st.success("Backup ZIP is ready for download!")
-
-            if 'full_backup_zip' in st.session_state:
-                st.download_button(
-                    label="📥 Download Full Backup (.zip)",
-                    data=st.session_state['full_backup_zip'],
-                    file_name=f"mmd-full-backup-{current_time}.zip",
-                    mime="application/zip",
-                    key="full_zip_download_btn"
-                )
-        
-        st.success("Gemini is excellent at tennis stats — it will even generate custom charts and models based on this data! 🎾📈")
-    else:
-        st.warning("No match data available yet. Add some matches first!")
-
-
-st.markdown("----")
-st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
-
-
-
-
 st.markdown("----")
 st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
