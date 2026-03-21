@@ -843,20 +843,17 @@ def calculate_rankings(matches_to_rank, players_df_input):
         except: pass
         
         # --- Enhanced UTR Calculation ---
-        # 1. Base Sigmoid Mapping (Maps 800-2000 Elo to approx 1.0-14.0 UTR)
-        # Formula: 1 + 15 / (1 + exp(-0.004 * (Elo - 1300)))
+        # 1. Base Linear Mapping (Calibrated for Club play)
+        # Formula: (Elo - 600) / 140. Hits ~6.0 at 1440 Elo.
         p_elo = elo_ratings[p]
-        import math
-        base_utr = 1 + 15 / (1 + math.exp(-0.004 * (p_elo - 1300)))
+        base_utr = max(1.0, (p_elo - 600) / 140)
         
         # 2. Match Count Weighting (Confidence Factor)
-        # New players start at UTR 1.0 and climb as they play more matches.
-        # Reliability reaches 100% after 10 matches.
+        # New players start anchored at 1.0. Reliability reaches 100% after 10 matches.
         reliability = min(1.0, m_played / 10.0)
         
         # 3. Final UTR Adjustment
-        # Weighted average between a "novice" UTR (1.0) and their Elo-based UTR.
-        # This prevents 1-match wonders from having high UTRs.
+        # Weighted average between a "novice" baseline (1.0) and their Elo-based potential.
         calculated_utr = (reliability * base_utr) + ((1 - reliability) * 1.0)
         
         # 4. Formatting
