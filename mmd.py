@@ -1147,14 +1147,12 @@ def get_birthday_banner(players_df):
             </style>
         """, unsafe_allow_html=True)
 
-def load_bookings():
-    df = fetch_data(BOOKINGS_TABLE)
-    cols = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-    for c in cols: 
-        if c not in df.columns: df[c] = None
-        
-    if not df.empty:
-        # Cleanup expired with robust format handling
+def cleanup_old_bookings(df):
+    """Automatically clears bookings older than 1 day from the database."""
+    if df.empty: return df
+
+    try:
+        # Robust format handling
         try:
              df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), format='%Y-%m-%d %H:%M', errors='coerce')
         except:
@@ -1166,13 +1164,30 @@ def load_bookings():
         else:
              df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
              
-        expired_ids = df[df['dt_combo'] < pd.Timestamp.now(tz='Asia/Dubai') - timedelta(hours=4)]['booking_id'].tolist()
+        # Cleanup bookings older than 1 day
+        expired_ids = df[df['dt_combo'] < pd.Timestamp.now(tz='Asia/Dubai') - timedelta(days=1)]['booking_id'].tolist()
+        
         if expired_ids:
             try:
                 supabase.table(BOOKINGS_TABLE).delete().in_("booking_id", expired_ids).execute()
                 df = df[~df['booking_id'].isin(expired_ids)]
             except Exception as e:
                 st.error(f"Error cleaning up expired bookings: {e}")
+                
+    except Exception as e:
+        pass # Fail silently on data errors to prevent app crash
+        
+    return df
+
+def load_bookings():
+    df = fetch_data(BOOKINGS_TABLE)
+    cols = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+    for c in cols: 
+        if c not in df.columns: df[c] = None
+        
+    if not df.empty:
+        # Run automatic cleanup
+        df = cleanup_old_bookings(df)
         
         # Format for display
         df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
