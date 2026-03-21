@@ -2812,12 +2812,11 @@ with tabs[4]:
             try:
                 doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
                 singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
-                doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
-                singles_rank_df, _ = calculate_rankings(singles_matches_df)
+                doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+                singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
             except Exception as e:
                 doubles_rank_df = pd.DataFrame()
                 singles_rank_df = pd.DataFrame()
-                st.warning(f"Unable to load rankings for pairing odds: {str(e)}")
             
             for _, row in upcoming_bookings.iterrows():
                 players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
