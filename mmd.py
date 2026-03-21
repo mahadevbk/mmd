@@ -3305,6 +3305,52 @@ with tabs[5]:
     #st.header("Hall of Fame")
     display_hall_of_fame()
 
+    st.markdown("---")
+    with st.expander("Admin: Archive Current Season (Q1 2026)", expanded=False):
+        password = st.text_input("Enter Admin Password", type="password", key="hof_admin_pw")
+        if st.button("Archive Q1 2026 Top 3"):
+            try:
+                if password == st.secrets["admin"]["password"]:
+                    if not rank_df.empty:
+                        # Sort by Points (descending)
+                        top_3 = rank_df.sort_values("Points", ascending=False).head(3)
+                        
+                        entries = []
+                        for i, (idx, row) in enumerate(top_3.iterrows()):
+                            entry = {
+                                "Season": "Q1 2026",
+                                "Player": row['Player'],
+                                "Rank": i + 1,
+                                "Points": row['Points'],
+                                "Matches": row['Matches'],
+                                "WinRate": row['Win %'],
+                                "Games_won": row['Games Won'],
+                                "GDA": row['Game Diff Avg'],
+                                "cumulative_GD": row['Game Diff Avg'] * row['Matches'],
+                                "Performance_score": row['Points'],
+                                "Clutch_factor": row['Clutch Factor'],
+                                "Consistency_index": row['Consistency Index'],
+                                "profile_image": row['Profile']
+                            }
+                            # Clean up numpy types for JSON serialization
+                            for k, v in entry.items():
+                                if isinstance(v, (np.integer, np.floating)):
+                                    entry[k] = float(v) if isinstance(v, np.floating) else int(v)
+                            entries.append(entry)
+                        
+                        supabase.table(HOF_TABLE).insert(entries).execute()
+                        st.success("Successfully archived Q1 2026 Top 3 to Hall of Fame!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.warning("No ranking data available to archive.")
+                else:
+                    st.error("Incorrect password.")
+            except KeyError:
+                st.error("Admin password not configured in secrets.")
+            except Exception as e:
+                st.error(f"Error archiving: {e}")
+
 
 
 
