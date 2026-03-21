@@ -25,7 +25,6 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from supabase import create_client, Client
 import textwrap
-import base64
 import json
 import streamlit.components.v1 as components
 
@@ -254,9 +253,49 @@ except KeyError:
 PLAYERS_TABLE = "players"
 MATCHES_TABLE = "matches"
 BOOKINGS_TABLE = "bookings"
-#HOF_TABLE = "hall_of_fame"
-hall_of_fame_table_name="hall_of_fame"
+HOF_TABLE = "hall_of_fame"
 AVAILABILITY_TABLE = "availability"
+
+TENNIS_SCORES = (
+    ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7"] +
+    [f"Tie Break 7-{i}" for i in range(6)] + [f"Tie Break {i}-7" for i in range(6)] +
+    [f"Tie Break 10-{i}" for i in range(9)] + [f"Tie Break {i}-10" for i in range(9)] +
+    ["Custom Tie Break", "Custom Super Tie Break"]
+)
+
+KNOWN_COURT_URLS = {
+    "Alvorado 1": "https://maps.google.com/?q=25.041792,55.259258",
+    "Alvorado 2": "https://maps.google.com/?q=25.041792,55.259258",
+    "Palmera 2": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6",
+    "Palmera 4": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6",
+    "Saheel": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8",
+    "Hattan": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7",
+    "MLC Mirador La Colleccion": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6",
+    "Al Mahra": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9",
+    "Mirador": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8",
+    "Reem 1": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7",
+    "Reem 2": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5",
+    "Reem 3": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39",
+    "Alma": "https://maps.app.goo.gl/BZNfScABbzb3osJ18",
+    "Mira 2": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9",
+    "Mira 4": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A",
+    "Mira 5 A": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
+    "Mira 5 B": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
+    "Mira Oasis 1": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8",
+    "Mira Oasis 2": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9",
+    "Mira Oasis 3 A": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
+    "Mira Oasis 3 B": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
+    "Mira Oasis 3 C": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8",
+    "Mudon Main courts": "https://maps.app.goo.gl/AZ8WJ1mnnwMgNxhz7?g_st=aw",
+    "Mudon Arabella": "https://maps.app.goo.gl/iudbB5YqrGKyHNqM6?g_st=aw",
+    "Mudon Arabella 3": "https://maps.app.goo.gl/o46ERJCq8LKg1Cz59?g_st=aw",
+    "AR2 Rosa": "https://maps.app.goo.gl/at1EKgatfMmvAg7g8?g_st=aw",
+    "AR2 Palma": "https://maps.app.goo.gl/oKxXvbXKYe3JgJco8?g_st=aw",
+    "AR 2 Fitness First": "https://maps.app.goo.gl/iZGipHv8KdfW82dW9?g_st=aw",
+    "Dubai Hills Maple": "https://maps.app.goo.gl/rypmwnSGbGeknykv6?g_st=aw",
+}
+
+COURT_NAMES = sorted(list(KNOWN_COURT_URLS.keys()))
 
 # --- Session State Init ---
 if 'players_df' not in st.session_state:
@@ -284,7 +323,8 @@ def fetch_data(table_name):
 def load_players():
     df = fetch_data(PLAYERS_TABLE)
     if not df.empty:
-        for col in ["name", "profile_image_url", "birthday", "gender", "base_elo"]:
+        cols = ["name", "profile_image_url", "birthday", "gender", "base_elo"]
+        for col in cols:
             if col not in df.columns: 
                 df[col] = 1200.0 if col == "base_elo" else ""
         df['name'] = df['name'].str.upper().str.strip()
@@ -423,21 +463,7 @@ def upload_image_to_github(file, file_name, image_type="match"):
 # --- Business Logic ---
 
 def tennis_scores():
-    # Regular set scores (excluding 7-6/6-7 because they MUST have tiebreak points)
-    scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7"]
-    
-    # Valid Tie Break scores (winner reaches 7, loser <= 5)
-    for i in range(6):
-        scores.append(f"Tie Break 7-{i}")
-        scores.append(f"Tie Break {i}-7")
-    
-    # Valid Super Tie Break scores (winner reaches 10, loser <= 8)
-    for i in range(9):
-        scores.append(f"Tie Break 10-{i}")
-        scores.append(f"Tie Break {i}-10")
-        
-    scores.extend(["Custom Tie Break", "Custom Super Tie Break"])
-    return scores
+    return TENNIS_SCORES
 
 def validate_custom_score(score_str, score_type):
     """
@@ -605,71 +631,49 @@ def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
 
 @st.cache_data(show_spinner=False)
 def calculate_rankings(matches_to_rank, players_df_input):
-    # --- 1. Initialization ---
     scores = defaultdict(float)
     stats = defaultdict(get_player_stats_template)
     partner_stats = defaultdict(get_partner_stats_template)
     current_streaks = defaultdict(int)
     
-    # Elo Rating Initialization from Players Table (Persistent across seasons)
-    base_elo_map = {}
-    if not players_df_input.empty:
-        # Ensure we have a clean name -> elo map
-        for _, p_row in players_df_input.iterrows():
-            p_name = str(p_row['name']).upper().strip()
-            p_elo = p_row.get('base_elo', 1200.0)
-            base_elo_map[p_name] = float(p_elo)
-    
+    base_elo_map = {str(r.name).upper().strip(): float(r.base_elo) for r in players_df_input.itertuples()} if not players_df_input.empty else {}
     elo_ratings = defaultdict(lambda: 1200.0, base_elo_map)
     last_elo_changes = defaultdict(float)
     K_FACTOR = 32 
     
     perf_breakdown = defaultdict(lambda: {'singles_w': 0, 'singles_m': 0, 'doubles_w': 0, 'doubles_m': 0})
     gender_map = pd.Series(players_df_input.gender.values, index=players_df_input.name).to_dict() if not players_df_input.empty else {}
+    img_map = pd.Series(players_df_input.profile_image_url.values, index=players_df_input.name).to_dict() if not players_df_input.empty else {}
+
+    re_digits = re.compile(r'\d+')
 
     if not matches_to_rank.empty:
         matches_to_rank = matches_to_rank.sort_values('date')
 
-    # --- 2. Main Match Processing Loop ---
     for row in matches_to_rank.itertuples(index=False):
-        match_type = row.match_type
-        
-        # Identify players (Excluding Visitors)
-        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
-        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip() and str(p).upper() != "VISITOR"]
-        
-        if not t1 or not t2: 
-            continue
+        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).strip().upper() != "VISITOR"]
+        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).strip().upper() != "VISITOR"]
+        if not t1 or not t2: continue
 
-        # Automated Mixed Detection (Your Original Logic)
         is_mixed = False
-        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
-            g1 = sorted([gender_map.get(p, 'U') for p in t1]) 
-            g2 = sorted([gender_map.get(p, 'U') for p in t2])
-            if g1 == ['F', 'M'] and g2 == ['F', 'M']:
+        if row.match_type in ['Doubles', 'Mixed Doubles'] and len(t1) == 2 and len(t2) == 2:
+            if sorted([gender_map.get(p, 'U') for p in t1]) == ['F', 'M'] and sorted([gender_map.get(p, 'U') for p in t2]) == ['F', 'M']:
                 is_mixed = True
 
-        match_gd = 0
-        is_clutch = False
-        sets = [row.set1, row.set2, row.set3]
-        winner_code = row.winner
-
-        # Game and Set Logic
-        for s in sets:
+        match_gd, is_clutch = 0, bool(row.set3 and str(row.set3).strip() and str(row.set3).lower() != 'nan')
+        
+        for s in [row.set1, row.set2, row.set3]:
             if not s or str(s).lower() == 'nan': continue
             s_str = str(s)
             t1_g, t2_g = 0, 0
-            
             if "Tie Break" in s_str:
                 is_clutch = True
-                nums = [int(x) for x in re.findall(r'\d+', s_str)]
-                if len(nums) >= 2:
-                    if nums[0] > nums[1]: t1_g, t2_g = 7, 6
-                    else: t1_g, t2_g = 6, 7
+                nums = [int(x) for x in re_digits.findall(s_str)]
+                if len(nums) >= 2: t1_g, t2_g = (7, 6) if nums[0] > nums[1] else (6, 7)
             elif '-' in s_str:
                 try:
-                    parts = s_str.split('-')
-                    t1_g, t2_g = int(parts[0]), int(parts[1])
+                    p1, p2 = map(int, s_str.split('-'))
+                    t1_g, t2_g = p1, p2
                 except: continue
             
             diff = t1_g - t2_g
@@ -683,222 +687,122 @@ def calculate_rankings(matches_to_rank, players_df_input):
                 stats[p]['gd_sum'] -= diff
                 stats[p]['gd_list'].append(-diff)
 
-        if row.set3 and str(row.set3).strip() and str(row.set3).lower() != 'nan': 
-            is_clutch = True
-        
-        # --- 3. Update Traditional Metrics & Elo ---
-        w_points = 3 if is_mixed else 2
-        
-        # Elo Helper
-        def get_elo_expected(ra, rb):
-            return 1 / (1 + 10 ** ((rb - ra) / 400))
-
         t1_elo = sum(elo_ratings[p] for p in t1) / len(t1)
         t2_elo = sum(elo_ratings[p] for p in t2) / len(t2)
-
-        # --- New Stat Logic: Giant Killer, Comeback ---
-        is_giant_kill = False
-        if winner_code == "Team 1" and (t2_elo - t1_elo) >= 100: is_giant_kill = True
-        elif winner_code == "Team 2" and (t1_elo - t2_elo) >= 100: is_giant_kill = True
-
+        winner_code = row.winner
+        is_giant_kill = (winner_code == "Team 1" and (t2_elo - t1_elo) >= 100) or (winner_code == "Team 2" and (t1_elo - t2_elo) >= 100)
+        
         is_comeback = False
-        s1 = str(row.set1)
-        if '-' in s1:
+        if '-' in str(row.set1):
             try:
-                s1_p1, s1_p2 = map(int, s1.split('-'))
-                if winner_code == "Team 1" and s1_p2 > s1_p1: is_comeback = True
-                elif winner_code == "Team 2" and s1_p1 > s1_p2: is_comeback = True
+                s1_p1, s1_p2 = map(int, str(row.set1).split('-'))
+                is_comeback = (winner_code == "Team 1" and s1_p2 > s1_p1) or (winner_code == "Team 2" and s1_p1 > s1_p2)
             except: pass
 
-        def update_player_metrics(players, outcome, opp_elo_avg, own_elo_avg, is_winner_team):
-            # 1. Elo Update
-            actual_score = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
-            expected = get_elo_expected(own_elo_avg, opp_elo_avg)
-            elo_change = K_FACTOR * (actual_score - expected)
-            
+        def update_metrics(players, outcome, opp_elo, own_elo, is_winner):
+            actual = 1.0 if outcome == 'win' else (0.5 if outcome == 'tie' else 0.0)
+            elo_change = K_FACTOR * (actual - (1 / (1 + 10 ** ((opp_elo - own_elo) / 400))))
             for p in players:
                 elo_ratings[p] += elo_change
-                # NEW: Track the change for the UI
-                if outcome == 'loss':
-                    last_elo_changes[p] = -abs(round(elo_change))
-                elif outcome == 'tie':
-                    last_elo_changes[p] = 0
-                else:
-                    last_elo_changes[p] = abs(round(elo_change))
-
-                # 2. Standard Stats (Your Original Logic)
+                last_elo_changes[p] = round(elo_change) if outcome != 'tie' else 0
                 stats[p]['matches'] += 1
                 if is_clutch: stats[p]['clutch_matches'] += 1
-                
-                # Last match date
                 stats[p]['last_match_date'] = row.date
-
-                # Sets won tracking & Tie Break wins
                 for s_val in [row.set1, row.set2, row.set3]:
                     if not s_val: continue
-                    s_str = str(s_val)
                     try:
-                        is_this_set_tb = "Tie Break" in s_str
-                        if is_this_set_tb:
-                            nums = [int(x) for x in re.findall(r'\d+', s_str)]
-                            if len(nums) >= 2:
-                                if is_winner_team and nums[0] > nums[1]: stats[p]['tb_wins'] += 1
-                                elif not is_winner_team and nums[1] > nums[0]: stats[p]['tb_wins'] += 1
-
-                        pts = str(s_val).split('-')
-                        if is_winner_team and int(pts[0]) > int(pts[1]): stats[p]['sets_won'] += 1
-                        elif not is_winner_team and int(pts[1]) > int(pts[0]): stats[p]['sets_won'] += 1
+                        nums = [int(x) for x in re_digits.findall(str(s_val))]
+                        if len(nums) >= 2:
+                            if "Tie Break" in str(s_val) and ((is_winner and nums[0] > nums[1]) or (not is_winner and nums[1] > nums[0])): stats[p]['tb_wins'] += 1
+                            if (is_winner and nums[0] > nums[1]) or (not is_winner and nums[1] > nums[0]): stats[p]['sets_won'] += 1
                     except: pass
-
-                # Daily matches
                 stats[p]['daily_matches'][str(row.date)] += 1
-
-                if is_winner_team and is_giant_kill: stats[p]['giant_kills'] += 1
-                if is_winner_team and is_comeback: stats[p]['comebacks'] += 1
-
-                if match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
+                if is_winner:
+                    if is_giant_kill: stats[p]['giant_kills'] += 1
+                    if is_comeback: stats[p]['comebacks'] += 1
+                if row.match_type == 'Singles': perf_breakdown[p]['singles_m'] += 1
                 else: perf_breakdown[p]['doubles_m'] += 1
-
                 if outcome == 'win':
-                    scores[p] += w_points
+                    scores[p] += (3 if is_mixed else 2)
                     stats[p]['wins'] += 1
                     if is_clutch: stats[p]['clutch_wins'] += 1
-                    if match_type == 'Singles': perf_breakdown[p]['singles_w'] += 1
+                    if row.match_type == 'Singles': perf_breakdown[p]['singles_w'] += 1
                     else: perf_breakdown[p]['doubles_w'] += 1
-                    if current_streaks[p] < 0: current_streaks[p] = 0
-                    current_streaks[p] += 1
+                    current_streaks[p] = max(0, current_streaks[p]) + 1
                 elif outcome == 'loss':
-                    scores[p] += 1 # Participation Point
+                    scores[p] += 1
                     stats[p]['losses'] += 1
-                    if current_streaks[p] > 0: current_streaks[p] = 0
-                    current_streaks[p] -= 1
-                else: # Tie
+                    current_streaks[p] = min(0, current_streaks[p]) - 1
+                else:
                     scores[p] += 1.5
                     current_streaks[p] = 0
 
-        # Run updates based on winner
         if winner_code == "Team 1":
-            update_player_metrics(t1, 'win', t2_elo, t1_elo, True)
-            update_player_metrics(t2, 'loss', t1_elo, t2_elo, False)
+            update_metrics(t1, 'win', t2_elo, t1_elo, True)
+            update_metrics(t2, 'loss', t1_elo, t2_elo, False)
         elif winner_code == "Team 2":
-            update_player_metrics(t2, 'win', t1_elo, t2_elo, True)
-            update_player_metrics(t1, 'loss', t2_elo, t1_elo, False)
+            update_metrics(t2, 'win', t1_elo, t2_elo, True)
+            update_metrics(t1, 'loss', t2_elo, t1_elo, False)
         else:
-            update_player_metrics(t1, 'tie', t2_elo, t1_elo, False)
-            update_player_metrics(t2, 'tie', t1_elo, t2_elo, False)
+            update_metrics(t1, 'tie', t2_elo, t1_elo, False)
+            update_metrics(t2, 'tie', t1_elo, t2_elo, False)
 
-        # Partner Stats (Original Logic)
-        if match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
+        if row.match_type in ['Doubles', 'Mixed Doubles'] and len(t1) >= 2 and len(t2) >= 2:
             for team, code, gd_val in [(t1, 1, match_gd), (t2, 2, -match_gd)]:
-                p1, p2 = team[0], team[1]
-                for a, b in [(p1, p2), (p2, p1)]:
-                    ps = partner_stats[a][b]
-                    ps['matches'] += 1
-                    ps['game_diff_sum'] += gd_val
-                    if winner_code == "Tie": ps['ties'] += 1
-                    elif (winner_code == "Team 1" and code == 1) or (winner_code == "Team 2" and code == 2):
-                        ps['wins'] += 1
-                    else: ps['losses'] += 1
+                for a, b in combinations(team, 2):
+                    for x, y in [(a, b), (b, a)]:
+                        ps = partner_stats[x][y]
+                        ps['matches'] += 1
+                        ps['game_diff_sum'] += gd_val
+                        if winner_code == "Tie": ps['ties'] += 1
+                        elif (winner_code == f"Team {code}"): ps['wins'] += 1
+                        else: ps['losses'] += 1
 
-    # --- 4. Ranking Data Aggregation ---
     rank_data = []
-    img_map = pd.Series(players_df_input.profile_image_url.values, index=players_df_input.name).to_dict() if not players_df_input.empty else {}
-    
     for p, s in stats.items():
-        m_played = s['matches']
-        if m_played == 0: continue
-        
+        m = s['matches']
+        if m == 0: continue
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
         consistency = np.std(s['gd_list']) if s['gd_list'] else 0
-        
         pb = perf_breakdown[p]
-        s_perf = (pb['singles_w'] / pb['singles_m'] * 100) if pb['singles_m'] > 0 else 0
-        d_perf = (pb['doubles_w'] / pb['doubles_m'] * 100) if pb['doubles_m'] > 0 else 0
-
-        # Recent Trend
-        p_gd_list = s['gd_list'][-5:]
-        trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else "dot-l"}"></span>' for gd in p_gd_list])
-
+        trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else "dot-l"}"></span>' for gd in s['gd_list'][-5:]])
         badges = []
         if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Clutch")
-        if consistency < 2.5 and m_played >= 5: badges.append("📉 Steady")
+        if consistency < 2.5 and m >= 5: badges.append("📉 Steady")
         if current_streaks[p] >= 3: badges.append("🔥 Hot")
-        
-        # New Badge Assignments
         if s.get('giant_kills', 0) > 0: badges.append("🛡️ Giant Killer")
         if s.get('comebacks', 0) > 0: badges.append("🔄 Comeback Kid")
         if any(v >= 3 for v in s['daily_matches'].values()): badges.append("⛓️ Iron Player")
         if s.get('sets_won', 0) >= 20: badges.append("🏆 Set Collector")
         if s.get('tb_wins', 0) >= 3: badges.append("🎯 Sniper")
-        if m_played >= 50: badges.append("🎖️ Veteran")
-        if m_played >= 100: badges.append("💯 Century Club")
-        
-        # Participation Badge (Played in last 7 days)
+        if m >= 50: badges.append("🎖️ Veteran")
+        if m >= 100: badges.append("💯 Century Club")
         try:
-            l_date = s.get('last_match_date')
-            if l_date:
-                last_dt = pd.to_datetime(l_date)
-                if (datetime.now() - last_dt).days <= 7:
-                    badges.append("🌱 Participation")
+            if s.get('last_match_date') and (datetime.now() - pd.to_datetime(s['last_match_date'])).days <= 7: badges.append("🌱 Participation")
         except: pass
         
-        # --- Enhanced UTR Calculation ---
-        # 1. Base Linear Mapping (Calibrated for Club play)
-        # Formula: (Elo - 600) / 140. Hits ~6.0 at 1440 Elo.
         p_elo = elo_ratings[p]
-        base_utr = max(1.0, (p_elo - 600) / 140)
-        
-        # 2. Match Count Weighting (Confidence Factor)
-        # New players start anchored at 1.0. Reliability reaches 100% after 10 matches.
-        reliability = min(1.0, m_played / 10.0)
-        
-        # 3. Final UTR Adjustment
-        # Weighted average between a "novice" baseline (1.0) and their Elo-based potential.
-        calculated_utr = (reliability * base_utr) + ((1 - reliability) * 1.0)
-        
-        # 4. Formatting
-        if m_played < 3:
-            p_utr_display = f"{round(calculated_utr, 2)} (P)"
-        else:
-            p_utr_display = round(calculated_utr, 2)
+        calculated_utr = (min(1.0, m / 10.0) * max(1.0, (p_elo - 600) / 140)) + ((1 - min(1.0, m / 10.0)) * 1.0)
         
         rank_data.append({
-            "Player": p, 
-            "Points": scores[p], 
-            "Elo": round(p_elo),
-            "UTR": p_utr_display,
-            "Last Change": last_elo_changes.get(p, 0),
-            "Win %": round((s['wins']/m_played)*100, 1),
-            "Recent Trend": trend_html,
-            "Matches": m_played, 
-            "Wins": s['wins'], 
-            "Losses": s['losses'],
-            "Games Won": s['games_won'], 
-            "Game Diff Avg": round(s['gd_sum']/m_played, 2),
-            "Clutch Factor": round(clutch_pct, 1), 
-            "Consistency Index": round(consistency, 2),
-            "Singles Perf": round(s_perf, 1), 
-            "Doubles Perf": round(d_perf, 1),
-            "Badges": badges, 
-            "Profile": img_map.get(p, "")
+            "Player": p, "Points": scores[p], "Elo": round(p_elo),
+            "UTR": f"{round(calculated_utr, 2)} (P)" if m < 3 else round(calculated_utr, 2),
+            "Last Change": last_elo_changes.get(p, 0), "Win %": round((s['wins']/m)*100, 1),
+            "Recent Trend": trend_html, "Matches": m, "Wins": s['wins'], "Losses": s['losses'],
+            "Games Won": s['games_won'], "Game Diff Avg": round(s['gd_sum']/m, 2),
+            "Clutch Factor": round(clutch_pct, 1), "Consistency Index": round(consistency, 2),
+            "Singles Perf": round((pb['singles_w']/pb['singles_m']*100) if pb['singles_m']>0 else 0, 1),
+            "Doubles Perf": round((pb['doubles_w']/pb['doubles_m']*100) if pb['doubles_m']>0 else 0, 1),
+            "Badges": badges, "Profile": img_map.get(p, "")
         })
         
     df = pd.DataFrame(rank_data)
-    
     if not df.empty:
-        df = df.sort_values(
-            by=["Points", "Win %", "Elo", "Game Diff Avg", "Player"], 
-            ascending=[False, False, False, False, True] 
-        ).reset_index(drop=True)
+        df = df.sort_values(["Points", "Win %", "Elo", "Game Diff Avg", "Player"], ascending=[False, False, False, False, True]).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
-        
-        # Additional Ranks for Player Profile
         df["Points Rank"] = df["Points"].rank(ascending=False, method="min").astype(int)
         df["Elo Rank"] = df["Elo"].rank(ascending=False, method="min").astype(int)
-        
-        # Award #1 Rank Badge
-        if not df.empty:
-            df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 Court Dominator"]
+        df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 Court Dominator"]
         
     return df, partner_stats
 
@@ -1083,27 +987,25 @@ def detect_match_category(row, gender_map):
     Automated detection: 
     Mixed Doubles = (M+F) vs (M+F) with NO Visitors.
     """
-    if row.match_type == "Singles":
+    m_type = getattr(row, 'match_type', 'Doubles')
+    if m_type == "Singles":
         return "Singles"
     
-    # Identify players
-    p1, p2 = str(row.team1_player1), str(row.team1_player2)
-    p3, p4 = str(row.team2_player1), str(row.team2_player2)
+    # Identify players safely
+    p1 = str(getattr(row, 'team1_player1', '')).upper()
+    p2 = str(getattr(row, 'team1_player2', '')).upper()
+    p3 = str(getattr(row, 'team2_player1', '')).upper()
+    p4 = str(getattr(row, 'team2_player2', '')).upper()
     
-    # 1. Check for Visitors (Manual override to standard Doubles)
-    all_players = [p1.upper(), p2.upper(), p3.upper(), p4.upper()]
-    if "VISITOR" in all_players or "NONE" in all_players or "" in all_players:
+    # Check for Visitors or empty slots
+    if any(p in ["VISITOR", "NONE", "", "NAN"] for p in [p1, p2, p3, p4]):
         return "Doubles"
 
-    # 2. Get Genders from the players_rows.csv map
-    g1, g2 = gender_map.get(p1), gender_map.get(p2)
-    g3, g4 = gender_map.get(p3), gender_map.get(p4)
+    # Get Genders
+    g1, g2 = gender_map.get(getattr(row, 'team1_player1', '')), gender_map.get(getattr(row, 'team1_player2', ''))
+    g3, g4 = gender_map.get(getattr(row, 'team2_player1', '')), gender_map.get(getattr(row, 'team2_player2', ''))
 
-    # 3. Check for Mixed (One M, One F per team)
-    team1_is_mixed = set([g1, g2]) == {'M', 'F'}
-    team2_is_mixed = set([g3, g4]) == {'M', 'F'}
-
-    if team1_is_mixed and team2_is_mixed:
+    if set([g1, g2]) == {'M', 'F'} and set([g3, g4]) == {'M', 'F'}:
         return "Mixed Doubles"
     
     return "Doubles"
@@ -1296,7 +1198,7 @@ def create_full_backup_zip():
             "players": PLAYERS_TABLE,
             "matches": MATCHES_TABLE,
             "bookings": BOOKINGS_TABLE,
-            "hall_of_fame": hall_of_fame_table_name,
+            "hall_of_fame": HOF_TABLE,
             "availability": AVAILABILITY_TABLE
         }
         
@@ -1369,7 +1271,7 @@ def display_hall_of_fame():
         return datetime(1900, 1, 1)
 
     try:
-        response = supabase.table(hall_of_fame_table_name).select("*").order("Season", desc=True).order("Rank", desc=False).execute()
+        response = supabase.table(HOF_TABLE).select("*").order("Season", desc=True).order("Rank", desc=False).execute()
         hof_data = response.data
 
         if not hof_data:
@@ -1467,6 +1369,9 @@ def display_hall_of_fame():
 load_players()
 load_matches()
 load_bookings()
+
+ALL_PLAYERS = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
+PERMANENT_PLAYERS = [p for p in ALL_PLAYERS if p != "VISITOR"]
 
 # --- Global Data Pre-calculation ---
 # Calculate rankings once so they are available for all tabs
@@ -1768,27 +1673,6 @@ with tabs[1]:
     # 2. Gender Mapping for Detection
     gender_map = dict(zip(st.session_state.players_df['name'], st.session_state.players_df['gender']))
     
-    def auto_detect_category(row):
-        m_type = getattr(row, 'match_type', 'Doubles')
-        if m_type == "Singles": return "Singles"
-
-        # Access players safely (works for NamedTuple and Series)
-        p1 = str(getattr(row, 'team1_player1', ''))
-        p2 = str(getattr(row, 'team1_player2', ''))
-        p3 = str(getattr(row, 'team2_player1', ''))
-        p4 = str(getattr(row, 'team2_player2', ''))
-
-        p_list = [p.upper() for p in [p1, p2, p3, p4]]
-        # Check for Visitors or empty slots
-        if "VISITOR" in p_list or "" in p_list or "NONE" in p_list or "NAN" in p_list:
-            return "Doubles"
-
-        g1 = sorted([gender_map.get(p1, 'U'), gender_map.get(p2, 'U')])
-        g2 = sorted([gender_map.get(p3, 'U'), gender_map.get(p4, 'U')])
-        if g1 == ['F', 'M'] and g2 == ['F', 'M']:
-            return "Mixed Doubles"
-        return "Doubles"
-
     def get_match_verb(row):
         t1_total, t2_total, sets_count = 0, 0, 0
         for s in [row.set1, row.set2, row.set3]:
@@ -1815,7 +1699,7 @@ with tabs[1]:
         elif gda <= 7.0:
             return random.choice(["demolished", "dismantled", "crushed", "trounced", "smoked"])
         else:
-            return random.choice(["annihilated", "obliterated", "clobbered", "whitewashed","deadpooled","skunked"])
+            return random.choice(["annihilated", "obliterated", "clobbered", "whitewashed", "skunked","bet the hell out of","deadpooled"])
 
 
     # --- Match Forms ---
@@ -1831,7 +1715,6 @@ with tabs[1]:
                 st.stop()
             
             suffix = st.session_state.form_key_suffix
-            permanent_names = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"])
             
             # 2. Match Type Selection
             m_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, horizontal=True, key=f"match_type_{suffix}")
@@ -1841,7 +1724,7 @@ with tabs[1]:
             col1, col2 = st.columns(2)
             if m_type == "Doubles":
                 # Include Visitor for Doubles
-                doubles_options = [""] + permanent_names + ["Visitor"]
+                doubles_options = [""] + ALL_PLAYERS
                 with col1:
                     st.markdown("**Team 1**")
                     t1p1 = st.selectbox("Player 1 *", doubles_options, key=f"d_t1p1_{suffix}")
@@ -1852,7 +1735,7 @@ with tabs[1]:
                     t2p2 = st.selectbox("Player 2 *", doubles_options, key=f"d_t2p2_{suffix}")
             else:
                 # No Visitor for Singles
-                singles_options = [""] + permanent_names
+                singles_options = [""] + PERMANENT_PLAYERS
                 with col1:
                     st.markdown("**Player 1 (Team 1)**")
                     t1p1 = st.selectbox("Select Name *", singles_options, key=f"s_t1p1_{suffix}")
@@ -2022,7 +1905,7 @@ with tabs[1]:
             st.info(f"No matches found for {selected_player}.")
         else:
             for row in m_hist.itertuples():
-                display_type = auto_detect_category(row)
+                display_type = detect_match_category(row, gender_map)
                 t1_total, t2_total, sets_count = 0, 0, 0
                 display_scores = []
                 
@@ -2116,25 +1999,17 @@ with tabs[1]:
                                     index=["Doubles", "Mixed Doubles", "Singles"].index(match_data['match_type']) if match_data['match_type'] in ["Doubles", "Mixed Doubles", "Singles"] else 0)
                 
                 col1, col2 = st.columns(2)
-                # Ensure all players in match_data are in players_list to avoid .index() errors
-                players_list = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
-                match_players = [match_data.get('team1_player1'), match_data.get('team1_player2'), 
-                               match_data.get('team2_player1'), match_data.get('team2_player2')]
-                for p in match_players:
-                    if pd.notnull(p) and str(p).strip() and p not in players_list:
-                        players_list.append(p)
-                players_list.sort()
-                
+                # Use ALL_PLAYERS for dropdowns
                 with col1:
-                    et1p1 = st.selectbox("Team 1 - P1", players_list, 
-                                        index=players_list.index(match_data['team1_player1']) if pd.notnull(match_data['team1_player1']) and match_data['team1_player1'] in players_list else 0)
-                    et1p2 = st.selectbox("Team 1 - P2", [""] + players_list, 
-                                        index=(players_list.index(match_data['team1_player2']) + 1) if pd.notnull(match_data['team1_player2']) and match_data['team1_player2'] in players_list else 0)
+                    et1p1 = st.selectbox("Team 1 - P1", ALL_PLAYERS, 
+                                        index=ALL_PLAYERS.index(match_data['team1_player1']) if pd.notnull(match_data['team1_player1']) and match_data['team1_player1'] in ALL_PLAYERS else 0)
+                    et1p2 = st.selectbox("Team 1 - P2", [""] + ALL_PLAYERS, 
+                                        index=(ALL_PLAYERS.index(match_data['team1_player2']) + 1) if pd.notnull(match_data['team1_player2']) and match_data['team1_player2'] in ALL_PLAYERS else 0)
                 with col2:
-                    et2p1 = st.selectbox("Team 2 - P1", players_list, 
-                                        index=players_list.index(match_data['team2_player1']) if pd.notnull(match_data['team2_player1']) and match_data['team2_player1'] in players_list else 0)
-                    et2p2 = st.selectbox("Team 2 - P2", [""] + players_list, 
-                                        index=(players_list.index(match_data['team2_player2']) + 1) if pd.notnull(match_data['team2_player2']) and match_data['team2_player2'] in players_list else 0)
+                    et2p1 = st.selectbox("Team 2 - P1", ALL_PLAYERS, 
+                                        index=ALL_PLAYERS.index(match_data['team2_player1']) if pd.notnull(match_data['team2_player1']) and match_data['team2_player1'] in ALL_PLAYERS else 0)
+                    et2p2 = st.selectbox("Team 2 - P2", [""] + ALL_PLAYERS, 
+                                        index=(ALL_PLAYERS.index(match_data['team2_player2']) + 1) if pd.notnull(match_data['team2_player2']) and match_data['team2_player2'] in ALL_PLAYERS else 0)
                 
                 score_opts = [""] + tennis_scores()
                 c1, c2, c3 = st.columns(3)
@@ -2355,11 +2230,10 @@ with tabs[2]:
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
         if 'players_df' in st.session_state and not st.session_state.players_df.empty:
-            players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
-            if not players:
+            if not PERMANENT_PLAYERS:
                 st.info("No players available. Add a new player to begin.")
             else:
-                selected_player = st.selectbox("Select Player", [""] + players, key="manage_player_select")
+                selected_player = st.selectbox("Select Player", [""] + PERMANENT_PLAYERS, key="manage_player_select")
                 if selected_player:
                     player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player].iloc[0]
                     current_image = player_data.get("profile_image_url", "")
@@ -2582,52 +2456,10 @@ with tabs[3]:
     st.header("Court Locations")
     court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"
     
-    known_urls = {
-        "Alvorado 1": "https://maps.google.com/?q=25.041792,55.259258",
-        "Alvorado 2": "https://maps.google.com/?q=25.041792,55.259258",
-        "Palmera 2": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6",
-        "Palmera 4": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6",
-        "Saheel": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8",
-        "Hattan": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7",
-        "MLC Mirador La Colleccion": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6",
-        "Al Mahra": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9",
-        "Mirador": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8",
-        "Reem 1": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7",
-        "Reem 2": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5",
-        "Reem 3": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39",
-        "Alma": "https://maps.app.goo.gl/BZNfScABbzb3osJ18",
-        "Mira 2": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9",
-        "Mira 4": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A",
-        "Mira 5 A": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
-        "Mira 5 B": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6",
-        "Mira Oasis 1": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8",
-        "Mira Oasis 2": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9",
-        "Mira Oasis 3 A": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
-        "Mira Oasis 3 B": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9",
-        "Mira Oasis 3 C": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8",
-        "Mudon Main courts": "https://maps.app.goo.gl/AZ8WJ1mnnwMgNxhz7?g_st=aw",
-        "Mudon Arabella": "https://maps.app.goo.gl/iudbB5YqrGKyHNqM6?g_st=aw",
-        "Mudon Arabella 3": "https://maps.app.goo.gl/o46ERJCq8LKg1Cz59?g_st=aw",
-        "AR2 Rosa": "https://maps.app.goo.gl/at1EKgatfMmvAg7g8?g_st=aw",
-        "AR2 Palma": "https://maps.app.goo.gl/oKxXvbXKYe3JgJco8?g_st=aw",
-        "AR 2 Fitness First": "https://maps.app.goo.gl/iZGipHv8KdfW82dW9?g_st=aw",
-        "Dubai Hills Maple": "https://maps.app.goo.gl/rypmwnSGbGeknykv6?g_st=aw",
-    }
+    ar_courts, mira_courts, other_courts = [], [], []
     
-    court_names = [
-        "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
-        "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
-        "Reem 3", "Alma", "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B", "Mira Oasis 1",
-        "Mira Oasis 2", "Mira Oasis 3 A","Mira Oasis 3 B", "Mira Oasis 3 C","Mudon Main courts",
-        "Mudon Arabella","Mudon Arabella 3","AR2 Rosa","AR2 Palma","AR 2 Fitness First","Dubai Hills Maple"
-    ]
-    
-    ar_courts = []
-    mira_courts = []
-    other_courts = []
-    
-    for name in court_names:
-        url = known_urls.get(name, f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(name + ' tennis court Dubai')}")
+    for name in COURT_NAMES:
+        url = KNOWN_COURT_URLS.get(name)
         item = {"name": name, "url": url}
         if any(x in name for x in ["Mira", "Mira Oasis"]):
             mira_courts.append(item)
@@ -2638,10 +2470,7 @@ with tabs[3]:
     
     def display_courts(section_title, courts_list):
         if not courts_list: return
-        # Create responsive grid: 3 cols if plenty of items, else 2 (or just stick to 3 for consistency)
         num_cols = 3 
-        
-        # Batch items into rows
         for i in range(0, len(courts_list), num_cols):
             cols = st.columns(num_cols)
             batch = courts_list[i:i+num_cols]
@@ -2671,21 +2500,15 @@ with tabs[3]:
 
 # --- Tab 5: Bookings ---
 with tabs[4]:
-
-    available_players = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
-    
-
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
-        
-        available_players = sorted(st.session_state.players_df['name'].tolist()) if not st.session_state.players_df.empty else []
         match_type = st.radio("Select Match Type", ["Doubles", "Singles"], horizontal=True)
 
         if match_type == "Doubles":
-            t1p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="matchup_doubles_t1p1")
-            t1p2 = st.selectbox("Team 1 - Player 2", [""] + available_players, key="matchup_doubles_t1p2")
-            t2p1 = st.selectbox("Team 2 - Player 1", [""] + available_players, key="matchup_doubles_t2p1")
-            t2p2 = st.selectbox("Team 2 - Player 2", [""] + available_players, key="matchup_doubles_t2p2")
+            t1p1 = st.selectbox("Team 1 - Player 1", [""] + ALL_PLAYERS, key="matchup_doubles_t1p1")
+            t1p2 = st.selectbox("Team 1 - Player 2", [""] + ALL_PLAYERS, key="matchup_doubles_t1p2")
+            t2p1 = st.selectbox("Team 2 - Player 1", [""] + ALL_PLAYERS, key="matchup_doubles_t2p1")
+            t2p2 = st.selectbox("Team 2 - Player 2", [""] + ALL_PLAYERS, key="matchup_doubles_t2p2")
 
             if st.button("Match up", key="btn_matchup_doubles"):
                 st.subheader("Match Odds")
@@ -2704,8 +2527,8 @@ with tabs[4]:
                 else:
                     st.info("No odds available (one or more players have no doubles match history).")
         else:  # Singles
-            p1 = st.selectbox("Player 1", [""] + available_players, key="matchup_singles_p1")
-            p2 = st.selectbox("Player 2", [""] + available_players, key="matchup_singles_p2")
+            p1 = st.selectbox("Player 1", [""] + PERMANENT_PLAYERS, key="matchup_singles_p1")
+            p2 = st.selectbox("Player 2", [""] + PERMANENT_PLAYERS, key="matchup_singles_p2")
 
             if st.button("Match up", key="btn_matchup_singles"):
                 st.subheader("Match Odds")
@@ -2727,35 +2550,34 @@ with tabs[4]:
 
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
         st.subheader("Add New Booking")
-        match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
+        suffix = st.session_state.form_key_suffix
+        match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{suffix}")
         
-        with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
-            date = st.date_input("Booking Date *", key=f"new_booking_date_{st.session_state.form_key_suffix}")
-            hours = []
-            hours.append(datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:00 AM
-            hours.append(datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 6:30 AM
-            hours.append(datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0'))  # 7:30 AM
-            for h in range(7, 22):  # From 7 AM to 9 PM
+        with st.form(key=f"add_booking_form_{suffix}"):
+            date = st.date_input("Booking Date *", key=f"new_booking_date_{suffix}")
+            hours = [datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip('0'),
+                     datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip('0'),
+                     datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip('0')]
+            for h in range(7, 22):
                 hours.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip('0'))
-            time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{st.session_state.form_key_suffix}")
+            time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{suffix}")
             
             if match_type == "Doubles":
                 col1, col2 = st.columns(2)
                 with col1:
-                    p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"new_booking_t1p1_{st.session_state.form_key_suffix}")
-                    p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"new_booking_t1p2_{st.session_state.form_key_suffix}")
+                    p1 = st.selectbox("Player 1 (optional)", [""] + ALL_PLAYERS, key=f"new_booking_t1p1_{suffix}")
+                    p2 = st.selectbox("Player 2 (optional)", [""] + ALL_PLAYERS, key=f"new_booking_t1p2_{suffix}")
                 with col2:
-                    p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"new_booking_t2p1_{st.session_state.form_key_suffix}")
-                    p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"new_booking_t2p2_{st.session_state.form_key_suffix}")
+                    p3 = st.selectbox("Player 3 (optional)", [""] + ALL_PLAYERS, key=f"new_booking_t2p1_{suffix}")
+                    p4 = st.selectbox("Player 4 (optional)", [""] + ALL_PLAYERS, key=f"new_booking_t2p2_{suffix}")
             else:
-                p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"new_booking_s1p1_{st.session_state.form_key_suffix}")
-                p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"new_booking_s1p2_{st.session_state.form_key_suffix}")
-                p2 = ""
-                p4 = ""
+                p1 = st.selectbox("Player 1 (optional)", [""] + PERMANENT_PLAYERS, key=f"new_booking_s1p1_{suffix}")
+                p3 = st.selectbox("Player 2 (optional)", [""] + PERMANENT_PLAYERS, key=f"new_booking_s1p2_{suffix}")
+                p2, p4 = "", ""
             
-            standby = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"new_booking_standby_{st.session_state.form_key_suffix}")
-            court = st.selectbox("Court Name *", [""] + court_names, key=f"court_{st.session_state.form_key_suffix}")
-            screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_{st.session_state.form_key_suffix}")
+            standby = st.selectbox("Standby Player (optional)", [""] + ALL_PLAYERS, key=f"new_booking_standby_{suffix}")
+            court = st.selectbox("Court Name *", [""] + COURT_NAMES, key=f"court_{suffix}")
+            screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_{suffix}")
             st.markdown("*Required fields", unsafe_allow_html=True)
             
             submit = st.form_submit_button("Add Booking")
@@ -3141,37 +2963,36 @@ with tabs[4]:
                         if match_type_edit == "Doubles":
                             col1, col2 = st.columns(2)
                             with col1:
-                                p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                                p1_edit = st.selectbox("Player 1 (optional)", [""] + ALL_PLAYERS,
+                                                       index=ALL_PLAYERS.index(booking_row["player1"]) + 1 if booking_row["player1"] in ALL_PLAYERS else 0,
                                                        key=f"edit_t1p1_{booking_id}")
-                                p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0,
+                                p2_edit = st.selectbox("Player 2 (optional)", [""] + ALL_PLAYERS,
+                                                       index=ALL_PLAYERS.index(booking_row["player2"]) + 1 if booking_row["player2"] in ALL_PLAYERS else 0,
                                                        key=f"edit_t1p2_{booking_id}")
                             with col2:
-                                p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                                p3_edit = st.selectbox("Player 3 (optional)", [""] + ALL_PLAYERS,
+                                                       index=ALL_PLAYERS.index(booking_row["player3"]) + 1 if booking_row["player3"] in ALL_PLAYERS else 0,
                                                        key=f"edit_t2p1_{booking_id}")
-                                p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players,
-                                                       index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0,
+                                p4_edit = st.selectbox("Player 4 (optional)", [""] + ALL_PLAYERS,
+                                                       index=ALL_PLAYERS.index(booking_row["player4"]) + 1 if booking_row["player4"] in ALL_PLAYERS else 0,
                                                        key=f"edit_t2p2_{booking_id}")
                         else:
-                            p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players,
-                                                   index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0,
+                            p1_edit = st.selectbox("Player 1 (optional)", [""] + PERMANENT_PLAYERS,
+                                                   index=PERMANENT_PLAYERS.index(booking_row["player1"]) + 1 if booking_row["player1"] in PERMANENT_PLAYERS else 0,
                                                    key=f"edit_s1p1_{booking_id}")
-                            p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players,
-                                                   index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0,
+                            p3_edit = st.selectbox("Player 2 (optional)", [""] + PERMANENT_PLAYERS,
+                                                   index=PERMANENT_PLAYERS.index(booking_row["player3"]) + 1 if booking_row["player3"] in PERMANENT_PLAYERS else 0,
                                                    key=f"edit_s1p2_{booking_id}")
-                            p2_edit = ""
-                            p4_edit = ""
+                            p2_edit, p4_edit = "", ""
 
                         standby_initial_index = 0
-                        if "standby_player" in booking_row and booking_row["standby_player"] and booking_row["standby_player"] in available_players:
-                            standby_initial_index = available_players.index(booking_row["standby_player"]) + 1
+                        if "standby_player" in booking_row and booking_row["standby_player"] and booking_row["standby_player"] in ALL_PLAYERS:
+                            standby_initial_index = ALL_PLAYERS.index(booking_row["standby_player"]) + 1
 
-                        standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players,
+                        standby_edit = st.selectbox("Standby Player (optional)", [""] + ALL_PLAYERS,
                                                     index=standby_initial_index, key=f"edit_standby_{booking_id}")
-                        court_edit = st.selectbox("Court Name *", [""] + court_names,
-                                                  index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0,
+                        court_edit = st.selectbox("Court Name *", [""] + COURT_NAMES,
+                                                  index=COURT_NAMES.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in COURT_NAMES else 0,
                                                   key=f"edit_court_{booking_id}")
                         screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)",
                                                            type=["jpg", "jpeg", "png", "gif", "bmp", "webp"],
@@ -3304,7 +3125,7 @@ with tabs[4]:
     
     # Add/Update Availability Form (simplified: one day at a time)
     with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
-        selected_player = st.selectbox("Select Player", [""] + available_players, key="avail_player")
+        selected_player = st.selectbox("Select Player", [""] + ALL_PLAYERS, key="avail_player")
         selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
         if selected_player and selected_day_label:
             day_date = next_10_days[day_options.index(selected_day_label)]
