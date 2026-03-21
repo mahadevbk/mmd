@@ -2247,7 +2247,7 @@ with tabs[2]:
                     else:
                         st.write("No profile image set.")
                     
-                    with st.expander("Edit Player Details", expanded=True):
+                    with st.expander("Edit Player Details", expanded=True, icon="➡️"):
                         new_name = st.text_input("Player Name *", value=player_data["name"], key=f"name_edit_{selected_player}")
                         # Birthday inputs (day and month)
                         default_day = 1
@@ -2942,7 +2942,7 @@ with tabs[4]:
                     booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
                     booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
 
-                    with st.expander("Edit Booking Details", expanded=True):
+                    with st.expander("Edit Booking Details", expanded=True, icon="➡️"):
                         date_edit = st.date_input(
                             "Booking Date *",
                             value=pd.to_datetime(booking_row["date"], errors="coerce").date(),
@@ -3306,9 +3306,14 @@ with tabs[5]:
     display_hall_of_fame()
 
     st.markdown("---")
-    with st.expander("Admin: Archive Current Season (Q1 2026)", expanded=False):
+    
+    # Calculate current season label dynamically
+    current_q = (datetime.now().month - 1) // 3 + 1
+    current_season_label = f"Q{current_q} {datetime.now().year}"
+    
+    with st.expander(f"Admin: Archive Current Season ({current_season_label})", expanded=False, icon="➡️"):
         password = st.text_input("Enter Admin Password", type="password", key="hof_admin_pw")
-        if st.button("Archive Q1 2026 Top 3"):
+        if st.button(f"Archive {current_season_label} Top 3"):
             try:
                 if password == st.secrets["admin"]["password"]:
                     if not rank_df.empty:
@@ -3318,7 +3323,7 @@ with tabs[5]:
                         entries = []
                         for i, (idx, row) in enumerate(top_3.iterrows()):
                             entry = {
-                                "Season": "Q1 2026",
+                                "Season": current_season_label,
                                 "Player": row['Player'],
                                 "Rank": i + 1,
                                 "Points": row['Points'],
@@ -3339,7 +3344,7 @@ with tabs[5]:
                             entries.append(entry)
                         
                         supabase.table(HOF_TABLE).insert(entries).execute()
-                        st.success("Successfully archived Q1 2026 Top 3 to Hall of Fame!")
+                        st.success(f"Successfully archived {current_season_label} Top 3 to Hall of Fame!")
                         time.sleep(1)
                         st.rerun()
                     else:
