@@ -2297,6 +2297,7 @@ with tabs[2]:
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name *", key="new_player_input").strip()
         new_gender = st.radio("Gender *", ["M", "F"], index=None, key="new_player_gender", horizontal=True)
+        new_initial_utr = st.number_input("Initial UTR / Base Rating (1.0 - 16.0)", min_value=1.0, max_value=16.0, value=1.0, step=0.1, help="Calibrate new players by setting their starting UTR. This will recalculate the entire league's rankings based on this anchor.")
         st.markdown("*Required fields", unsafe_allow_html=True)
         if st.button("Add Player", key="add_player_button"):
             if not new_player:
@@ -2308,11 +2309,14 @@ with tabs[2]:
             elif new_player in st.session_state.players_df["name"].tolist():
                 st.warning(f"{new_player} already exists.")
             else:
+                # Convert UTR to Elo for storage
+                calculated_base_elo = (new_initial_utr * 140) + 600
                 new_player_data = {
                     "name": new_player,
                     "profile_image_url": "",
                     "birthday": "",
-                    "gender": new_gender
+                    "gender": new_gender,
+                    "base_elo": calculated_base_elo
                 }
                 st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                 save_players(st.session_state.players_df)
@@ -2355,6 +2359,12 @@ with tabs[2]:
                         birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player}")
                         # Gender selector
                         gender_edit = st.radio("Gender *", ["M", "F"], index=0 if current_gender == "M" else 1, key=f"gender_edit_{selected_player}", horizontal=True)
+                        
+                        # Initial UTR Calibration
+                        current_base_elo = player_data.get("base_elo", 1200.0)
+                        current_initial_utr = round((current_base_elo - 600) / 140, 1)
+                        edit_initial_utr = st.number_input("Initial UTR / Base Rating (1.0 - 16.0)", min_value=1.0, max_value=16.0, value=float(max(1.0, current_initial_utr)), step=0.1, key=f"utr_edit_{selected_player}", help="Recalibrate this player by setting their starting UTR. This will recalculate the entire league's rankings based on this anchor.")
+                        
                         profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player}")
                         st.markdown("*Required fields", unsafe_allow_html=True)
                         
@@ -2375,12 +2385,14 @@ with tabs[2]:
                                             re.sub(r'[^a-zA-Z0-9]', '_', new_name.lower()),
                                             image_type="profile"
                                         )
+                                    # Convert edited UTR back to Elo
+                                    new_base_elo = (edit_initial_utr * 140) + 600
                                     updated_player = {
                                         "name": new_name,
                                         "profile_image_url": image_url,
                                         "birthday": f"{birthday_day:02d}-{birthday_month:02d}",
                                         "gender": gender_edit,
-                                        "base_elo": player_data.get("base_elo", 1200.0)
+                                        "base_elo": new_base_elo
                                     }
                                     try:
                                         # Update the specific row in the DataFrame using index
