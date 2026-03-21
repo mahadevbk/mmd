@@ -842,16 +842,35 @@ def calculate_rankings(matches_to_rank, players_df_input):
                     badges.append("🌱 Participation")
         except: pass
         
-        # UTR Approximation (Option 1: (Elo - 700) / 100)
+        # --- Enhanced UTR Calculation ---
+        # 1. Base Sigmoid Mapping (Maps 800-2000 Elo to approx 1.0-14.0 UTR)
+        # Formula: 1 + 15 / (1 + exp(-0.004 * (Elo - 1300)))
         p_elo = elo_ratings[p]
-        p_utr = round(max(1.0, (p_elo - 700) / 100), 2)
+        import math
+        base_utr = 1 + 15 / (1 + math.exp(-0.004 * (p_elo - 1300)))
+        
+        # 2. Match Count Weighting (Confidence Factor)
+        # New players start at UTR 1.0 and climb as they play more matches.
+        # Reliability reaches 100% after 10 matches.
+        reliability = min(1.0, m_played / 10.0)
+        
+        # 3. Final UTR Adjustment
+        # Weighted average between a "novice" UTR (1.0) and their Elo-based UTR.
+        # This prevents 1-match wonders from having high UTRs.
+        calculated_utr = (reliability * base_utr) + ((1 - reliability) * 1.0)
+        
+        # 4. Formatting
+        if m_played < 3:
+            p_utr_display = f"{round(calculated_utr, 2)} (P)"
+        else:
+            p_utr_display = round(calculated_utr, 2)
         
         rank_data.append({
             "Player": p, 
             "Points": scores[p], 
             "Elo": round(p_elo),
-            "UTR": p_utr,
-            "Last Change": last_elo_changes.get(p, 0), # NEW: Added for UI
+            "UTR": p_utr_display,
+            "Last Change": last_elo_changes.get(p, 0),
             "Win %": round((s['wins']/m_played)*100, 1),
             "Recent Trend": trend_html,
             "Matches": m_played, 
