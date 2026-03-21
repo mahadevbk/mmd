@@ -1166,13 +1166,13 @@ def load_bookings():
         else:
              df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
              
-        cutoff = pd.Timestamp.now(tz='Asia/Dubai') - timedelta(hours=4)
-        
-        expired = df[df['dt_combo'] < cutoff]
-        if not expired.empty:
-            for bid in expired['booking_id']:
-                supabase.table(BOOKINGS_TABLE).delete().eq("booking_id", bid).execute()
-            df = df[df['dt_combo'] >= cutoff]
+        expired_ids = df[df['dt_combo'] < pd.Timestamp.now(tz='Asia/Dubai') - timedelta(hours=4)]['booking_id'].tolist()
+        if expired_ids:
+            try:
+                supabase.table(BOOKINGS_TABLE).delete().in_("booking_id", expired_ids).execute()
+                df = df[~df['booking_id'].isin(expired_ids)]
+            except Exception as e:
+                st.error(f"Error cleaning up expired bookings: {e}")
         
         # Format for display
         df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
@@ -1252,6 +1252,8 @@ def create_full_backup_zip():
 
 
 
+RE_SEASON = re.compile(r'Q(\d) (\d{4})')
+
 def display_hall_of_fame():
     """
     Fetches and displays detailed Hall of Fame data from Supabase.
@@ -1262,7 +1264,7 @@ def display_hall_of_fame():
     def season_to_date(season_str):
         if not season_str:
             return datetime(1900, 1, 1)
-        match = re.match(r'Q(\d) (\d{4})', season_str)
+        match = RE_SEASON.match(season_str)
         if match:
             q = int(match.group(1))
             year = int(match.group(2))
@@ -3320,7 +3322,6 @@ with tabs[6]:
         api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
         
         try:
-            # Note: Ensure 'requests' is imported at the top of your file
             response = requests.get(api_url)
             if response.status_code == 200:
                 files = response.json()
