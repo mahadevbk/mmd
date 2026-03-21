@@ -1771,24 +1771,52 @@ with tabs[1]:
     def auto_detect_category(row):
         m_type = getattr(row, 'match_type', 'Doubles')
         if m_type == "Singles": return "Singles"
-        
+
         # Access players safely (works for NamedTuple and Series)
         p1 = str(getattr(row, 'team1_player1', ''))
         p2 = str(getattr(row, 'team1_player2', ''))
         p3 = str(getattr(row, 'team2_player1', ''))
         p4 = str(getattr(row, 'team2_player2', ''))
-        
+
         p_list = [p.upper() for p in [p1, p2, p3, p4]]
         # Check for Visitors or empty slots
         if "VISITOR" in p_list or "" in p_list or "NONE" in p_list or "NAN" in p_list:
             return "Doubles"
-            
+
         g1 = sorted([gender_map.get(p1, 'U'), gender_map.get(p2, 'U')])
         g2 = sorted([gender_map.get(p3, 'U'), gender_map.get(p4, 'U')])
-        
         if g1 == ['F', 'M'] and g2 == ['F', 'M']:
             return "Mixed Doubles"
         return "Doubles"
+
+    def get_match_verb(row):
+        t1_total, t2_total, sets_count = 0, 0, 0
+        for s in [row.set1, row.set2, row.set3]:
+            if s and str(s).strip() and str(s).lower() != 'nan':
+                nums = re.findall(r'\d+', str(s))
+                if len(nums) >= 2:
+                    p1, p2 = int(nums[0]), int(nums[1])
+                    sets_count += 1
+                    if "Tie Break" in str(s):
+                        g1, g2 = (7, 6) if p1 > p2 else (6, 7)
+                    else:
+                        g1, g2 = p1, p2
+                    t1_total += g1
+                    t2_total += g2
+
+        gda = abs(t1_total - t2_total) / sets_count if sets_count > 0 else 0
+
+        if gda <= 1.0:
+            return random.choice(["outlasted", "nipped", "escaped", "squeaked past", "edged"])
+        elif gda <= 3.0:
+            return random.choice(["toppled", "tamed", "bested", "ousted", "upended"])
+        elif gda <= 5.0:
+            return random.choice(["cruised past", "dispatched", "steamrolled", "powered through", "outclassed"])
+        elif gda <= 7.0:
+            return random.choice(["demolished", "dismantled", "crushed", "trounced", "smoked"])
+        else:
+            return random.choice(["annihilated", "obliterated", "clobbered", "whitewashed", "skunked"])
+
 
     # --- Match Forms ---
     if not st.session_state.players_df.empty:
@@ -2033,7 +2061,7 @@ with tabs[1]:
                     return f"<span class='player-name-bold'>{p1s}</span>"
 
                 t1_h, t2_h = fmt_team(row.team1_player1, row.team1_player2), fmt_team(row.team2_player1, row.team2_player2)
-                status_txt = "defeated" if row.winner != "Tie" else "tied with"
+                status_txt = get_match_verb(row) if row.winner != "Tie" else "tied with"
                 winner_h = t1_h if row.winner == "Team 1" else t2_h if row.winner == "Team 2" else t1_h
                 loser_h = t2_h if row.winner == "Team 1" else t1_h if row.winner == "Team 2" else t2_h
                 headline = f"{winner_h} <span class='status-text-grey'>{status_txt}</span> {loser_h}"
