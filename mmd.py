@@ -1815,7 +1815,7 @@ with tabs[1]:
         elif gda <= 7.0:
             return random.choice(["demolished", "dismantled", "crushed", "trounced", "smoked"])
         else:
-            return random.choice(["annihilated", "obliterated", "clobbered", "whitewashed", "skunked"])
+            return random.choice(["annihilated", "obliterated", "clobbered", "whitewashed","deadpooled","skunked"])
 
 
     # --- Match Forms ---
