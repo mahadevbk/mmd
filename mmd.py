@@ -1814,7 +1814,8 @@ with tabs[1]:
                 
                 # --- A. Basic Field Validation ---
                 selected_players = [p for p in [t1p1, t1p2, t2p1, t2p2] if p != ""]
-                visitor_count = sum(1 for p in selected_players if p == "Visitor")
+                non_visitor_players = [p for p in selected_players if str(p).upper() != "VISITOR"]
+                visitor_count = sum(1 for p in selected_players if str(p).upper() == "VISITOR")
                 
                 if not s1:
                     st.error("Set 1 score is required.")
@@ -1822,14 +1823,17 @@ with tabs[1]:
                 elif not match_img:
                     st.error("A match photo is required.")
                     valid = False
+                elif len(non_visitor_players) != len(set(non_visitor_players)):
+                    st.error("A player cannot be entered twice in a match.")
+                    valid = False
                 elif m_type == "Doubles" and (len(selected_players) < 4 or not s2):
                     st.error("Doubles requires 4 players and at least 2 sets.")
                     valid = False
                 elif m_type == "Doubles" and visitor_count > 1:
                     st.error("Invalid: Only ONE Visitor allowed in Doubles.")
                     valid = False
-                elif m_type == "Singles" and len(selected_players) < 2:
-                    st.error("Singles requires 2 players.")
+                elif m_type == "Singles" and (len(selected_players) < 2 or visitor_count > 0):
+                    st.error("Singles requires 2 players and NO Visitors.")
                     valid = False
 
                 # --- B. Custom Score Validation ---
@@ -2045,9 +2049,13 @@ with tabs[1]:
                         # --- Validation in Edit Form ---
                         valid_edit = True
                         selected_edit_players = [p for p in [et1p1, et1p2, et2p1, et2p2] if p and p.strip() != ""]
+                        non_visitor_edit_players = [p for p in selected_edit_players if str(p).upper() != "VISITOR"]
                         visitor_count_edit = sum(1 for p in selected_edit_players if str(p).upper() == "VISITOR")
                         
-                        if e_type == "Singles":
+                        if len(non_visitor_edit_players) != len(set(non_visitor_edit_players)):
+                            st.error("A player cannot be entered twice in a match.")
+                            valid_edit = False
+                        elif e_type == "Singles":
                             if len(selected_edit_players) != 2:
                                 st.error("Singles requires exactly 2 players.")
                                 valid_edit = False
@@ -2081,7 +2089,9 @@ with tabs[1]:
                                 "match_image_url": match_data['match_image_url']
                             }
                             delete_match_from_db(match_id) # Remove old
-                            save_match_to_db(updated_match) # Save new
+                            # Add updated and save
+                            st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([updated_match])], ignore_index=True)
+                            save_matches(st.session_state.matches_df)
                             st.success("Match updated!")
                             time.sleep(1)
                             st.rerun()
@@ -2530,19 +2540,30 @@ with tabs[4]:
             if st.button("Match up", key="btn_matchup_doubles"):
                 st.subheader("Match Odds")
                 players = [t1p1, t1p2, t2p1, t2p2]
-                doubles_rank_df, _ = calculate_rankings(
-                    st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"],
-                    st.session_state.players_df
-                )
-                if all(p in doubles_rank_df["Player"].values for p in players if p):
-                    pairing_text, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
-                    if pairing_text:
-                        st.markdown(pairing_text, unsafe_allow_html=True)
-                        st.write(f"Team 1: {team1_odds:.1f}% | Team 2: {team2_odds:.1f}%")
-                    else:
-                        st.info("No odds available for this combination.")
+                selected_players = [p for p in players if p]
+                non_visitor_players = [p for p in selected_players if str(p).upper() != "VISITOR"]
+                visitor_count = sum(1 for p in selected_players if str(p).upper() == "VISITOR")
+                
+                if len(selected_players) < 4:
+                    st.error("Please select all four players for a doubles match.")
+                elif len(non_visitor_players) != len(set(non_visitor_players)):
+                    st.error("A player cannot be entered twice in a match.")
+                elif visitor_count > 1:
+                    st.error("Only ONE Visitor allowed in Doubles.")
                 else:
-                    st.info("No odds available (one or more players have no doubles match history).")
+                    doubles_rank_df, _ = calculate_rankings(
+                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Doubles"],
+                        st.session_state.players_df
+                    )
+                    if all(p in doubles_rank_df["Player"].values for p in players if p):
+                        pairing_text, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
+                        if pairing_text:
+                            st.markdown(pairing_text, unsafe_allow_html=True)
+                            st.write(f"Team 1: {team1_odds:.1f}% | Team 2: {team2_odds:.1f}%")
+                        else:
+                            st.info("No odds available for this combination.")
+                    else:
+                        st.info("No odds available (one or more players have no doubles match history).")
         else:  # Singles
             p1 = st.selectbox("Player 1", [""] + PERMANENT_PLAYERS, key="matchup_singles_p1")
             p2 = st.selectbox("Player 2", [""] + PERMANENT_PLAYERS, key="matchup_singles_p2")
@@ -2550,15 +2571,18 @@ with tabs[4]:
             if st.button("Match up", key="btn_matchup_singles"):
                 st.subheader("Match Odds")
                 if p1 and p2:
-                    singles_rank_df, _ = calculate_rankings(
-                        st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"],
-                        st.session_state.players_df
-                    )
-                    if p1 in singles_rank_df["Player"].values and p2 in singles_rank_df["Player"].values:
-                        odds1, odds2 = suggest_singles_odds([p1, p2], singles_rank_df)
-                        st.write(f"Odds → {p1}: {odds1:.1f}% | {p2}: {odds2:.1f}%")
+                    if p1 == p2:
+                        st.error("A player cannot be entered twice in a match.")
                     else:
-                        st.info("No odds available (one or both players have no singles match history).")
+                        singles_rank_df, _ = calculate_rankings(
+                            st.session_state.matches_df[st.session_state.matches_df['match_type']=="Singles"],
+                            st.session_state.players_df
+                        )
+                        if p1 in singles_rank_df["Player"].values and p2 in singles_rank_df["Player"].values:
+                            odds1, odds2 = suggest_singles_odds([p1, p2], singles_rank_df)
+                            st.write(f"Odds → {p1}: {odds1:.1f}% | {p2}: {odds2:.1f}%")
+                        else:
+                            st.info("No odds available (one or both players have no singles match history).")
                 else:
                     st.warning("Please select both players.")
 
@@ -2605,8 +2629,15 @@ with tabs[4]:
                     st.error("Booking date and time are required.")
                 else:
                     selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
-                    if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
-                        st.error("Please select different players for each position.")
+                    non_visitor_players = [p for p in selected_players if str(p).upper() != "VISITOR"]
+                    visitor_count = sum(1 for p in selected_players if str(p).upper() == "VISITOR")
+                    
+                    if len(non_visitor_players) != len(set(non_visitor_players)):
+                        st.error("A player cannot be entered twice in a match.")
+                    elif match_type == "Doubles" and visitor_count > 1:
+                        st.error("Only ONE Visitor allowed in Doubles.")
+                    elif match_type == "Singles" and visitor_count > 0:
+                        st.error("Visitors are not allowed in Singles matches.")
                     else:
                         booking_id = str(uuid.uuid4())
                         screenshot_url = upload_image_to_github(screenshot, booking_id, image_type="booking") if screenshot else None
