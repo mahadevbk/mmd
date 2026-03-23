@@ -180,16 +180,17 @@ def apply_custom_theme(theme_choice):
         table_row_hover = "rgba(187, 134, 252, 0.1)"
         st_header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
     elif theme_choice == "Light":
-        bg = "#FDF5E6"
+        bg = "#E9ECEF"
         surface = "#FFFFFF"
-        text = "#2F4F4F"
-        accent = "#D2691E"
-        card_bg = "linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%)"
-        border_color = "rgba(210, 105, 30, 0.3)"
-        secondary_text = "#555555"
-        table_row_bg = "linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%)"
-        table_row_hover = "rgba(210, 105, 30, 0.1)"
-        st_header_bg = "linear-gradient(to top, #FDF5E6, #FFFFFF)"
+        text = "#1A1A1A"
+        accent = "#D4FC1E" # Tennis Volt
+        clay_accent = "#B24A00" # Deeper Clay
+        card_bg = "#FFFFFF"
+        border_color = "#B24A00"
+        secondary_text = "#444444"
+        table_row_bg = "#FFFFFF"
+        table_row_hover = "rgba(178, 74, 0, 0.05)"
+        st_header_bg = "linear-gradient(to top, #E9ECEF, #FFFFFF)"
     else:  # Default (Neon Court)
         bg = "linear-gradient(to bottom, #041136, #21000a)"
         surface = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
@@ -206,15 +207,15 @@ def apply_custom_theme(theme_choice):
     <style>
     .mobile-card {{
         background: {card_bg};
-        border: 1px solid {border_color};
+        border: {'2px solid ' + border_color if theme_choice == "Light" else '1px solid ' + border_color};
         border-radius: 15px;
         padding: 15px;
         margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 15px rgba(0,0,0,{'0.08' if theme_choice == "Light" else '0.5'}) !important;
     }}
     .rank-badge {{
-        background: {accent};
-        color: #041136;
+        background: {accent if theme_choice != "Light" else clay_accent};
+        color: {'#041136' if theme_choice != "Light" else '#FFFFFF'};
         font-weight: bold;
         border-radius: 5px;
         padding: 2px 8px;
@@ -237,9 +238,9 @@ def apply_custom_theme(theme_choice):
     }}
     [data-testid="stHeader"] {{ background: {st_header_bg} !important; }}
     .profile-image {{
-        width: 80px; height: 80px; object-fit: cover; border: 2px solid {accent};
+        width: 80px; height: 80px; object-fit: cover; border: 2px solid {accent if theme_choice != "Light" else clay_accent};
         border-radius: 15px; margin-right: 15px; vertical-align: middle;
-        transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px {border_color};
+        transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px {border_color if theme_choice == "Light" else 'rgba(255, 245, 0, 0.6)'};
     }}
     .profile-image:hover {{ transform: scale(1.1); }}
     .birthday-banner {{
@@ -255,18 +256,18 @@ def apply_custom_theme(theme_choice):
     }}
     .whatsapp-share img {{ width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }}
     .court-card {{
-        background: {card_bg}; border: 1px solid {accent};
-        border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        background: {card_bg}; border: {'2px solid ' + border_color if theme_choice == "Light" else '1px solid ' + accent};
+        border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 15px rgba(0,0,0,{'0.08' if theme_choice == "Light" else '0.2'}) !important;
         transition: transform 0.2s, box-shadow 0.2s; text-align: center;
     }}
     .court-card:hover {{ transform: scale(1.05); box-shadow: 0 6px 12px {border_color}; }}
-    .court-card h4 {{ color: {accent}; margin-bottom: 10px; }}
+    .court-card h4 {{ color: {clay_accent if theme_choice == "Light" else accent}; margin-bottom: 10px; }}
     .court-card a {{
-        background-color: {accent}; color: {bg if 'linear' not in bg else '#041136'}; padding: 8px 16px; border-radius: 5px;
+        background-color: {clay_accent if theme_choice == "Light" else accent}; color: {'#FFFFFF' if theme_choice == "Light" else (bg if 'linear' not in bg else '#041136')}; padding: 8px 16px; border-radius: 5px;
         text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
         transition: background-color 0.2s;
     }}
-    .court-card a:hover {{ background-color: {accent}; opacity: 0.8; }}
+    .court-card a:hover {{ background-color: {clay_accent if theme_choice == "Light" else accent}; opacity: 0.8; }}
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {{ font-family: 'Offside', sans-serif !important; color: {text} !important; }}
     h1 {{ font-size: 24px !important; }}
@@ -276,24 +277,28 @@ def apply_custom_theme(theme_choice):
         width: 100%; margin-top: 0px !important; padding: 5px;
     }}
     .ranking-row {{
-        display: block; padding: 15px; margin-bottom: 15px; border: 1px solid {border_color};
-        border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        display: block; padding: 15px; margin-bottom: 15px; border: {'2px solid ' + border_color if theme_choice == "Light" else '1px solid ' + border_color};
+        border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,{'0.08' if theme_choice == "Light" else '0.3'}) !important;
         background: {table_row_bg};
         overflow: visible; transition: transform 0.2s;
     }}
-    .ranking-row:hover {{ transform: translateY(-2px); border-color: {accent}; background: {table_row_hover}; }}
+    .ranking-row:hover {{ transform: translateY(-2px); border-color: {accent if theme_choice != "Light" else clay_accent}; background: {table_row_hover}; }}
     .rank-profile-player-group {{ display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid {border_color}; padding-bottom: 10px; }}
-    .rank-col {{ font-size: 2em; font-weight: bold; color: {accent}; margin-right: 15px; min-width: 40px; text-align: center; }}
+    .rank-col {{ font-size: 2em; font-weight: bold; color: {clay_accent if theme_choice == "Light" else accent}; margin-right: 15px; min-width: 40px; text-align: center; }}
     .player-col {{ font-size: 1.4em; font-weight: bold; color: {text}; flex-grow: 1; }}
-    .badge {{ background: {border_color}; color: {accent}; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid {border_color}; vertical-align: middle; }}
+    .badge {{ background: {border_color if theme_choice != "Light" else 'rgba(178, 74, 0, 0.1)'}; color: {accent if theme_choice != "Light" else clay_accent}; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid {border_color}; vertical-align: middle; }}
     .stat-box {{ flex: 1; min-width: 100px; text-align: center; padding: 5px; }}
     .stat-label {{ font-size: 0.75em; color: {secondary_text}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }}
     .stat-value {{ font-size: 1.1em; color: {text}; font-weight: bold; }}
-    .stat-highlight {{ color: {accent}; }}
+    .stat-highlight {{ color: {clay_accent if theme_choice == "Light" else accent}; }}
     [data-testid="stMetric"] > div:nth-of-type(1) {{ color: #FF7518 !important; }}
     .block-container {{ display: flex; flex-wrap: wrap; justify-content: center; }}
     [data-testid="stHorizontalBlock"] {{ flex: 1 1 100% !important; margin: 10px 0; }}
     [data-testid="stExpander"] i, [data-testid="stExpander"] span.icon {{ font-family: 'Material Icons' !important; }}
+    
+    /* Volt Icon Highlights for Light Theme */
+    [data-testid="stExpanderIcon"] {{ color: {accent if theme_choice == "Light" else 'inherit'} !important; }}
+
     .img-lightbox {{
         display: none;
         position: fixed;
@@ -312,7 +317,7 @@ def apply_custom_theme(theme_choice):
     .img-lightbox img {{
         max-width: 90%;
         max-height: 90%;
-        border: 3px solid {accent};
+        border: 3px solid {accent if theme_choice != "Light" else clay_accent};
         border-radius: 10px;
         box-shadow: 0 0 20px {border_color};
         object-fit: contain;
@@ -336,13 +341,14 @@ def apply_custom_theme(theme_choice):
     }}
     /* Button theming */
     .stButton>button {{
-        background-color: {surface if 'linear' not in surface else 'transparent'};
-        color: {text};
-        border: 1px solid {accent};
+        background-color: {clay_accent if theme_choice == "Light" else (surface if 'linear' not in surface else 'transparent')};
+        color: {'#FFFFFF' if theme_choice == "Light" else text};
+        border: 1px solid {clay_accent if theme_choice == "Light" else accent};
     }}
     .stButton>button:hover {{
-        border-color: {accent};
-        color: {accent};
+        border-color: {clay_accent if theme_choice == "Light" else accent};
+        color: {'#FFFFFF' if theme_choice == "Light" else accent};
+        opacity: 0.9;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -686,9 +692,9 @@ def create_radar_chart(player_data, theme="Default"):
         template = 'plotly_dark'
         fill_color = 'rgba(187, 134, 252, 0.3)'
     elif theme == "Light":
-        accent = '#D2691E'
+        accent = '#B24A00'
         template = 'plotly_white'
-        fill_color = 'rgba(210, 105, 30, 0.3)'
+        fill_color = 'rgba(178, 74, 0, 0.3)'
     else:
         accent = '#fff500'
         template = 'plotly_dark'
@@ -1168,7 +1174,7 @@ def plot_player_performance(player_name, matches_df, theme="Default"):
         accent = '#BB86FC'
         template = 'plotly_dark'
     elif theme == "Light":
-        accent = '#D2691E'
+        accent = '#B24A00'
         template = 'plotly_white'
     else:
         accent = '#fff500'
