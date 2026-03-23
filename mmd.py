@@ -3476,13 +3476,18 @@ with tabs[6]:
     # --- 1. Fetch Photos Dynamically from GitHub ---
     @st.cache_data(ttl=3600)
     def get_tournament_photos():
-        owner = "mahadevbk"
-        repo = "mmd"
-        path = "assets/minitourney"
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-        
         try:
-            response = requests.get(api_url)
+            token = st.secrets["github"]["token"]
+            repo = st.secrets["github"]["repo"]
+            # owner and branch are also in secrets usually
+            owner = repo.split('/')[0] if '/' in repo else "mahadevbk"
+            repo_name = repo.split('/')[1] if '/' in repo else "mmd"
+            path = "assets/minitourney"
+            api_url = f"https://api.github.com/repos/{owner}/{repo_name}/contents/{path}"
+            
+            headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+            response = requests.get(api_url, headers=headers)
+            
             if response.status_code == 200:
                 files = response.json()
                 image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
@@ -3491,9 +3496,11 @@ with tabs[6]:
                     if file['name'].lower().endswith(image_extensions)
                 ]
                 return photo_urls
+            else:
+                # Fallback to unauthenticated if token fails or just log error
+                return []
         except Exception as e:
-            st.error(f"Error fetching photos: {e}")
-        return []
+            return []
 
     photos = get_tournament_photos()
 
