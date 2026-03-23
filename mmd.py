@@ -460,6 +460,60 @@ def upload_image_to_github(file, file_name, image_type="match"):
     except Exception as e:
         st.error(f"Upload failed: {e}")
         return ""
+
+def get_court_coords(court_name):
+    # Default to Arabian Ranches / Mira area
+    default_lat, default_lon = 25.0, 55.2
+    
+    # Try to refine based on name
+    if "Mira" in court_name:
+        return 25.01, 55.28
+    elif "Mudon" in court_name:
+        return 25.02, 55.25
+    elif "Dubai Hills" in court_name:
+        return 25.10, 55.26
+    elif any(x in court_name for x in ["Alvorado", "Palmera", "Saheel", "Hattan", "MLC", "Mirador", "Al Mahra", "Reem", "Alma"]):
+        return 25.04, 55.27
+    
+    return default_lat, default_lon
+
+@st.cache_data(ttl=3600)
+def get_weather(lat, lon, date_str, time_str):
+    try:
+        # date_str is YYYY-MM-DD
+        # time_str is HH:MM:SS or HH:MM
+        if len(time_str.split(':')) == 2:
+            time_str += ":00"
+            
+        target_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+        
+        # Check if date is within 14 days (Open-Meteo limit for free forecast)
+        # We allow a small buffer for today's past hours
+        now = datetime.now()
+        if target_dt > now + timedelta(days=13) or target_dt < now - timedelta(hours=24):
+             return "Weather N/A"
+             
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability&timezone=auto&start_date={date_str}&end_date={date_str}"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        
+        if "hourly" not in data:
+            return "Weather N/A"
+            
+        hourly = data["hourly"]
+        target_hour_str = target_dt.strftime("%Y-%m-%dT%H:00")
+        
+        if target_hour_str in hourly["time"]:
+            idx = hourly["time"].index(target_hour_str)
+            temp = hourly["temperature_2m"][idx]
+            hum = hourly["relative_humidity_2m"][idx]
+            rain = hourly["precipitation_probability"][idx]
+            
+            return f"🌡️ {temp}°C | 💧 {hum}% | 🌧️ {rain}%"
+        else:
+            return "Weather N/A"
+    except Exception:
+        return "Weather N/A"
 # --- Business Logic ---
 
 def tennis_scores():
@@ -2832,7 +2886,13 @@ with tabs[4]:
                 players_list = ", ".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
                 standby_text = f" | STD. BY: *{row['standby_player']}*" if row['standby_player'] else ""
                 
-                share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}* | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
+                # Weather logic
+                lat, lon = get_court_coords(row['court_name'])
+                weather_info = get_weather(lat, lon, str(row['date']), str(row['time']))
+                weather_row = f"<div><strong>Weather:</strong> <span style='font-weight:bold; color:#fff500;'>{weather_info}</span></div>"
+                weather_share = f" | Weather: *{weather_info}*" if weather_info != "Weather N/A" else ""
+
+                share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}*{weather_share} | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
                 encoded_text = urllib.parse.quote(share_text)
                 whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
                 
@@ -2841,6 +2901,7 @@ with tabs[4]:
                     <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
                     <div><strong>Court:</strong> {court_name_html}</div>
                     <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                    {weather_row}
                     <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
                     <div><strong>Players:</strong> {players_str}</div>
                     <div><strong>Standby Player:</strong> {standby_str}</div>
