@@ -117,7 +117,7 @@ st.markdown("""
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 .rank-badge {
-    background: #fff500;
+    background: #D4FC1E;
     color: #041136;
     font-weight: bold;
     border-radius: 5px;
@@ -140,13 +140,13 @@ st.markdown("""
 }
 [data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
 .profile-image {
-    width: 80px; height: 80px; object-fit: cover; border: 2px solid #fff500;
+    width: 80px; height: 80px; object-fit: cover; border: 2px solid #D4FC1E;
     border-radius: 15px; margin-right: 15px; vertical-align: middle;
     transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 245, 0, 0.6);
 }
 .profile-image:hover { transform: scale(1.1); }
 .birthday-banner {
-    background: linear-gradient(45deg, #FFFF00, #EEE8AA); color: #950606; padding: 15px;
+    background: linear-gradient(45deg, #D4FC1E, #EEE8AA); color: #950606; padding: 15px;
     border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
     margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex; justify-content: center; align-items: center;
@@ -158,14 +158,14 @@ st.markdown("""
 }
 .whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
 .court-card {
-    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid #fff500;
+    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid #D4FC1E;
     border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, box-shadow 0.2s; text-align: center;
 }
 .court-card:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); }
-.court-card h4 { color: #fff500; margin-bottom: 10px; }
+.court-card h4 { color: #D4FC1E; margin-bottom: 10px; }
 .court-card a {
-    background-color: #fff500; color: #031827; padding: 8px 16px; border-radius: 5px;
+    background-color: #D4FC1E; color: #031827; padding: 8px 16px; border-radius: 5px;
     text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
     transition: background-color 0.2s;
 }
@@ -186,13 +186,13 @@ h3 { font-size: 16px !important; }
 }
 .ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
 .rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-.rank-col { font-size: 2em; font-weight: bold; color: #fff500; margin-right: 15px; min-width: 40px; text-align: center; }
+.rank-col { font-size: 2em; font-weight: bold; color: #D4FC1E; margin-right: 15px; min-width: 40px; text-align: center; }
 .player-col { font-size: 1.4em; font-weight: bold; class='dynamic-text'ff; flex-grow: 1; }
 .badge { background: rgba(255, 215, 0, 0.2); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
 .stat-box { flex: 1; min-width: 100px; text-align: center; padding: 5px; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
 .stat-value { font-size: 1.1em; class='dynamic-text' font-weight: bold; }
-.stat-highlight { color: #fff500; }
+.stat-highlight { color: #D4FC1E; }
 [data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
 .block-container { display: flex; flex-wrap: wrap; justify-content: center; }
 [data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
@@ -215,7 +215,7 @@ h3 { font-size: 16px !important; }
 .img-lightbox img {
     max-width: 90%;
     max-height: 90%;
-    border: 3px solid #fff500;
+    border: 3px solid #D4FC1E;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(255, 245, 0, 0.5);
     object-fit: contain;
@@ -330,7 +330,7 @@ def apply_custom_theme(theme_choice):
         bg = "linear-gradient(to bottom, #041136, #21000a)"
         surface = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
         text = "#FFFFFF"
-        accent = "#fff500"
+        accent = "#D4FC1E"
         card_bg = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
         border_color = "rgba(255, 245, 0, 0.2)"
         secondary_text = "#aaaaaa"
@@ -410,7 +410,7 @@ def apply_custom_theme(theme_choice):
     }}
     .profile-image:hover {{ transform: scale(1.1); }}
     .birthday-banner {{
-        background: linear-gradient(45deg, #FFFF00, #EEE8AA); color: #950606; padding: 15px;
+        background: linear-gradient(45deg, #D4FC1E, #EEE8AA); color: #950606; padding: 15px;
         border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
         margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         display: flex; justify-content: center; align-items: center;
@@ -862,7 +862,7 @@ def create_radar_chart(player_data, theme="Default"):
         template = 'plotly_white'
         fill_color = 'rgba(178, 74, 0, 0.3)'
     else:
-        accent = '#fff500'
+        accent = '#D4FC1E'
         template = 'plotly_dark'
         fill_color = 'rgba(255, 245, 0, 0.3)'
 
@@ -1343,7 +1343,7 @@ def plot_player_performance(player_name, matches_df, theme="Default"):
         accent = '#B24A00'
         template = 'plotly_white'
     else:
-        accent = '#fff500'
+        accent = '#D4FC1E'
         template = 'plotly_dark'
 
     # Filter matches involving the player
@@ -1442,7 +1442,7 @@ def get_birthday_banner(players_df):
         names = " & ".join(birthday_people)
         st.markdown(f"""
             <div style="
-                background: linear-gradient(90deg, #fff500, #ff0055);
+                background: linear-gradient(90deg, #D4FC1E, #ff0055);
                 padding: 15px;
                 border-radius: 10px;
                 text-align: center;
@@ -1665,21 +1665,21 @@ def display_hall_of_fame():
                         f"""
                         <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
-                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid #fff500;">
-                                <p style="font-size: 1.5em; font-weight: bold; color: #fff500; margin-top: 10px;">{player_name}</p>
+                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid #D4FC1E;">
+                                <p style="font-size: 1.5em; font-weight: bold; color: #D4FC1E; margin-top: 10px;">{player_name}</p>
                                 <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
-                                    {rank_emoji} Rank <span style="font-weight: bold; color: #FFFF00;">{rank}</span>
+                                    {rank_emoji} Rank <span style="font-weight: bold; color: #D4FC1E;">{rank}</span>
                                 </p>
                             </div>
                             <div style="text-align: left; font-size: 0.95em; padding: 0 10px;">
                                 <p><strong>Data for the Season:</strong></p>
-                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: #FFFF00;">{points_display}</span></p>
-                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: #FFFF00;">{Games_won_display}</span></p>
-                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: #FFFF00;">{win_rate_display}</span></p>
-                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: #FFFF00;">{matches_played}</span></p>
-                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: #FFFF00;">{gda_display}</span></p>
-                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: #FFFF00;">{cumulative_GD_display}</span></p>
-                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: #FFFF00;">{performance_score}</span></p>
+                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: #D4FC1E;">{points_display}</span></p>
+                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: #D4FC1E;">{Games_won_display}</span></p>
+                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: #D4FC1E;">{win_rate_display}</span></p>
+                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: #D4FC1E;">{matches_played}</span></p>
+                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: #D4FC1E;">{gda_display}</span></p>
+                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: #D4FC1E;">{cumulative_GD_display}</span></p>
+                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: #D4FC1E;">{performance_score}</span></p>
                             </div>
                         </div>
                         """,
@@ -1838,14 +1838,14 @@ with tabs[0]:
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
-                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid #fff500; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid #D4FC1E; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
                             </a>
                         </div>
                         <div id="{p_uid}" class="img-lightbox">
                             <a href="#" class="img-lightbox-close">&times;</a>
                             <img src="{photo}">
                         </div>
-                        <div style="margin: 5px 0; color: #fff500; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
+                        <div style="margin: 5px 0; color: #D4FC1E; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
                         <div style="class='dynamic-text'; font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
                         <div style="color: #aaa; font-size: 0.7em;">{player['Win %']}% Win</div>
                     </div>
@@ -2511,12 +2511,12 @@ with tabs[2]:
     st.markdown("""
         <style>
         .badge {
-            background: #fff500; color: black; padding: 2px 8px; 
+            background: #D4FC1E; color: black; padding: 2px 8px; 
             border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
         }
         .stat-box {
             background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
-            border-left: 4px solid #fff500; margin-bottom: 10px;
+            border-left: 4px solid #D4FC1E; margin-bottom: 10px;
         }
         .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
         .metric-value { font-size: 1.1em; font-weight: bold; }
@@ -2727,7 +2727,7 @@ with tabs[2]:
                             height: 120px; 
                             background-color: #262626; 
                             border-radius: 15px; 
-                            border: 3px solid #fff500; 
+                            border: 3px solid #D4FC1E; 
                             display: flex; 
                             justify-content: center; 
                             align-items: center; 
@@ -2760,7 +2760,7 @@ with tabs[2]:
                     st.markdown(f"""
                     <div class="stat-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                            <span style="color: #fff500; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
+                            <span style="color: #D4FC1E; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
                             <div>{badges_html}</div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
@@ -3051,7 +3051,7 @@ with tabs[4]:
                             time_ampm = "Invalid Time"
                 
                 court_url = court_url_mapping.get(row['court_name'], "#")
-                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#D4FC1E; text-decoration:none;'>{row['court_name']}</a>"
             
                 pairing_suggestion = ""
                 plain_suggestion = ""
@@ -3198,7 +3198,7 @@ with tabs[4]:
                 for player_name, img_url in image_urls:
                     visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
                 for player_name, initial in placeholder_initials:
-                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #D4FC1E; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #D4FC1E; font-weight: bold;">{initial}</div>'
                 visuals_html += '</div></div>'
                 booking_text += visuals_html + '</div>'
                 
@@ -3213,7 +3213,7 @@ with tabs[4]:
                     **Match Type:** {row['match_type']}  
                     **Players:** {', '.join(players) if players else 'No players'}  
                     **Standby Player:** {row.get('standby_player', 'None')}  
-                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#D4FC1E;">', '').replace('</span>', '')}
+                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:#D4FC1E;\'>', '').replace('</span>', '')}
                     """, unsafe_allow_html=True)
                     st.markdown(f"""
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -3241,7 +3241,7 @@ with tabs[4]:
                         for player_name, initial in placeholder_initials:
                             with cols[col_idx]:
                                 st.markdown(f"""
-                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #D4FC1E; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #D4FC1E; font-weight: bold;'>{initial}</div>
                                 <div style='text-align: center;'>{player_name}</div>
                                 """, unsafe_allow_html=True)
                             col_idx += 1
@@ -3564,7 +3564,7 @@ with tabs[4]:
         <style>
         .availability-day-card {
             background: linear-gradient(to bottom, #031827, #07314f);
-            border: 1px solid #fff500;
+            border: 1px solid #D4FC1E;
             border-radius: 12px;
             padding: 15px;
             margin: 10px 0;
@@ -3577,7 +3577,7 @@ with tabs[4]:
             box-shadow: 0 6px 12px rgba(255, 245, 0, 0.4);
         }
         .day-header {
-            color: #fff500;
+            color: #D4FC1E;
             font-weight: bold;
             font-size: 1.2em;
             margin-bottom: 10px;
@@ -3591,11 +3591,11 @@ with tabs[4]:
             padding: 5px;
             background: rgba(255, 245, 0, 0.1);
             border-radius: 6px;
-            border-left: 3px solid #fff500;
+            border-left: 3px solid #D4FC1E;
         }
         .player-name {
             font-weight: bold;
-            color: #fff500;
+            color: #D4FC1E;
             margin-right: 8px;
             min-width: 80px;
         }
@@ -3779,7 +3779,7 @@ with tabs[6]:
                     st.markdown(f"""
                         <div style="margin-bottom: 20px; text-align: center;">
                             <a href="#{img_id}">
-                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid #fff500; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid #D4FC1E; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                             </a>
                         </div>
                         <div id="{img_id}" class="img-lightbox">
@@ -3922,7 +3922,7 @@ with tabs[7]:
     else:
         st.warning("Not enough data to generate visual analytics. Add some matches first!")
         
-    st.markdown("<hr style='border: 2px solid #fff500;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border: 2px solid #D4FC1E;'>", unsafe_allow_html=True)
 
     # --- SECTION 2: AI EXPORT & FULL BACKUP SYSTEM (Original Code) ---
     st.header("🤖 Analyze League Data with Google Gemini")
@@ -3958,7 +3958,7 @@ with tabs[7]:
             st.markdown("""
             <a href="https://gemini.google.com/app" target="_blank">
                 <button style="
-                    background-color: #fff500;
+                    background-color: #D4FC1E;
                     color: #031827;
                     padding: 14px 20px;
                     border: none;
