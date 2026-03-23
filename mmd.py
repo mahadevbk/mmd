@@ -105,141 +105,6 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Custom CSS ---
-st.markdown("""
-<style>
-.mobile-card {
-    background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
-    border: 1px solid rgba(255, 245, 0, 0.2);
-    border-radius: 15px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-.rank-badge {
-    background: #fff500;
-    color: #041136;
-    font-weight: bold;
-    border-radius: 5px;
-    padding: 2px 8px;
-    font-size: 14px;
-}
-.trend-dot {
-    height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 3px;
-}
-.dot-w { background-color: #00ff88; box-shadow: 0 0 5px #00ff88; }
-.dot-l { background-color: #ff4b4b; }
-.stApp {
-  background: linear-gradient(to bottom, #041136, #21000a);
-  background-attachment: scroll;
-}
-@media print {
-  html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: linear-gradient(to bottom, #21000a, #041136) !important; height: 100vh; margin: 0; padding: 0; }
-  header, .stToolbar { display: none; }
-}
-[data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
-.profile-image {
-    width: 80px; height: 80px; object-fit: cover; border: 2px solid #fff500;
-    border-radius: 15px; margin-right: 15px; vertical-align: middle;
-    transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 245, 0, 0.6);
-}
-.profile-image:hover { transform: scale(1.1); }
-.birthday-banner {
-    background: linear-gradient(45deg, #FFFF00, #EEE8AA); color: #950606; padding: 15px;
-    border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
-    margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    display: flex; justify-content: center; align-items: center;
-}
-.whatsapp-share, .calendar-share {
-    background-color: #25D366; color: white !important; padding: 5px 10px; border-radius: 5px; 
-    text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
-    font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
-}
-.whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
-.court-card {
-    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid #fff500;
-    border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s, box-shadow 0.2s; text-align: center;
-}
-.court-card:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); }
-.court-card h4 { color: #fff500; margin-bottom: 10px; }
-.court-card a {
-    background-color: #fff500; color: #031827; padding: 8px 16px; border-radius: 5px;
-    text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
-    transition: background-color 0.2s;
-}
-.court-card a:hover { background-color: #ffd700; }
-@import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
-html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 { font-family: 'Offside', sans-serif !important; }
-h1 { font-size: 24px !important; }
-h2 { font-size: 22px !important; }
-h3 { font-size: 16px !important; }
-.rankings-table-container {
-    width: 100%; margin-top: 0px !important; padding: 5px;
-}
-.ranking-row {
-    display: block; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    overflow: visible; transition: transform 0.2s;
-}
-.ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
-.rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-.rank-col { font-size: 2em; font-weight: bold; color: #fff500; margin-right: 15px; min-width: 40px; text-align: center; }
-.player-col { font-size: 1.4em; font-weight: bold; color: #ffffff; flex-grow: 1; }
-.badge { background: rgba(255, 215, 0, 0.2); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
-.stat-box { flex: 1; min-width: 100px; text-align: center; padding: 5px; }
-.stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-.stat-value { font-size: 1.1em; color: #fff; font-weight: bold; }
-.stat-highlight { color: #fff500; }
-[data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
-.block-container { display: flex; flex-wrap: wrap; justify-content: center; }
-[data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
-[data-testid="stExpander"] i, [data-testid="stExpander"] span.icon { font-family: 'Material Icons' !important; }
-.img-lightbox {
-    display: none;
-    position: fixed;
-    z-index: 99999;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.9);
-    align-items: center;
-    justify-content: center;
-}
-.img-lightbox:target {
-    display: flex;
-}
-.img-lightbox img {
-    max-width: 90%;
-    max-height: 90%;
-    border: 3px solid #fff500;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(255, 245, 0, 0.5);
-    object-fit: contain;
-}
-.img-lightbox-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    color: white;
-    font-size: 50px;
-    font-weight: bold;
-    text-decoration: none;
-    cursor: pointer;
-}
-.clickable-img {
-    cursor: pointer;
-    transition: 0.3s;
-}
-.clickable-img:hover {
-    opacity: 0.8;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # --- Supabase Initialization ---
 try:
     supabase_url = st.secrets["supabase"]["supabase_url"]
@@ -296,6 +161,193 @@ KNOWN_COURT_URLS = {
 }
 
 COURT_NAMES = sorted(list(KNOWN_COURT_URLS.keys()))
+
+# --- Session State Init ---
+if 'theme' not in st.session_state:
+    st.session_state.theme = "Default"
+
+def apply_custom_theme(theme_choice):
+    # Base colors and variables
+    if theme_choice == "Dark":
+        bg = "#121212"
+        surface = "#1E1E1E"
+        text = "#E0E0E0"
+        accent = "#BB86FC"
+        card_bg = "linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)"
+        border_color = "rgba(187, 134, 252, 0.3)"
+        secondary_text = "#aaaaaa"
+        table_row_bg = "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)"
+        table_row_hover = "rgba(187, 134, 252, 0.1)"
+        st_header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
+    elif theme_choice == "Light":
+        bg = "#FDF5E6"
+        surface = "#FFFFFF"
+        text = "#2F4F4F"
+        accent = "#D2691E"
+        card_bg = "linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%)"
+        border_color = "rgba(210, 105, 30, 0.3)"
+        secondary_text = "#555555"
+        table_row_bg = "linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%)"
+        table_row_hover = "rgba(210, 105, 30, 0.1)"
+        st_header_bg = "linear-gradient(to top, #FDF5E6, #FFFFFF)"
+    else:  # Default (Neon Court)
+        bg = "linear-gradient(to bottom, #041136, #21000a)"
+        surface = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
+        text = "#FFFFFF"
+        accent = "#fff500"
+        card_bg = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
+        border_color = "rgba(255, 245, 0, 0.2)"
+        secondary_text = "#aaaaaa"
+        table_row_bg = "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)"
+        table_row_hover = "rgba(255, 245, 0, 0.1)"
+        st_header_bg = "linear-gradient(to top, #041136, #21000a)"
+
+    st.markdown(f"""
+    <style>
+    .mobile-card {{
+        background: {card_bg};
+        border: 1px solid {border_color};
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }}
+    .rank-badge {{
+        background: {accent};
+        color: #041136;
+        font-weight: bold;
+        border-radius: 5px;
+        padding: 2px 8px;
+        font-size: 14px;
+    }}
+    .trend-dot {{
+        height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 3px;
+    }}
+    .dot-w {{ background-color: #00ff88; box-shadow: 0 0 5px #00ff88; }}
+    .dot-l {{ background-color: #ff4b4b; }}
+    .stApp {{
+      background: {bg};
+      background-attachment: scroll;
+      color: {text};
+    }}
+    @media print {{
+      html, body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+      body {{ background: {bg} !important; height: 100vh; margin: 0; padding: 0; }}
+      header, .stToolbar {{ display: none; }}
+    }}
+    [data-testid="stHeader"] {{ background: {st_header_bg} !important; }}
+    .profile-image {{
+        width: 80px; height: 80px; object-fit: cover; border: 2px solid {accent};
+        border-radius: 15px; margin-right: 15px; vertical-align: middle;
+        transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px {border_color};
+    }}
+    .profile-image:hover {{ transform: scale(1.1); }}
+    .birthday-banner {{
+        background: linear-gradient(45deg, #FFFF00, #EEE8AA); color: #950606; padding: 15px;
+        border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
+        margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        display: flex; justify-content: center; align-items: center;
+    }}
+    .whatsapp-share, .calendar-share {{
+        background-color: #25D366; color: white !important; padding: 5px 10px; border-radius: 5px; 
+        text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
+        font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
+    }}
+    .whatsapp-share img {{ width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }}
+    .court-card {{
+        background: {card_bg}; border: 1px solid {accent};
+        border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, box-shadow 0.2s; text-align: center;
+    }}
+    .court-card:hover {{ transform: scale(1.05); box-shadow: 0 6px 12px {border_color}; }}
+    .court-card h4 {{ color: {accent}; margin-bottom: 10px; }}
+    .court-card a {{
+        background-color: {accent}; color: {bg if 'linear' not in bg else '#041136'}; padding: 8px 16px; border-radius: 5px;
+        text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
+        transition: background-color 0.2s;
+    }}
+    .court-card a:hover {{ background-color: {accent}; opacity: 0.8; }}
+    @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
+    html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {{ font-family: 'Offside', sans-serif !important; color: {text} !important; }}
+    h1 {{ font-size: 24px !important; }}
+    h2 {{ font-size: 22px !important; }}
+    h3 {{ font-size: 16px !important; }}
+    .rankings-table-container {{
+        width: 100%; margin-top: 0px !important; padding: 5px;
+    }}
+    .ranking-row {{
+        display: block; padding: 15px; margin-bottom: 15px; border: 1px solid {border_color};
+        border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        background: {table_row_bg};
+        overflow: visible; transition: transform 0.2s;
+    }}
+    .ranking-row:hover {{ transform: translateY(-2px); border-color: {accent}; background: {table_row_hover}; }}
+    .rank-profile-player-group {{ display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid {border_color}; padding-bottom: 10px; }}
+    .rank-col {{ font-size: 2em; font-weight: bold; color: {accent}; margin-right: 15px; min-width: 40px; text-align: center; }}
+    .player-col {{ font-size: 1.4em; font-weight: bold; color: {text}; flex-grow: 1; }}
+    .badge {{ background: {border_color}; color: {accent}; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid {border_color}; vertical-align: middle; }}
+    .stat-box {{ flex: 1; min-width: 100px; text-align: center; padding: 5px; }}
+    .stat-label {{ font-size: 0.75em; color: {secondary_text}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }}
+    .stat-value {{ font-size: 1.1em; color: {text}; font-weight: bold; }}
+    .stat-highlight {{ color: {accent}; }}
+    [data-testid="stMetric"] > div:nth-of-type(1) {{ color: #FF7518 !important; }}
+    .block-container {{ display: flex; flex-wrap: wrap; justify-content: center; }}
+    [data-testid="stHorizontalBlock"] {{ flex: 1 1 100% !important; margin: 10px 0; }}
+    [data-testid="stExpander"] i, [data-testid="stExpander"] span.icon {{ font-family: 'Material Icons' !important; }}
+    .img-lightbox {{
+        display: none;
+        position: fixed;
+        z-index: 99999;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.9);
+        align-items: center;
+        justify-content: center;
+    }}
+    .img-lightbox:target {{
+        display: flex;
+    }}
+    .img-lightbox img {{
+        max-width: 90%;
+        max-height: 90%;
+        border: 3px solid {accent};
+        border-radius: 10px;
+        box-shadow: 0 0 20px {border_color};
+        object-fit: contain;
+    }}
+    .img-lightbox-close {{
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 50px;
+        font-weight: bold;
+        text-decoration: none;
+        cursor: pointer;
+    }}
+    .clickable-img {{
+        cursor: pointer;
+        transition: 0.3s;
+    }}
+    .clickable-img:hover {{
+        opacity: 0.8;
+    }}
+    /* Button theming */
+    .stButton>button {{
+        background-color: {surface if 'linear' not in surface else 'transparent'};
+        color: {text};
+        border: 1px solid {accent};
+    }}
+    .stButton>button:hover {{
+        border-color: {accent};
+        color: {accent};
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+apply_custom_theme(st.session_state.theme)
 
 # --- Session State Init ---
 if 'players_df' not in st.session_state:
@@ -624,10 +676,24 @@ def get_partner_stats_inner_template():
 def get_partner_stats_template():
     return defaultdict(get_partner_stats_inner_template)
 
-def create_radar_chart(player_data):
+def create_radar_chart(player_data, theme="Default"):
     """Generates a small radar chart for player stats."""
     categories = ['Win %', 'Clutch', 'Consistency', 'GDA', 'Exp']
     
+    # Theme settings
+    if theme == "Dark":
+        accent = '#BB86FC'
+        template = 'plotly_dark'
+        fill_color = 'rgba(187, 134, 252, 0.3)'
+    elif theme == "Light":
+        accent = '#D2691E'
+        template = 'plotly_white'
+        fill_color = 'rgba(210, 105, 30, 0.3)'
+    else:
+        accent = '#fff500'
+        template = 'plotly_dark'
+        fill_color = 'rgba(255, 245, 0, 0.3)'
+
     # Normalize stats for visual balance (0-100 scale)
     # Consistency: Lower is better, so we invert it (0 index = 100 score)
     consistency_score = max(0, 100 - (player_data.get('Consistency Index', 0) * 10))
@@ -652,19 +718,20 @@ def create_radar_chart(player_data):
         r=values,
         theta=categories,
         fill='toself',
-        fillcolor='rgba(255, 245, 0, 0.3)',
-        line=dict(color='#fff500', width=2),
+        fillcolor=fill_color,
+        line=dict(color=accent, width=2),
         hoverinfo='r+theta'
     ))
 
     fig.update_layout(
+        template=template,
         polar=dict(
             bgcolor='rgba(0,0,0,0)',
             radialaxis=dict(visible=False, range=[0, 100]),
             angularaxis=dict(
-                gridcolor="rgba(255,255,255,0.1)", 
-                linecolor="rgba(255,255,255,0.1)",
-                tickfont=dict(size=9, color="#aaa")
+                gridcolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)", 
+                linecolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)",
+                tickfont=dict(size=9, color="#aaa" if theme != "Light" else "#555")
             )
         ),
         showlegend=False,
@@ -1093,9 +1160,20 @@ def get_player_trend(player, matches, max_matches=5):
 
 # --- Helper to plot trend ---
 @st.cache_data(ttl=300)
-def plot_player_performance(player_name, matches_df):
+def plot_player_performance(player_name, matches_df, theme="Default"):
     if matches_df.empty: return None
     
+    # Theme settings
+    if theme == "Dark":
+        accent = '#BB86FC'
+        template = 'plotly_dark'
+    elif theme == "Light":
+        accent = '#D2691E'
+        template = 'plotly_white'
+    else:
+        accent = '#fff500'
+        template = 'plotly_dark'
+
     # Filter matches involving the player
     mask = (matches_df['team1_player1'] == player_name) | (matches_df['team1_player2'] == player_name) | \
             (matches_df['team2_player1'] == player_name) | (matches_df['team2_player2'] == player_name)
@@ -1155,8 +1233,17 @@ def plot_player_performance(player_name, matches_df):
     fig = px.line(history, x="Match", y="Cumulative Game Diff", 
                     hover_data=["Date", "Result", "Opponents"],
                     title=f"Performance Trend - {player_name}",
-                    markers=True)
-    fig.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
+                    markers=True,
+                    color_discrete_sequence=[accent])
+    fig.update_layout(
+        template=template,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.1)' if theme != "Light" else 'rgba(0,0,0,0.1)'),
+        height=300, 
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
     return fig
 
 def get_birthday_banner(players_df):
@@ -1648,7 +1735,7 @@ with tabs[0]:
                 col_chart, col_stats = st.columns([1.8, 1])
                 with col_chart:
                     if 'create_radar_chart' in globals():
-                        fig = create_radar_chart(row)
+                        fig = create_radar_chart(row, theme=st.session_state.theme)
                         fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=250)
                         st.plotly_chart(fig, config={'displayModeBar': False}, width='stretch', key=f"radar_{row['Player']}_{idx}")
                     
@@ -2520,7 +2607,7 @@ with tabs[2]:
                     with st.expander("Details & Partners", expanded=False, icon="➡️"):
                         t1, t2 = st.tabs(["Trends", "Partners"])
                         with t1:
-                            fig = plot_player_performance(p_name, st.session_state.matches_df)
+                            fig = plot_player_performance(p_name, st.session_state.matches_df, theme=st.session_state.theme)
                             if fig: st.plotly_chart(fig, width="stretch", key=f"p_{idx}")
                         with t2:
                             if p_name in partner_stats_global:
@@ -3739,4 +3826,27 @@ with tabs[7]:
 
 
 st.markdown("----")
+col_theme, _ = st.columns([1, 2])
+with col_theme:
+    # Use segmented_control if available, otherwise radio
+    try:
+        new_theme = st.segmented_control(
+            "App Appearance",
+            options=["Default", "Dark", "Light"],
+            default=st.session_state.theme,
+            key="theme_toggle_widget"
+        )
+    except AttributeError:
+        new_theme = st.radio(
+            "App Appearance",
+            options=["Default", "Dark", "Light"],
+            index=["Default", "Dark", "Light"].index(st.session_state.theme),
+            horizontal=True,
+            key="theme_toggle_widget"
+        )
+
+if new_theme and new_theme != st.session_state.theme:
+    st.session_state.theme = new_theme
+    st.rerun()
+
 st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
