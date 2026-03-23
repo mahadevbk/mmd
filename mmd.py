@@ -203,8 +203,34 @@ def apply_custom_theme(theme_choice):
         table_row_hover = "rgba(255, 245, 0, 0.1)"
         st_header_bg = "linear-gradient(to top, #041136, #21000a)"
 
+    # Light Theme Contrast Overrides
+    light_overrides = ""
+    if theme_choice == "Light":
+        light_overrides = f"""
+        /* Force Internal Text Color for Light Theme */
+        .mobile-card *, .court-card *, .ranking-row *, .booking-card *, .booking-row * {{
+            color: #1A1A1A !important;
+        }}
+        .card-subtitle, .card-detail, .stat-label {{
+            color: #444444 !important;
+        }}
+        .stat-value, .stat-highlight {{
+            color: {clay_accent} !important;
+            font-weight: bold !important;
+        }}
+        .mobile-card, .court-card, .ranking-row, .booking-row {{
+            background-color: #FFFFFF !important;
+        }}
+        /* Ensure buttons in cards are readable */
+        .mobile-card .stButton>button, .court-card .stButton>button, .ranking-row .stButton>button {{
+            color: #FFFFFF !important;
+            background-color: {clay_accent} !important;
+        }}
+        """
+
     st.markdown(f"""
     <style>
+    {light_overrides}
     .mobile-card {{
         background: {card_bg};
         border: {'2px solid ' + border_color if theme_choice == "Light" else '1px solid ' + border_color};
