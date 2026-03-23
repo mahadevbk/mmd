@@ -493,7 +493,7 @@ def get_weather(lat, lon, date_str, time_str):
         if target_dt > now + timedelta(days=13) or target_dt < now - timedelta(hours=24):
              return "Weather N/A"
              
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability&timezone=auto&start_date={date_str}&end_date={date_str}"
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m,uv_index&timezone=auto&start_date={date_str}&end_date={date_str}"
         response = requests.get(url, timeout=5)
         data = response.json()
         
@@ -508,8 +508,10 @@ def get_weather(lat, lon, date_str, time_str):
             temp = hourly["temperature_2m"][idx]
             hum = hourly["relative_humidity_2m"][idx]
             rain = hourly["precipitation_probability"][idx]
+            wind = hourly["wind_speed_10m"][idx]
+            uv = hourly["uv_index"][idx]
             
-            return f"🌡️ {temp}°C | 💧 {hum}% | 🌧️ {rain}%"
+            return f"🌡️ {temp}°C | 💧 {hum}% | 🌧️ {rain}% | 💨 {wind}km/h | ☀️ UV {uv}"
         else:
             return "Weather N/A"
     except Exception:
