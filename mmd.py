@@ -353,17 +353,18 @@ def apply_custom_theme(theme_choice):
             border: none !important;
             color: #1A1A1A !important; /* Force black text */
         }
-        /* 3. The ACTIVE button */
-        div[data-testid='stSegmentedControl'] [data-testid='stHorizontalBlock'] button[aria-checked='true'],
-        div[data-testid='stSegmentedControl'] button[data-baseweb='tab'][aria-selected='true'],
-        div[data-testid='stSegmentedControl'] div[role='radiogroup'] div[aria-checked='true'] {
+        /* 3. The ACTIVE button (the one currently blue) */
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'] {
             background-color: #B24A00 !important; /* Clay Orange */
-            color: #FFFFFF !important; /* White text */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+            color: #FFFFFF !important; /* Force text to white */
         }
-        /* 4. Force the text inside AGAIN */
-        div[data-testid='stSegmentedControl'] button div p {
-            color: inherit !important; 
+        /* 4. This removes the yellow text that is appearing on the selected button */
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'] div p {
+            color: #FFFFFF !important;
+        }
+        /* 5. This ensures the unselected buttons have dark text by default */
+        div[data-testid='stSegmentedControl'] button[aria-checked='false'] div p {
+            color: #1A1A1A !important;
         }
         """
 
