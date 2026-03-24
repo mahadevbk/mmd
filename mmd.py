@@ -39,32 +39,39 @@ except ImportError:
 st.set_page_config(
     page_title="MMD Mira Mixed Doubles Tennis League",
     page_icon="https://raw.githubusercontent.com/mahadevbk/mmd/main/assets/logo/mmdlogo.png",
+    #layout="wide"
 )
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
-# Initialize state
-if "theme" not in st.session_state:
-    st.session_state.theme = "Default"
+# In mmd.py
+
+
 
 # --- PWA Injection ---
 def inject_pwa_meta():
     pwa_html = """
     <script>
       const parentDoc = window.parent.document;
+      
       const manifestUrl = "/static/manifest.json";
       const swUrl = "/static/sw.js";
+
+      // Manifest
       if (!parentDoc.querySelector('link[rel="manifest"]')) {
           const manifest = parentDoc.createElement('link');
           manifest.rel = 'manifest';
           manifest.href = manifestUrl;
           parentDoc.head.appendChild(manifest);
       }
+
+      // iOS Meta Tags for PWA
       const metaTags = [
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
         { name: "apple-mobile-web-app-title", content: "MMD Tennis" },
         { rel: "apple-touch-icon", href: "/static/mmdlogo-192.png" }
       ];
+
       metaTags.forEach(tag => {
         const selector = tag.name ? `meta[name="${tag.name}"]` : `link[rel="${tag.rel}"]`;
         if (!parentDoc.querySelector(selector)) {
@@ -79,10 +86,18 @@ def inject_pwa_meta():
           parentDoc.head.appendChild(element);
         }
       });
+
+      // Service Worker Registration
       if ('serviceWorker' in window.navigator) {
+        // Scope can only be broader than current directory if Served with Service-Worker-Allowed header.
+        // But we attempt to register and the browser handles it.
         window.navigator.serviceWorker.register(swUrl)
-          .then(reg => { console.log('MMD PWA Registered'); })
-          .catch(err => { console.error('MMD PWA Failed', err); });
+          .then(reg => {
+            console.log('MMD PWA: Service Worker Registered with scope:', reg.scope);
+          })
+          .catch(err => {
+            console.error('MMD PWA: Service Worker Registration Failed:', err);
+          });
       }
     </script>
     """
@@ -91,60 +106,66 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) ---
-# Create 4 columns: spacer pulls icons to the right
-t_col_spacer, t_c1, t_c2, t_c3 = st.columns([15, 1, 1, 1])
+# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
+t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
 
-with t_c1:
-    if st.button("🌓", help="Default Theme", key="t_def"):
+with t_col2:
+    # Default / Mixed Theme Icon
+    if st.button("🌓", help="Default Theme", key="theme_def"):
         st.session_state.theme = "Default"
         st.rerun()
-with t_c2:
-    if st.button("🌑", help="Dark Theme", key="t_dark"):
+
+with t_col3:
+    # Dark Theme Icon
+    if st.button("🌑", help="Dark Theme", key="theme_dark"):
         st.session_state.theme = "Dark"
         st.rerun()
-with t_c3:
-    if st.button("🌞", help="Light Theme", key="t_light"):
+
+with t_col4:
+    # Light Theme Icon
+    if st.button("🌞", help="Light Theme", key="theme_light"):
         st.session_state.theme = "Light"
         st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. THEME SELECTOR FIX: Strip button boxes and borders */
-div[data-testid="column"] button {
-    height: 30px !important;
-    width: 30px !important;
-    min-width: 30px !important;
-    padding: 0px !important;
-    margin: 0px !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    color: inherit !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+/* Container for the top-right theme icons */
+.theme-container {
+    position: fixed;
+    top: 50px; /* Adjust based on your header height */
+    right: 20px;
+    z-index: 999999;
+    display: flex;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Ensure absolutely no background or outline on any state */
-div[data-testid="column"] button:hover, 
-div[data-testid="column"] button:active, 
-div[data-testid="column"] button:focus {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
+/* Individual Icon Style */
+.theme-icon {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-icon:hover {
     transform: scale(1.2);
-    transition: all 0.2s ease-in-out;
+    opacity: 1;
 }
 
-/* Size the icon itself */
-div[data-testid="column"] button p {
-    font-size: 20px !important;
-    margin: 0 !important;
+.theme-icon.active {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--dynamic-accent));
 }
-
-/* 2. APP STYLING (Existing Styles) */
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
     border: 1px solid rgba(255, 245, 0, 0.2);
@@ -153,6 +174,19 @@ div[data-testid="column"] button p {
     margin-bottom: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
+.rank-badge {
+    background-color: var(--dynamic-accent) !important;
+    color: #041136;
+    font-weight: bold;
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 14px;
+}
+.trend-dot {
+    height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 3px;
+}
+.dot-w { background-color: #00ff88; box-shadow: 0 0 5px #00ff88; }
+.dot-l { background-color: #ff4b4b; }
 .stApp {
   background: linear-gradient(to bottom, #041136, #21000a);
   background-attachment: scroll;
@@ -162,17 +196,107 @@ div[data-testid="column"] button p {
   body { background: linear-gradient(to bottom, #21000a, #041136) !important; height: 100vh; margin: 0; padding: 0; }
   header, .stToolbar { display: none; }
 }
-[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
+.profile-image {
+    width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--dynamic-accent) !important;
+    border-radius: 15px; margin-right: 15px; vertical-align: middle;
+    transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+.profile-image:hover { transform: scale(1.1); }
+.birthday-banner {
+    background: #FFFFFF; color: var(--dynamic-text); padding: 15px;
+    border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
+    margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    display: flex; justify-content: center; align-items: center;
+}
+.whatsapp-share, .calendar-share {
+    background-color: var(--dynamic-accent); padding: 5px 10px; border-radius: 5px; 
+    text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
+    font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
+}
+.whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
+.court-card {
+    background: var(--card-bg); border: 1px solid var(--dynamic-accent);
+    border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s; text-align: center;
+}
+.court-card:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); }
+.court-card h4 { color: var(--dynamic-accent) !important; margin-bottom: 10px; }
+.court-card a {
+    background-color: var(--dynamic-accent) !important; color: #031827; padding: 8px 16px; border-radius: 5px;
+    text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
+    transition: background-color 0.2s;
+}
+.court-card a:hover { background-color: var(--dynamic-accent); }
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 { font-family: 'Offside', sans-serif !important; }
+h1 { font-size: 24px !important; }
+h2 { font-size: 22px !important; }
+h3 { font-size: 16px !important; }
+.rankings-table-container {
+    width: 100%; margin-top: 0px !important; padding: 5px;
+}
+.ranking-row {
+    display: block; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    overflow: visible; transition: transform 0.2s;
+}
+.ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
+.rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+.rank-col { font-size: 2em; font-weight: bold; color: var(--dynamic-accent) !important; margin-right: 15px; }
+.player-col { font-size: 1.4em; font-weight: bold; flex-grow: 1; }
+.badge { background: rgba(255, 215, 0, 0.2); color: var(--dynamic-accent); padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
+.stat-box { flex: 1; min-width: 100px; text-align: center; padding: 5px; }
+.stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.stat-value { font-size: 1.1em; font-weight: bold; }
+.stat-highlight { color: var(--dynamic-accent) !important; }
+[data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
+.block-container { display: flex; flex-wrap: wrap; justify-content: center; }
+[data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
+[data-testid="stExpander"] i, [data-testid="stExpander"] span.icon { font-family: 'Material Icons' !important; }
+.img-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+.img-lightbox:target {
+    display: flex;
+}
+.img-lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border: 3px solid var(--dynamic-accent) !important;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    object-fit: contain;
+}
+.img-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 50px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+.clickable-img {
+    cursor: pointer;
+    transition: 0.3s;
+}
+.clickable-img:hover {
+    opacity: 0.8;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# --- MAIN CONTENT STARTS HERE ---
-#st.title("MMD Mira Mixed Doubles")
-
-
-        
 # --- Supabase Initialization ---
 try:
     supabase_url = st.secrets["supabase"]["supabase_url"]
