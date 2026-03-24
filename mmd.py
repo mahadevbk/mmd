@@ -505,6 +505,11 @@ def apply_custom_theme(theme_choice):
             border-radius: 8px !important;
             border: 1px solid #ddd !important;
         }
+
+        /* 4. Fix st.container(border=True) border */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 1px solid var(--card-border-color) !important;
+        }
         """
 
     # 2. Define CSS rules using the variables
@@ -1893,7 +1898,7 @@ with tabs[0]:
 
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
@@ -2348,7 +2353,7 @@ with tabs[1]:
                 img_html = f'<div class="match-img-wrapper"><a href="#{m_uid}"><img src="{row.match_image_url}" class="match-img-content clickable-img"></a></div><div id="{m_uid}" class="img-lightbox"><a href="#" class="img-lightbox-close">&times;</a><img src="{row.match_image_url}"></div>' if row.match_image_url else ""
                 
                 card_html = f"""
-<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
+<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); margin-bottom: 25px; overflow: hidden;">
     {img_html}
     <div style="padding: 15px;">
         <div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
@@ -3895,7 +3900,7 @@ with tabs[7]:
         fig1.update_layout(height=500, template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig1, width="stretch")
         
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid var(--card-border-color);'>", unsafe_allow_html=True)
         
         col_a, col_b = st.columns(2)
         
@@ -3922,7 +3927,7 @@ with tabs[7]:
             fig3.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig3, width="stretch")
 
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid var(--card-border-color);'>", unsafe_allow_html=True)
 
         # 5. Line Chart: League Activity Over Time
         st.subheader("📅 Match Activity Timeline")
@@ -3939,7 +3944,7 @@ with tabs[7]:
         fig4.update_layout(template="plotly_dark", xaxis_title="Date", yaxis_title="Number of Matches", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig4, width="stretch")
 
-        st.markdown("<hr style='border: 1px solid rgba(255,245,0,0.2);'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 1px solid var(--card-border-color);'>", unsafe_allow_html=True)
 
         # 6. Interactive Radar Chart Comparison Tool
         st.subheader("🕸️ Player Stat Comparison Tool")
