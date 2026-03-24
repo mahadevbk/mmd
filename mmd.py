@@ -105,66 +105,85 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Elegant Theme Selector (Top of App) ---
-# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
-t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
+# --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
+# ─────────────────────────────────────────────────────────────
+#   FINAL CLEAN THEME SELECTOR - Beautiful Pill (No duplicates)
+# ─────────────────────────────────────────────────────────────
+col_spacer, col_pill = st.columns([14, 3])
 
-with t_col2:
-    # Default / Mixed Theme Icon
-    if st.button("🌓", help="Default Theme", key="theme_def"):
+with col_pill:
+    st.markdown("""
+    <div class="theme-pill">
+        <span onclick="document.querySelector('button[key=\\'theme_def\\']').click()" 
+              class="theme-btn" title="Default Theme">🌓</span>
+        <span onclick="document.querySelector('button[key=\\'theme_dark\\']').click()" 
+              class="theme-btn" title="Dark Theme">🌑</span>
+        <span onclick="document.querySelector('button[key=\\'theme_light\\']').click()" 
+              class="theme-btn" title="Light Theme">🌞</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # These buttons are completely hidden but handle the actual logic
+    if st.button("🌓", key="theme_def"):
         st.session_state.theme = "Default"
         st.rerun()
-
-with t_col3:
-    # Dark Theme Icon
-    if st.button("🌑", help="Dark Theme", key="theme_dark"):
+    if st.button("🌑", key="theme_dark"):
         st.session_state.theme = "Dark"
         st.rerun()
-
-with t_col4:
-    # Light Theme Icon
-    if st.button("🌞", help="Light Theme", key="theme_light"):
+    if st.button("🌞", key="theme_light"):
         st.session_state.theme = "Light"
         st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* Container for the top-right theme icons */
-.theme-container {
-    position: fixed;
-    top: 50px; /* Adjust based on your header height */
-    right: 20px;
-    z-index: 999999;
+/* === FINAL CLEAN THEME PILL (Top Right) === */
+.theme-pill {
     display: flex;
-    gap: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 8px 12px;
-    border-radius: 20px;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 245, 0, 0.3);
+    border-radius: 50px;
+    padding: 5px 10px;
+    gap: 6px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+    align-items: center;
 }
 
-/* Individual Icon Style */
-.theme-icon {
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-    transition: transform 0.2s, opacity 0.2s;
-    opacity: 0.6;
+.theme-btn {
+    background: transparent !important;
+    border: none !important;
+    font-size: 29px !important;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--dynamic-text);
 }
 
-.theme-icon:hover {
+.theme-btn:hover {
+    background: rgba(255, 245, 0, 0.35) !important;
     transform: scale(1.2);
-    opacity: 1;
+    color: var(--dynamic-accent);
 }
 
-.theme-icon.active {
-    opacity: 1;
-    filter: drop-shadow(0 0 5px var(--dynamic-accent));
+/* FORCE HIDE the real Streamlit buttons and any wrapper */
+.stButton button[key^="theme_"],
+button[key^="theme_"],
+div:has(> button[key^="theme_"]) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
