@@ -105,96 +105,50 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Elegant Theme Selector (Sidebar) ---
-# 1. Main layout: 75% left, 25% right
-col_main, col_side = st.columns([3, 1])
 
-with col_side:
-    # 2. CSS to center the horizontal icons and hide the radio label
-    st.markdown("""
-        <style>
-        /* Hide the radio button label "Select Theme" */
-        div[data-testid="stRadio"] > label {
-            display: none;
-        }
-        /* Center the horizontal radio options */
-        div[data-testid="stRadio"] > div[role="radiogroup"] {
-            justify-content: center;
-            gap: 15px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-    with st.expander("🎨", expanded=False):
-        # Map labels to icons
-        theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
-
-        if 'theme' not in st.session_state:
-            st.session_state.theme = "Default"
-
-        # The Radio Selector
-        selected_theme = st.radio(
-            "Select Theme", # This label is hidden by the CSS above
-            options=list(theme_map.keys()),
-            format_func=lambda x: theme_map[x], # This shows ONLY the icon
-            index=list(theme_map.keys()).index(st.session_state.theme),
-            horizontal=True,
-            key="icon_radio_theme"
-        )
-
-        # 3. Update state and rerun only if changed
-        if st.session_state.theme != selected_theme:
-            st.session_state.theme = selected_theme
-            st.rerun()
 
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. Remove the massive gap at the top of the page */
+* 1. Remove top page padding to let the expander sit at the very edge */
 .block-container {
-padding-top: 1rem !important;
-padding-bottom: 0rem !important;
+padding-top: 0rem !important;
 }
 
-/* 2. Force columns to stay horizontal on mobile (Streamlit usually stacks them) */
-[data-testid="column"] {
-width: calc(25% - 1rem) !important;
-flex: 1 1 calc(25% - 1rem) !important;
-min-width: 25% !important;
+/* 2. Target the expander specifically to be 25% width and float right /
+div[data-testid="stExpander"] {
+position: absolute;
+top: 5px;
+right: 5px;
+width: 25% !important;
+min-width: 120px !important; / Prevents it from getting too small on phones */
+z-index: 999999;
 }
 
-/* The 'Main' column needs to take the other 75% */
-div[data-testid="column"]:nth-of-type(1) {
-width: 75% !important;
-flex: 3 1 75% !important;
-min-width: 75% !important;
+/* 3. Make the expander look like a clean floating button */
+.stExpander {
+border: 1px solid rgba(151, 151, 151, 0.3) !important;
+background-color: white !important;
+border-radius: 10px !important;
+box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
 }
 
-/* 3. Hide the Radio labels and center the icons */
+/* 4. Center icons and hide the radio labels */
 div[data-testid="stRadio"] > label {
 display: none !important;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] {
 justify-content: space-evenly !important;
-gap: 0px !important;
+gap: 5px !important;
 }
 
-/* Increase icon size for easier clicking */
-div[data-testid="stRadio"] div[role="radiogroup"] label {
-font-size: 1.5rem !important;
+/* 5. Mobile Adjustment: If screen is tiny, allow it to be a bit wider than 25% */
+@media (max-width: 640px) {
+div[data-testid="stExpander"] {
+width: 35% !important;
 }
-
-/* 4. Make the expander look like a floating button on the right */
-.stExpander {
-border: none !important;
-background-color: transparent !important;
-}
-
-/* Ensure the expander header (the icon) is aligned right */
-div[data-testid="stExpanderDetails"] {
-padding: 0 !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
@@ -370,6 +324,32 @@ h3 { font-size: 16px !important; }
 }
 </style>
 """, unsafe_allow_html=True)
+
+
+#------theme selection
+# Inject the CSS from above here
+st.markdown(f"<style>{css_code_above}</style>", unsafe_allow_html=True)
+
+# This will now float in the top right corner because of the CSS
+with st.expander("🎨", expanded=False):
+    theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
+    
+    if 'theme' not in st.session_state:
+        st.session_state.theme = "Default"
+
+    selected_theme = st.radio(
+        "Theme",
+        options=list(theme_map.keys()),
+        format_func=lambda x: theme_map[x],
+        index=list(theme_map.keys()).index(st.session_state.theme),
+        horizontal=True,
+        key="floating_theme_radio"
+    )
+
+    if st.session_state.theme != selected_theme:
+        st.session_state.theme = selected_theme
+        st.rerun()
+
 
 # --- Supabase Initialization ---
 try:
