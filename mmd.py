@@ -128,9 +128,23 @@ with st.sidebar:
 # --- Custom CSS ---
 st.markdown("""
 <style>
+[data-testid="stIconMaterial"] span:contains("palette") {
+    display: none !important;
+}
+
+/* 2. Add your custom palette icon in its place */
 [data-testid="stIconMaterial"]::before {
-    content: "🎨";                  /* Color palette emoji */
-    font-size: 1.4em;
+    content: "🎨";           /* Emoji version - works everywhere */
+    /* OR use Material icon name: content: "palette"; */
+    font-family: "Material Symbols Rounded", sans-serif;
+    font-size: 24px;
+    font-variation-settings: 'FILL' 1;   /* makes it filled and nicer */
+    vertical-align: middle;
+}
+
+/* Optional: Make sure arrows and other icons are NOT affected */
+[data-testid="stIconMaterial"] span {
+    display: inline !important;   /* restore other icons like arrows */
 }
 /* Container for the top-right theme icons */
 .theme-container {
