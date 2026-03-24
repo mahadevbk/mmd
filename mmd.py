@@ -158,7 +158,7 @@ st.markdown("""
 }
 .whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
 .court-card {
-    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid var(--dynamic-accent);
+    background: var(--card-bg); border: 1px solid var(--dynamic-accent);
     border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, box-shadow 0.2s; text-align: center;
 }
@@ -3468,7 +3468,7 @@ with tabs[4]:
         st.markdown("""
         <style>
         .availability-day-card {
-            background: linear-gradient(to bottom, #031827, #07314f);
+            background: var(--card-bg);
             border: 2px solid var(--dynamic-accent) !important;
             border-radius: 12px;
             padding: 15px;
