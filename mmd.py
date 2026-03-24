@@ -342,13 +342,17 @@ def apply_custom_theme(theme_choice):
         
         /* Segmented Control Backgrounds for Light Mode */
         div[data-baseweb="segmented-control"] {
-            background-color: #E9ECEF !important;
+            background-color: #ffffff !important;
+            border: 1px solid #B24A00 !important;
         }
         div[data-baseweb="segmented-control"] div[aria-selected="true"] {
             background-color: #B24A00 !important;
         }
         div[data-baseweb="segmented-control"] div[aria-selected="true"] p {
             color: #ffffff !important;
+        }
+        div[data-baseweb="segmented-control"] div[aria-selected="false"] p {
+            color: #1A1A1A !important;
         }
         """
 
