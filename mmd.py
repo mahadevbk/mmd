@@ -340,30 +340,35 @@ def apply_custom_theme(theme_choice):
             color: #1A1A1A !important; 
         }
 
-        /* 1. The container */
-        div[data-testid='stSegmentedControl'] {
-            background-color: #f0f2f6 !important;
-            border: 1px solid #B24A00 !important;
-            border-radius: 10px !important;
-            padding: 5px !important;
+        /* 1. Force the background of the active segment */
+        div[data-testid='stSegmentedControl'] div[role='radiogroup'] div[aria-checked='true'] {
+            background-color: #B24A00 !important;
+            color: white !important;
         }
-        /* 2. All buttons in the toggle */
-        div[data-testid='stSegmentedControl'] button {
-            background-color: transparent !important;
-            border: none !important;
-            color: #1A1A1A !important; /* Force black text */
+
+        /* 2. Target the label text specifically to kill the optic yellow */
+        div[data-testid='stSegmentedControl'] * {
+            color: #1A1A1A !important;
         }
-        /* 3. The ACTIVE button (the one currently blue) */
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'] {
-            background-color: #B24A00 !important; /* Clay Orange */
-            color: #FFFFFF !important; /* Force text to white */
-        }
-        /* 4. This removes the yellow text that is appearing on the selected button */
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'] div p {
+
+        /* 3. Force the SELECTED label text to white */
+        div[data-testid='stSegmentedControl'] [aria-checked='true'] * {
             color: #FFFFFF !important;
         }
-        /* 5. This ensures the unselected buttons have dark text by default */
-        div[data-testid='stSegmentedControl'] button[aria-checked='false'] div p {
+
+        /* 4. Remove the blue glow/border Streamlit adds on focus */
+        div[data-testid='stSegmentedControl'] button:focus, 
+        div[data-testid='stSegmentedControl'] [aria-checked='true'] {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* 5. Fix the 'hover' state that was working before but felt disconnected */
+        div[data-testid='stSegmentedControl'] button:hover {
+            background-color: rgba(178, 74, 0, 0.1) !important;
+        }
+        ton[aria-checked='false'] div p {
             color: #1A1A1A !important;
         }
         """
