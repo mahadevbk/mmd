@@ -169,7 +169,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 { font-family: 'Offside', san
 """, unsafe_allow_html=True)
 
 # --- MAIN CONTENT STARTS HERE ---
-st.title("MMD Mira Mixed Doubles")
+#st.title("MMD Mira Mixed Doubles")
 
 
         
