@@ -336,20 +336,19 @@ def apply_custom_theme(theme_choice):
     if theme_choice == "Light":
         light_overrides = """
         /* Force Dark Labels for Tabs, Radio Buttons, and Segmented Control in Light Mode */
-        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, .stSegmentedControl label, div[data-baseweb="segmented-control"] p { 
+        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, .stSegmentedControl label, div[data-baseweb="segmented-control"] p, label[data-testid="stWidgetLabel"] { 
             color: #1A1A1A !important; 
         }
         
-        /* Ensure Active Tab is Orange */
-        button[data-baseweb='tab'][aria-selected='true'] p {
-            color: #B24A00 !important;
-            border-bottom-color: #B24A00 !important;
+        /* Segmented Control Backgrounds for Light Mode */
+        div[data-baseweb="segmented-control"] {
+            background-color: #E9ECEF !important;
         }
-        
-        /* Specific Card Visibility for Light Mode */
-        .mobile-card, .ranking-row, .court-card {
-            border: 1px solid #B24A00 !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        div[data-baseweb="segmented-control"] div[aria-selected="true"] {
+            background-color: #B24A00 !important;
+        }
+        div[data-baseweb="segmented-control"] div[aria-selected="true"] p {
+            color: #ffffff !important;
         }
         """
 
@@ -3907,14 +3906,14 @@ with col_theme:
     # Use segmented_control if available, otherwise radio
     try:
         new_theme = st.segmented_control(
-            "App Appearance",
+            "App Theme",
             options=["Default", "Dark", "Light"],
             default=st.session_state.theme,
             key="theme_toggle_widget"
         )
     except AttributeError:
         new_theme = st.radio(
-            "App Appearance",
+            "App Theme",
             options=["Default", "Dark", "Light"],
             index=["Default", "Dark", "Light"].index(st.session_state.theme),
             horizontal=True,
