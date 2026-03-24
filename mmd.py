@@ -106,26 +106,24 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) ---
-# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
-t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
-
-with t_col2:
-    # Default / Mixed Theme Icon
-    if st.button("🌓", help="Default Theme", key="theme_def"):
-        st.session_state.theme = "Default"
-        st.rerun()
-
-with t_col3:
-    # Dark Theme Icon
-    if st.button("🌑", help="Dark Theme", key="theme_dark"):
-        st.session_state.theme = "Dark"
-        st.rerun()
-
-with t_col4:
-    # Light Theme Icon
-    if st.button("🌞", help="Light Theme", key="theme_light"):
-        st.session_state.theme = "Light"
-        st.rerun()
+# Create an expander for theme icons
+with st.expander("", icon="🎨"):
+    t_col1, t_col2, t_col3 = st.columns(3)
+    with t_col1:
+        # Default / Mixed Theme Icon
+        if st.button("🌓", help="Default Theme", key="theme_def"):
+            st.session_state.theme = "Default"
+            st.rerun()
+    with t_col2:
+        # Dark Theme Icon
+        if st.button("🌑", help="Dark Theme", key="theme_dark"):
+            st.session_state.theme = "Dark"
+            st.rerun()
+    with t_col3:
+        # Light Theme Icon
+        if st.button("🌞", help="Light Theme", key="theme_light"):
+            st.session_state.theme = "Light"
+            st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
