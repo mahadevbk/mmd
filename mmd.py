@@ -296,11 +296,40 @@ KNOWN_COURT_URLS = {
 
 COURT_NAMES = sorted(list(KNOWN_COURT_URLS.keys()))
 
-# --- Session State Init ---
+# --- Theme Initialization & URL Sync ---
+if "theme" in st.query_params:
+    st.session_state.theme = st.query_params["theme"]
+
 if 'theme' not in st.session_state:
     st.session_state.theme = "Default"
 
 def apply_custom_theme(theme_choice):
+    # Render Floating Theme Selector
+    themes = ["Default", "Dark", "Light"]
+    # Radial gradients for metallic effect
+    gradients = {
+        "Default": "radial-gradient(circle at 30% 30%, #4facfe, #001e3c)",
+        "Dark": "radial-gradient(circle at 30% 30%, #555, #000)",
+        "Light": "radial-gradient(circle at 30% 30%, #fff, #aaa)"
+    }
+    glows = {
+        "Default": "0 0 10px #4facfe",
+        "Dark": "0 0 10px #555",
+        "Light": "0 0 10px #fff"
+    }
+
+    sphere_html = '<div style="position: fixed; top: 10px; right: 20px; z-index: 9999; display: flex; gap: 10px;">'
+    for t in themes:
+        active_style = f"box-shadow: {glows[t]}; border: 2px solid white;" if st.session_state.theme == t else "border: 1px solid #333;"
+        sphere_html += f'''
+        <a href="?theme={t}" style="
+            width: 18px; height: 18px; border-radius: 50%;
+            background: {gradients[t]}; {active_style}
+            display: inline-block; cursor: pointer; transition: transform 0.2s;
+        "></a>'''
+    sphere_html += '</div>'
+    st.markdown(sphere_html, unsafe_allow_html=True)
+
     # 1. Define CSS variables for each theme
     if theme_choice == "Light":
         root_vars = """
