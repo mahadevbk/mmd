@@ -128,6 +128,9 @@ with st.sidebar:
 # --- Custom CSS ---
 st.markdown("""
 <style>
+[data-testid="stIconMaterial"] {
+    display: none !important;
+}
 /* Container for the top-right theme icons */
 .theme-container {
     position: fixed;
