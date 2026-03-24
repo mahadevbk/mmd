@@ -340,26 +340,30 @@ def apply_custom_theme(theme_choice):
             color: #1A1A1A !important; 
         }
 
-        /* Background of the entire toggle container */
+        /* 1. The container */
         div[data-testid='stSegmentedControl'] {
-            background-color: #f8f9fa !important;
+            background-color: #f0f2f6 !important;
             border: 1px solid #B24A00 !important;
-            border-radius: 8px;
-            padding: 4px;
+            border-radius: 10px !important;
+            padding: 5px !important;
         }
-        /* Unselected Buttons */
+        /* 2. All buttons in the toggle */
         div[data-testid='stSegmentedControl'] button {
             background-color: transparent !important;
-            color: #1A1A1A !important;
+            border: none !important;
+            color: #1A1A1A !important; /* Force black text */
         }
-        /* Selected Button */
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'] {
-            background-color: #B24A00 !important;
-            color: #FFFFFF !important;
+        /* 3. The ACTIVE button */
+        div[data-testid='stSegmentedControl'] [data-testid='stHorizontalBlock'] button[aria-checked='true'],
+        div[data-testid='stSegmentedControl'] button[data-baseweb='tab'][aria-selected='true'],
+        div[data-testid='stSegmentedControl'] div[role='radiogroup'] div[aria-checked='true'] {
+            background-color: #B24A00 !important; /* Clay Orange */
+            color: #FFFFFF !important; /* White text */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
         }
-        /* Hover state */
-        div[data-testid='stSegmentedControl'] button:hover {
-            background-color: rgba(178, 74, 0, 0.1) !important;
+        /* 4. Force the text inside AGAIN */
+        div[data-testid='stSegmentedControl'] button div p {
+            color: inherit !important; 
         }
         """
 
