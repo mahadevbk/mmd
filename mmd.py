@@ -111,44 +111,50 @@ inject_pwa_meta()
 # --- Custom CSS ---
 st.markdown("""
 <style>
-* 1. Remove top page padding to let the expander sit at the very edge */
+/* 1. Reset container padding for top-right alignment */
 .block-container {
-padding-top: 0rem !important;
+padding-top: 1rem !important;
 }
 
-/* 2. Target the expander specifically to be 25% width and float right /
+/* 2. The Expander "Button" in the Top Right */
 div[data-testid="stExpander"] {
 position: absolute;
-top: 5px;
-right: 5px;
-width: 25% !important;
-min-width: 120px !important; / Prevents it from getting too small on phones */
+top: 10px;
+right: 10px;
+width: 20% !important;
+min-width: 100px !important;
 z-index: 999999;
+border: 1px solid rgba(255, 245, 0, 0.3) !important;
+border-radius: 12px !important;
+background: rgba(4, 17, 54, 0.8) !important;
+backdrop-filter: blur(10px);
 }
 
-/* 3. Make the expander look like a clean floating button */
-.stExpander {
-border: 1px solid rgba(151, 151, 151, 0.3) !important;
-background-color: white !important;
-border-radius: 10px !important;
-box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-}
-
-/* 4. Center icons and hide the radio labels */
+/* 3. Style the internal Radio Buttons */
 div[data-testid="stRadio"] > label {
 display: none !important;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] {
 justify-content: space-evenly !important;
-gap: 5px !important;
+gap: 10px !important;
+padding: 5px !important;
 }
 
-/* 5. Mobile Adjustment: If screen is tiny, allow it to be a bit wider than 25% */
-@media (max-width: 640px) {
-div[data-testid="stExpander"] {
-width: 35% !important;
+/* 4. Make icons pop */
+div[data-testid="stRadio"] label {
+font-size: 1.4rem !important;
+cursor: pointer;
 }
+
+/* 5. Clean up the default expander arrow/icon */
+[data-testid="stExpander"] svg {
+display: none !important;
+}
+
+/* Ensure the expander doesn't have a massive white background in dark mode */
+.stExpander {
+background-color: transparent !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
@@ -327,10 +333,6 @@ h3 { font-size: 16px !important; }
 
 
 #------theme selection
-# Inject the CSS from above here
-st.markdown(f"<style>{css_code_above}</style>", unsafe_allow_html=True)
-
-# This will now float in the top right corner because of the CSS
 with st.expander("🎨", expanded=False):
     theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
     
