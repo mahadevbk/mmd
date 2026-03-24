@@ -425,8 +425,6 @@ def apply_custom_theme(theme_choice):
     }}
     </style>
     """, unsafe_allow_html=True)
-    </style>
-    """, unsafe_allow_html=True)
 
 apply_custom_theme(st.session_state.theme)
 
