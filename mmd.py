@@ -340,6 +340,7 @@ def apply_custom_theme(theme_choice):
 
     # Light Theme Contrast Overrides
     light_overrides = ""
+    clay_accent = "#B24A00" # Define for all scopes
     if theme_choice == "Light":
         light_overrides = f"""
         /* Force Internal Text Color for Light Theme */
