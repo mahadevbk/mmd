@@ -531,22 +531,22 @@ def apply_custom_theme(theme_choice):
     }}
 
     /* --- Card Base Styles --- */
-    .mobile-card, .ranking-row, .court-card, .booking-row {
+    .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
         border: 1.5px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
         transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {
+    }}
+    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
         transform: translateY(-2px);
-    }
+    }}
 
     /* Target Streamlit's internal container borders globally */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
         border: 1.5px solid var(--card-border-color) !important;
-    }
+    }}
     
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
