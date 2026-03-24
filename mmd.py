@@ -110,7 +110,7 @@ col_main, col_side = st.columns([3, 1])
 
 with col_side:
     # 2. Place the expander inside the 25% column
-    with st.expander("🎨 Theme Settings", expanded=False):
+    with st.expander("🎨", expanded=False):
         
         theme_options = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
 
