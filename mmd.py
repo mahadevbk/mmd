@@ -452,7 +452,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #444444;
             --dynamic-accent: #B24A00;
             --card-bg: #ffffff;
-            --card-border-color: rgba(178, 74, 0, 0.4);
+            --card-border-color: rgba(178, 74, 0, 0.6);
             --divider-color: rgba(0, 0, 0, 0.1);
         }
         """
@@ -544,7 +544,8 @@ def apply_custom_theme(theme_choice):
     }}
 
     /* Target Streamlit's internal container borders globally */
-    div[data-testid="stVerticalBlockBorderWrapper"] {{
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    div[data-testid="stVerticalBlockBorderWrapper"] > div {{
         border: 1.5px solid var(--card-border-color) !important;
     }}
     
