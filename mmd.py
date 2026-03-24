@@ -545,7 +545,9 @@ def apply_custom_theme(theme_choice):
 
     /* Target Streamlit's internal container borders globally */
     div[data-testid="stVerticalBlockBorderWrapper"],
-    div[data-testid="stVerticalBlockBorderWrapper"] > div {{
+    div[data-testid="stVerticalBlockBorderWrapper"] > div,
+    div.st-emotion-cache-12w0qpk,
+    div.st-emotion-cache-ke6n6u {{
         border: 1.5px solid var(--card-border-color) !important;
     }}
     
@@ -1969,6 +1971,26 @@ with tabs[0]:
                     <img src="{profile_pic}">
                 </div>
                 """, unsafe_allow_html=True)
+
+                # Content Section (Radar + Stats)
+                # We place the stats inside another div if needed, or just let them be.
+                # Since the border=True was removed from container, we might want to wrap the whole thing.
+                # But st.columns cannot be inside an f-string markdown easily.
+                # However, the user said the "outline" is not visible. 
+                # Let's see if wrapping the TOP part in "mobile-card" helps.
+                # Wait, the "mobile-card" has a border. If I only wrap the top part, the chart will be outside.
+                
+                # REVISED APPROACH: Use a single st.markdown to open a div, then Streamlit components, then st.markdown to close it? 
+                # No, that's not possible in Streamlit.
+                
+                # Let's try to fix the CSS specifically for the Rankings tab container.
+                # Maybe the Rankings tab uses a different container type?
+                
+                # Actually, let's look at line 1935 again: `with st.container(border=True):`
+                # If I use `st.container()` without `border=True` and then use a custom div inside for the WHOLE content?
+                # No, st.plotly_chart can't go inside that div.
+                
+                # Let's stick to st.container(border=True) and fix the CSS once and for all.
 
                 # Content Section (Radar + Stats)
                 col_chart, col_stats = st.columns([1.8, 1])
