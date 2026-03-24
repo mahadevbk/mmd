@@ -107,7 +107,7 @@ inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
 # 1. Main layout: 75% left, 25% right
-col_main, col_side = st.columns([3, 1])
+col_main, col_side = st.columns([5, 1])
 
 with col_side:
     # 2. CSS to center the horizontal icons and hide the radio label
