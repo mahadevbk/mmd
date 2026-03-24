@@ -105,24 +105,21 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Elegant Theme Selector (Top of App) ---
-# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
+# --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
 t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
 
+# Force fully transparent, borderless, minimal buttons for icons
 with t_col2:
-    # Default / Mixed Theme Icon
     if st.button("🌓", help="Default Theme", key="theme_def"):
         st.session_state.theme = "Default"
         st.rerun()
 
 with t_col3:
-    # Dark Theme Icon
     if st.button("🌑", help="Dark Theme", key="theme_dark"):
         st.session_state.theme = "Dark"
         st.rerun()
 
 with t_col4:
-    # Light Theme Icon
     if st.button("🌞", help="Light Theme", key="theme_light"):
         st.session_state.theme = "Light"
         st.rerun()
@@ -130,6 +127,31 @@ with t_col4:
 # --- Custom CSS ---
 st.markdown("""
 <style>
+/* Clean Theme Selector Icons - No background square */
+div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    color: var(--dynamic-text) !important;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))):hover {
+    transform: scale(1.25);
+    opacity: 1;
+    background: transparent !important;
+}
+
+/* Optional: make them slightly larger or adjust spacing if needed */
+div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))) {
+    font-size: 28px !important;
+}
 /* Container for the top-right theme icons */
 .theme-container {
     position: fixed;
