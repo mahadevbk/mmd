@@ -1631,7 +1631,7 @@ if not st.session_state.matches_df.empty:
 # --- Header with Theme Toggle ---
 header_col, theme_col = st.columns([4, 1])
 with header_col:
-    st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=None)
+    st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=700)
 
 with theme_col:
     # Header for theme selector
