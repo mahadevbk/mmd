@@ -106,32 +106,35 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
+# 1. Main layout: 75% left, 25% right
 col_main, col_side = st.columns([3, 1])
 
 with col_side:
-    # 2. Place the expander inside the 25% column
     with st.expander("🎨", expanded=False):
+        # 2. Create 3 sub-columns inside the expander for the icons
+        sub_col1, sub_col2, sub_col3 = st.columns(3)
         
-        theme_options = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
-
-        # Initialize session state if it doesn't exist
+        # Initialize state
         if 'theme' not in st.session_state:
             st.session_state.theme = "Default"
 
-        # The Radio Selector (Clean & Aligned)
-        selected_theme = st.radio(
-            "Select Appearance",
-            options=list(theme_options.keys()),
-            format_func=lambda x: f"{theme_options[x]} {x}",
-            index=list(theme_options.keys()).index(st.session_state.theme),
-            key="theme_selector_right",
-            label_visibility="collapsed"
-        )
+        # Column 1: Default
+        with sub_col1:
+            if st.button("🌓", help="Default", key="btn_def", use_container_width=True):
+                st.session_state.theme = "Default"
+                st.rerun()
 
-        # 3. Update state and rerun only if changed
-        if st.session_state.theme != selected_theme:
-            st.session_state.theme = selected_theme
-            st.rerun()
+        # Column 2: Dark
+        with sub_col2:
+            if st.button("🌑", help="Dark", key="btn_dark", use_container_width=True):
+                st.session_state.theme = "Dark"
+                st.rerun()
+
+        # Column 3: Light
+        with sub_col3:
+            if st.button("🌞", help="Light", key="btn_light", use_container_width=True):
+                st.session_state.theme = "Light"
+                st.rerun()
 
 
 # --- Custom CSS ---
