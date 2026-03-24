@@ -107,7 +107,7 @@ inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
 # 1. Main layout: 75% left, 25% right
-col_main, col_side = st.columns([5, 1])
+col_main, col_side = st.columns([4, 1])
 
 with col_side:
     # 2. CSS to center the horizontal icons and hide the radio label
@@ -151,6 +151,51 @@ with col_side:
 # --- Custom CSS ---
 st.markdown("""
 <style>
+/* 1. Remove the massive gap at the top of the page */
+.block-container {
+padding-top: 1rem !important;
+padding-bottom: 0rem !important;
+}
+
+/* 2. Force columns to stay horizontal on mobile (Streamlit usually stacks them) */
+[data-testid="column"] {
+width: calc(25% - 1rem) !important;
+flex: 1 1 calc(25% - 1rem) !important;
+min-width: 25% !important;
+}
+
+/* The 'Main' column needs to take the other 75% */
+div[data-testid="column"]:nth-of-type(1) {
+width: 75% !important;
+flex: 3 1 75% !important;
+min-width: 75% !important;
+}
+
+/* 3. Hide the Radio labels and center the icons */
+div[data-testid="stRadio"] > label {
+display: none !important;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+justify-content: space-evenly !important;
+gap: 0px !important;
+}
+
+/* Increase icon size for easier clicking */
+div[data-testid="stRadio"] div[role="radiogroup"] label {
+font-size: 1.5rem !important;
+}
+
+/* 4. Make the expander look like a floating button on the right */
+.stExpander {
+border: none !important;
+background-color: transparent !important;
+}
+
+/* Ensure the expander header (the icon) is aligned right */
+div[data-testid="stExpanderDetails"] {
+padding: 0 !important;
+}
 [data-testid="stIconMaterial"] {
     display: none !important;
 }
