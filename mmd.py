@@ -105,9 +105,67 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
+# --- Elegant Theme Selector (Top of App) ---
+# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
+t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
+
+with t_col2:
+    # Default / Mixed Theme Icon
+    if st.button("🌓", help="Default Theme", key="theme_def"):
+        st.session_state.theme = "Default"
+        st.rerun()
+
+with t_col3:
+    # Dark Theme Icon
+    if st.button("🌑", help="Dark Theme", key="theme_dark"):
+        st.session_state.theme = "Dark"
+        st.rerun()
+
+with t_col4:
+    # Light Theme Icon
+    if st.button("🌞", help="Light Theme", key="theme_light"):
+        st.session_state.theme = "Light"
+        st.rerun()
+
 # --- Custom CSS ---
 st.markdown("""
 <style>
+/* Container for the top-right theme icons */
+.theme-container {
+    position: fixed;
+    top: 50px; /* Adjust based on your header height */
+    right: 20px;
+    z-index: 999999;
+    display: flex;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Individual Icon Style */
+.theme-icon {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-icon:hover {
+    transform: scale(1.2);
+    opacity: 1;
+}
+
+.theme-icon.active {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--dynamic-accent));
+}
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
     border: 1px solid rgba(255, 245, 0, 0.2);
@@ -3913,27 +3971,6 @@ with tabs[7]:
 
 
 st.markdown("----")
-col_theme, _ = st.columns([1, 2])
-with col_theme:
-    # Use segmented_control if available, otherwise radio
-    try:
-        new_theme = st.segmented_control(
-            "App Theme",
-            options=["Default", "Dark", "Light"],
-            default=st.session_state.theme,
-            key="theme_toggle_widget"
-        )
-    except AttributeError:
-        new_theme = st.radio(
-            "App Theme",
-            options=["Default", "Dark", "Light"],
-            index=["Default", "Dark", "Light"].index(st.session_state.theme),
-            horizontal=True,
-            key="theme_toggle_widget"
-        )
 
-if new_theme and new_theme != st.session_state.theme:
-    st.session_state.theme = new_theme
-    st.rerun()
 
 st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
