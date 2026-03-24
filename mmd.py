@@ -106,11 +106,11 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-# --- Elegant Theme Selector - Clean Pill Only (No duplicate row) ---
+# --- Clean Theme Selector - Single Pill Only ---
 col_spacer, col_icons = st.columns([14, 3])
 
 with col_icons:
-    # Nice pill container (visible)
+    # Beautiful pill container (visible)
     st.markdown("""
     <div class="theme-pill">
         <span class="theme-btn" title="Default Theme" 
@@ -122,22 +122,21 @@ with col_icons:
     </div>
     """, unsafe_allow_html=True)
 
-    # Hidden real buttons (functionality only - completely invisible)
-    with st.container():
-        if st.button("🌓", help="Default Theme", key="theme_def"):
-            st.session_state.theme = "Default"
-            st.rerun()
-        if st.button("🌑", help="Dark Theme", key="theme_dark"):
-            st.session_state.theme = "Dark"
-            st.rerun()
-        if st.button("🌞", help="Light Theme", key="theme_light"):
-            st.session_state.theme = "Light"
-            st.rerun()
+    # Hidden functionality buttons (completely invisible)
+    if st.button("🌓", key="theme_def", help="Default Theme"):
+        st.session_state.theme = "Default"
+        st.rerun()
+    if st.button("🌑", key="theme_dark", help="Dark Theme"):
+        st.session_state.theme = "Dark"
+        st.rerun()
+    if st.button("🌞", key="theme_light", help="Light Theme"):
+        st.session_state.theme = "Light"
+        st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === CLEAN THEME PILL CONTAINER (Top Right) === */
+/* === CLEAN THEME PILL - SINGLE ROW ONLY === */
 .theme-pill {
     display: flex;
     background: rgba(255, 255, 255, 0.08);
@@ -149,7 +148,7 @@ st.markdown("""
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 999999;
     align-items: center;
-    margin-bottom: 8px;   /* small spacing */
+    margin-bottom: 4px;
 }
 
 .theme-btn {
@@ -174,17 +173,18 @@ st.markdown("""
     color: var(--dynamic-accent);
 }
 
-/* Completely hide the real Streamlit buttons and their container */
+/* Hide ALL Streamlit buttons and containers for theme keys */
 .stButton button[key^="theme_"],
 button[key^="theme_"],
-div:has(> button[key^="theme_"]) {
+div:has(button[key^="theme_"]) {
     display: none !important;
     visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
+    height: 0px !important;
+    width: 0px !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
+    position: absolute !important;
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
