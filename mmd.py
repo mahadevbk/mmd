@@ -122,8 +122,9 @@ st.markdown("""
     top: 10px !important;
     right: 10px !important;
     width: 25% !important;
-    min-width: 150px !important; /* Slightly wider for better icon spacing */
+    min-width: 150px !important; /* Ensures icons aren't squished on mobile */
     z-index: 999999 !important;
+    display: block !important;
 }
 
 /* 3. Force the Expander inside the anchor to fill only that 25% space */
@@ -132,15 +133,17 @@ st.markdown("""
     background-color: #041136 !important; /* Your Tennis Dark Blue */
     border: 1px solid rgba(255, 245, 0, 0.5) !important;
     border-radius: 12px !important;
+    margin: 0 !important;
 }
 
 /* 4. Ensure the header (the 🎨 bar) respects the container width */
 #theme-selector-anchor [data-testid="stExpanderSummary"] {
     width: 100% !important;
+    display: flex !important;
     justify-content: center !important;
 }
 
-/* 5. Clean up: Hide default arrow and labels */
+/* 5. Clean up: Hide default arrow and internal labels */
 #theme-selector-anchor [data-testid="stExpanderIcon"],
 #theme-selector-anchor [data-testid="stExpander"] svg {
     display: none !important;
