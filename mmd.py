@@ -340,36 +340,27 @@ def apply_custom_theme(theme_choice):
             color: #1A1A1A !important; 
         }
 
-        /* 1. Force the background of the active segment */
-        div[data-testid='stSegmentedControl'] div[role='radiogroup'] div[aria-checked='true'] {
-            background-color: #B24A00 !important;
-            color: white !important;
-        }
-
-        /* 2. Target the label text specifically to kill the optic yellow */
-        div[data-testid='stSegmentedControl'] * {
+        /* 1. Everything target: strip all yellow/blue/transparent */
+        div[data-testid='stSegmentedControl'] *, 
+        div[data-testid='stSegmentedControl'] [data-testid='stBaseButton-secondary'] {
             color: #1A1A1A !important;
+            background-color: transparent !important;
+            border-color: transparent !important;
         }
 
-        /* 3. Force the SELECTED label text to white */
-        div[data-testid='stSegmentedControl'] [aria-checked='true'] * {
+        /* 2. Forces the SELECTED/ACTIVE button to Clay Orange */
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'],
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'] div,
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'] p {
+            background-color: #B24A00 !important;
             color: #FFFFFF !important;
         }
 
-        /* 4. Remove the blue glow/border Streamlit adds on focus */
-        div[data-testid='stSegmentedControl'] button:focus, 
-        div[data-testid='stSegmentedControl'] [aria-checked='true'] {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-        }
-
-        /* 5. Fix the 'hover' state that was working before but felt disconnected */
-        div[data-testid='stSegmentedControl'] button:hover {
-            background-color: rgba(178, 74, 0, 0.1) !important;
-        }
-        ton[aria-checked='false'] div p {
-            color: #1A1A1A !important;
+        /* 3. Fix container background */
+        div[data-testid='stSegmentedControl'] {
+            background-color: #f0f2f6 !important;
+            border-radius: 8px !important;
+            border: 1px solid #ddd !important;
         }
         """
 
