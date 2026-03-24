@@ -335,24 +335,31 @@ def apply_custom_theme(theme_choice):
     light_overrides = ""
     if theme_choice == "Light":
         light_overrides = """
-        /* Force Dark Labels for Tabs, Radio Buttons, and Segmented Control in Light Mode */
-        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, [data-testid="stSegmentedControl"] label, [data-testid="stSegmentedControl"] p, div[data-baseweb="segmented-control"] p, label[data-testid="stWidgetLabel"] { 
+        /* Force Dark Labels for Tabs and Radio Buttons in Light Mode */
+        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, label[data-testid="stWidgetLabel"] { 
             color: #1A1A1A !important; 
         }
-        
-        /* Segmented Control Backgrounds for Light Mode - Broad Coverage */
-        div[data-testid="stSegmentedControl"], div[data-baseweb="segmented-control"] {
-            background-color: #ffffff !important;
+
+        /* Background of the entire toggle container */
+        div[data-testid='stSegmentedControl'] {
+            background-color: #f8f9fa !important;
             border: 1px solid #B24A00 !important;
+            border-radius: 8px;
+            padding: 4px;
         }
-        div[data-testid="stSegmentedControl"] button[aria-selected="true"], div[data-baseweb="segmented-control"] div[aria-selected="true"] {
-            background-color: #B24A00 !important;
-        }
-        div[data-testid="stSegmentedControl"] button[aria-selected="true"] p, div[data-baseweb="segmented-control"] div[aria-selected="true"] p {
-            color: #ffffff !important;
-        }
-        div[data-testid="stSegmentedControl"] button[aria-selected="false"] p, div[data-baseweb="segmented-control"] div[aria-selected="false"] p {
+        /* Unselected Buttons */
+        div[data-testid='stSegmentedControl'] button {
+            background-color: transparent !important;
             color: #1A1A1A !important;
+        }
+        /* Selected Button */
+        div[data-testid='stSegmentedControl'] button[aria-checked='true'] {
+            background-color: #B24A00 !important;
+            color: #FFFFFF !important;
+        }
+        /* Hover state */
+        div[data-testid='stSegmentedControl'] button:hover {
+            background-color: rgba(178, 74, 0, 0.1) !important;
         }
         """
 
