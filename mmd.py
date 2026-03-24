@@ -110,55 +110,54 @@ inject_pwa_meta()
 col_spacer, col_icons = st.columns([14, 3])
 
 with col_icons:
-    # Create a clean container for the three icons
+    # Clean pill container using HTML + CSS
     st.markdown("""
     <div class="theme-pill">
-        <button class="theme-btn" title="Default Theme" onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</button>
-        <button class="theme-btn" title="Dark Theme" onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</button>
-        <button class="theme-btn" title="Light Theme" onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</button>
+        <span class="theme-btn" title="Default Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_def\\']').click()">🌓</span>
+        <span class="theme-btn" title="Dark Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_dark\\']').click()">🌑</span>
+        <span class="theme-btn" title="Light Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_light\\']').click()">🌞</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # Hidden real Streamlit buttons (they handle the logic)
-    col1, col2, col3 = st.columns([1,1,1])
-    with col1:
-        if st.button("🌓", help="Default Theme", key="theme_def", label_visibility="collapsed"):
-            st.session_state.theme = "Default"
-            st.rerun()
-    with col2:
-        if st.button("🌑", help="Dark Theme", key="theme_dark", label_visibility="collapsed"):
-            st.session_state.theme = "Dark"
-            st.rerun()
-    with col3:
-        if st.button("🌞", help="Light Theme", key="theme_light", label_visibility="collapsed"):
-            st.session_state.theme = "Light"
-            st.rerun()
+    # Hidden real Streamlit buttons (they handle the actual logic)
+    with st.container():
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("🌓", help="Default Theme", key="theme_def"):
+                st.session_state.theme = "Default"
+                st.rerun()
+        with col2:
+            if st.button("🌑", help="Dark Theme", key="theme_dark"):
+                st.session_state.theme = "Dark"
+                st.rerun()
+        with col3:
+            if st.button("🌞", help="Light Theme", key="theme_light"):
+                st.session_state.theme = "Light"
+                st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
-<style>
 <style>
 /* === CLEAN THEME PILL CONTAINER === */
 .theme-pill {
     display: flex;
     background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 245, 0, 0.2);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 245, 0, 0.25);
     border-radius: 50px;
-    padding: 6px 10px;
-    gap: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    padding: 6px 12px;
+    gap: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 999999;
+    align-items: center;
 }
 
-/* Clean icon buttons inside the pill */
 .theme-btn {
     background: transparent !important;
     border: none !important;
-    box-shadow: none !important;
     font-size: 28px !important;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -166,68 +165,25 @@ st.markdown("""
     cursor: pointer;
     transition: all 0.25s ease;
     color: var(--dynamic-text);
-    padding: 0;
+    user-select: none;
 }
 
 .theme-btn:hover {
-    background: rgba(255, 245, 0, 0.25) !important;
-    transform: scale(1.15);
+    background: rgba(255, 245, 0, 0.3) !important;
+    transform: scale(1.2);
     color: var(--dynamic-accent);
 }
 
-/* Hide the real Streamlit buttons but keep their functionality */
-.stButton button[key^="theme_"],
-button[key^="theme_"] {
+/* Completely hide the real Streamlit buttons */
+.stButton button[key^="theme_"] {
     display: none !important;
-}
-
-/* Strong override for any remaining Streamlit button styles */
-.stButton button,
-[data-testid="stHorizontalBlock"] button,
-div[data-testid="column"] button,
-button[kind="secondary"] {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
 }
-
-/* Rest of your existing CSS (unchanged) */
-.theme-container {
-    position: fixed;
-    top: 50px;
-    right: 20px;
-    z-index: 999999;
-    display: flex;
-    gap: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 8px 12px;
-    border-radius: 20px;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.theme-icon {
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-    transition: transform 0.2s, opacity 0.2s;
-    opacity: 0.6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.theme-icon:hover {
-    transform: scale(1.2);
-    opacity: 1;
-}
-
-.theme-icon.active {
-    opacity: 1;
-    filter: drop-shadow(0 0 5px var(--dynamic-accent));
-}
-
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
     border: 1px solid rgba(255, 245, 0, 0.2);
