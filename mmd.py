@@ -107,7 +107,9 @@ inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
 with st.sidebar:
+    # Sidebar theme selection
     st.header("🎨 Themes")
+    
     # Default / Mixed Theme Icon
     if st.button("🌓 Default", help="Default Theme", key="theme_def"):
         st.session_state.theme = "Default"
