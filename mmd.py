@@ -117,17 +117,25 @@ padding-top: 1rem !important;
 }
 
 /* 2. The Expander "Button" in the Top Right */
-div[data-testid="stExpander"] {
+/* 1. Only target the expander inside our specific anchor div */
+#theme-selector-anchor div[data-testid="stExpander"] {
 position: absolute;
 top: 10px;
 right: 10px;
-width: 20% !important;
-min-width: 100px !important;
+width: 25% !important;
+min-width: 120px !important;
 z-index: 999999;
-border: 1px solid rgba(255, 245, 0, 0.3) !important;
-border-radius: 12px !important;
-background: rgba(4, 17, 54, 0.8) !important;
-backdrop-filter: blur(10px);
+}
+
+/* 2. Hide radio label ONLY for this specific expander */
+#theme-selector-anchor div[data-testid="stRadio"] > label {
+display: none !important;
+}
+
+/* 3. Keep all other expanders in the app normal */
+div[data-testid="stExpander"] {
+position: relative;
+width: 100%;
 }
 
 /* 3. Style the internal Radio Buttons */
@@ -333,6 +341,10 @@ h3 { font-size: 16px !important; }
 
 
 #------theme selection
+# --- Elegant Theme Selector (Targeted) ---
+# We wrap this in a div with a unique ID
+st.markdown('<div id="theme-selector-anchor">', unsafe_allow_html=True)
+
 with st.expander("🎨", expanded=False):
     theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
     
@@ -351,6 +363,8 @@ with st.expander("🎨", expanded=False):
     if st.session_state.theme != selected_theme:
         st.session_state.theme = selected_theme
         st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 
 # --- Supabase Initialization ---
