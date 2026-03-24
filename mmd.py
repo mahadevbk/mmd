@@ -105,89 +105,66 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-# --- Clean Theme Selector - Single Pill Only ---
-# --- Clean Theme Selector - Nice Pill Only (No Duplicates) ---
-col_spacer, col_icons = st.columns([14, 3])
+# --- Elegant Theme Selector (Top of App) ---
+# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
+t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
 
-with col_icons:
-    # Visible nice pill
-    st.markdown("""
-    <div class="theme-pill">
-        <span class="theme-btn" title="Default Theme" 
-              onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</span>
-        <span class="theme-btn" title="Dark Theme" 
-              onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</span>
-        <span class="theme-btn" title="Light Theme" 
-              onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Hidden functionality (zero space)
-    if st.button("🌓", key="theme_def", help="Default Theme"):
+with t_col2:
+    # Default / Mixed Theme Icon
+    if st.button("🌓", help="Default Theme", key="theme_def"):
         st.session_state.theme = "Default"
         st.rerun()
-    if st.button("🌑", key="theme_dark", help="Dark Theme"):
+
+with t_col3:
+    # Dark Theme Icon
+    if st.button("🌑", help="Dark Theme", key="theme_dark"):
         st.session_state.theme = "Dark"
         st.rerun()
-    if st.button("🌞", key="theme_light", help="Light Theme"):
+
+with t_col4:
+    # Light Theme Icon
+    if st.button("🌞", help="Light Theme", key="theme_light"):
         st.session_state.theme = "Light"
         st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === CLEAN THEME PILL - ONLY ONE ROW === */
-.theme-pill {
-    display: flex;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 245, 0, 0.25);
-    border-radius: 50px;
-    padding: 6px 12px;
-    gap: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+/* Container for the top-right theme icons */
+.theme-container {
+    position: fixed;
+    top: 50px; /* Adjust based on your header height */
+    right: 20px;
     z-index: 999999;
-    align-items: center;
-    margin-bottom: 4px;
+    display: flex;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.theme-btn {
-    background: transparent !important;
-    border: none !important;
-    font-size: 28px !important;
-    width: 40px;
-    height: 40px;
+/* Individual Icon Style */
+.theme-icon {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.6;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    color: var(--dynamic-text);
-    user-select: none;
 }
 
-.theme-btn:hover {
-    background: rgba(255, 245, 0, 0.3) !important;
-    transform: scale(1.18);
-    color: var(--dynamic-accent);
+.theme-icon:hover {
+    transform: scale(1.2);
+    opacity: 1;
 }
 
-/* AGGRESSIVE HIDING - Zero space for the real buttons */
-.stButton button[key^="theme_"],
-button[key^="theme_"],
-div[data-testid="stVerticalBlock"] > div:has(button[key^="theme_"]),
-.element-container:has(button[key^="theme_"]) {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    position: absolute !important;
+.theme-icon.active {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--dynamic-accent));
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
