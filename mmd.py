@@ -111,7 +111,7 @@ inject_pwa_meta()
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. Reset container padding for top-right alignment */
+/* 1. Reset container padding for top-left alignment */
 .block-container {
     padding-top: 0rem !important;
 }
@@ -120,7 +120,7 @@ st.markdown("""
 #theme-selector-anchor {
     position: absolute !important;
     top: 10px !important;
-    right: 10px !important;
+    left: 10px !important;
     width: 25% !important;
     min-width: 150px !important; /* Ensures icons aren't squished on mobile */
     z-index: 999999 !important;
@@ -165,6 +165,7 @@ div[data-testid="stExpander"] {
     width: 100% !important;
     top: auto !important;
     right: auto !important;
+    left: auto !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
