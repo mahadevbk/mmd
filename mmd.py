@@ -106,25 +106,22 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
-# Create an expander for theme icons in the sidebar
 with st.sidebar:
-    with st.expander("", icon="🎨"):
-        t_col1, t_col2, t_col3 = st.columns(3)
-        with t_col1:
-            # Default / Mixed Theme Icon
-            if st.button("🌓", help="Default Theme", key="theme_def"):
-                st.session_state.theme = "Default"
-                st.rerun()
-        with t_col2:
-            # Dark Theme Icon
-            if st.button("🌑", help="Dark Theme", key="theme_dark"):
-                st.session_state.theme = "Dark"
-                st.rerun()
-        with t_col3:
-            # Light Theme Icon
-            if st.button("🌞", help="Light Theme", key="theme_light"):
-                st.session_state.theme = "Light"
-                st.rerun()
+    st.header("🎨 Themes")
+    # Default / Mixed Theme Icon
+    if st.button("🌓 Default", help="Default Theme", key="theme_def"):
+        st.session_state.theme = "Default"
+        st.rerun()
+
+    # Dark Theme Icon
+    if st.button("🌑 Dark", help="Dark Theme", key="theme_dark"):
+        st.session_state.theme = "Dark"
+        st.rerun()
+
+    # Light Theme Icon
+    if st.button("🌞 Light", help="Light Theme", key="theme_light"):
+        st.session_state.theme = "Light"
+        st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
