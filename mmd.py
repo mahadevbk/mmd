@@ -331,10 +331,33 @@ def apply_custom_theme(theme_choice):
             bg_color = "linear-gradient(to bottom, #041136, #21000a)"
             header_bg = "linear-gradient(to top, #041136, #21000a)"
 
+    # Light Theme Specific Overrides
+    light_overrides = ""
+    if theme_choice == "Light":
+        light_overrides = """
+        /* Force Dark Labels for Tabs, Radio Buttons, and Segmented Control in Light Mode */
+        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, .stSegmentedControl label, div[data-baseweb="segmented-control"] p { 
+            color: #1A1A1A !important; 
+        }
+        
+        /* Ensure Active Tab is Orange */
+        button[data-baseweb='tab'][aria-selected='true'] p {
+            color: #B24A00 !important;
+            border-bottom-color: #B24A00 !important;
+        }
+        
+        /* Specific Card Visibility for Light Mode */
+        .mobile-card, .ranking-row, .court-card {
+            border: 1px solid #B24A00 !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }
+        """
+
     # 2. Define CSS rules using the variables
     st.markdown(f"""
     <style>
     {root_vars}
+    {light_overrides}
 
     /* --- Global App Style --- */
     .stApp {{
@@ -364,9 +387,6 @@ def apply_custom_theme(theme_choice):
         transform: translateY(-2px);
     }}
     
-    /* --- Light Theme Card Visibility --- */
-    {''.join([f".{c} {{ border: 1px solid #B24A00 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }}" for c in ["mobile-card", "ranking-row"]]) if theme_choice == "Light" else ""}
-
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
         border: 3px solid var(--dynamic-accent);
@@ -374,7 +394,7 @@ def apply_custom_theme(theme_choice):
     }}
     .rank-badge {{
         background: var(--dynamic-accent);
-        color: #041136; /* Keep dark text for contrast on yellow */
+        color: #041136; /* Keep dark text for contrast on yellow/orange */
         font-weight: bold;
         border-radius: 5px;
         padding: 2px 8px;
@@ -1548,12 +1568,12 @@ def display_hall_of_fame():
                     # --- Display Card ---
                     st.markdown(
                         f"""
-                        <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between; background-color: var(--card-bg);">
                             <div>
                                 <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid var(--dynamic-accent) !important;">
-                                <p style="font-size: 1.5em; font-weight: bold; color: var(--dynamic-accent) !important; margin-top: 10px;">{player_name}</p>
+                                <p style="font-size: 1.5em; font-weight: bold; color: var(--dynamic-text) !important; margin-top: 10px;">{player_name}</p>
                                 <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
-                                    {rank_emoji} Rank <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{rank}</span>
+                                    {rank_emoji} Rank <span style="font-weight: bold; color: var(--dynamic-text) !important;">{rank}</span>
                                 </p>
                             </div>
                             <div style="text-align: left; font-size: 0.95em; padding: 0 10px;">
@@ -1719,7 +1739,7 @@ with tabs[0]:
 
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                         <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
@@ -2174,7 +2194,7 @@ with tabs[1]:
                 img_html = f'<div class="match-img-wrapper"><a href="#{m_uid}"><img src="{row.match_image_url}" class="match-img-content clickable-img"></a></div><div id="{m_uid}" class="img-lightbox"><a href="#" class="img-lightbox-close">&times;</a><img src="{row.match_image_url}"></div>' if row.match_image_url else ""
                 
                 card_html = f"""
-<div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
+<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
     {img_html}
     <div style="padding: 15px;">
         <div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
@@ -2400,7 +2420,7 @@ with tabs[2]:
             border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
         }
         .stat-box {
-            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
+            background: var(--card-bg); padding: 15px; border-radius: 10px; 
             border-left: 4px solid #D4FC1E; margin-bottom: 10px;
         }
         .metric-label { font-size: 0.7em; color: var(--dynamic-subtext); text-transform: uppercase; }
