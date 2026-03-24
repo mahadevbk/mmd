@@ -106,56 +106,96 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
+# --- Elegant Theme Selector with Clean Pill Container ---
+col_spacer, col_icons = st.columns([14, 3])
 
-# Force fully transparent, borderless, minimal buttons for icons
-with t_col2:
-    if st.button("🌓", help="Default Theme", key="theme_def"):
-        st.session_state.theme = "Default"
-        st.rerun()
+with col_icons:
+    # Create a clean container for the three icons
+    st.markdown("""
+    <div class="theme-pill">
+        <button class="theme-btn" title="Default Theme" onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</button>
+        <button class="theme-btn" title="Dark Theme" onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</button>
+        <button class="theme-btn" title="Light Theme" onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</button>
+    </div>
+    """, unsafe_allow_html=True)
 
-with t_col3:
-    if st.button("🌑", help="Dark Theme", key="theme_dark"):
-        st.session_state.theme = "Dark"
-        st.rerun()
-
-with t_col4:
-    if st.button("🌞", help="Light Theme", key="theme_light"):
-        st.session_state.theme = "Light"
-        st.rerun()
+    # Hidden real Streamlit buttons (they handle the logic)
+    col1, col2, col3 = st.columns([1,1,1])
+    with col1:
+        if st.button("🌓", help="Default Theme", key="theme_def", label_visibility="collapsed"):
+            st.session_state.theme = "Default"
+            st.rerun()
+    with col2:
+        if st.button("🌑", help="Dark Theme", key="theme_dark", label_visibility="collapsed"):
+            st.session_state.theme = "Dark"
+            st.rerun()
+    with col3:
+        if st.button("🌞", help="Light Theme", key="theme_light", label_visibility="collapsed"):
+            st.session_state.theme = "Light"
+            st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* Clean Theme Selector Icons - No background square */
-div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))) {
+<style>
+/* === CLEAN THEME PILL CONTAINER === */
+.theme-pill {
+    display: flex;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 245, 0, 0.2);
+    border-radius: 50px;
+    padding: 6px 10px;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 999999;
+}
+
+/* Clean icon buttons inside the pill */
+.theme-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 28px !important;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: var(--dynamic-text);
+    padding: 0;
+}
+
+.theme-btn:hover {
+    background: rgba(255, 245, 0, 0.25) !important;
+    transform: scale(1.15);
+    color: var(--dynamic-accent);
+}
+
+/* Hide the real Streamlit buttons but keep their functionality */
+.stButton button[key^="theme_"],
+button[key^="theme_"] {
+    display: none !important;
+}
+
+/* Strong override for any remaining Streamlit button styles */
+.stButton button,
+[data-testid="stHorizontalBlock"] button,
+div[data-testid="column"] button,
+button[kind="secondary"] {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
-    margin: 0 !important;
-    min-width: 32px !important;
-    height: 32px !important;
-    font-size: 24px !important;
-    line-height: 1 !important;
-    color: var(--dynamic-text) !important;
-    transition: transform 0.2s, opacity 0.2s;
 }
 
-div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))):hover {
-    transform: scale(1.25);
-    opacity: 1;
-    background: transparent !important;
-}
-
-/* Optional: make them slightly larger or adjust spacing if needed */
-div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("🌑"), :contains("🌞"))) {
-    font-size: 28px !important;
-}
-/* Container for the top-right theme icons */
+/* Rest of your existing CSS (unchanged) */
 .theme-container {
     position: fixed;
-    top: 50px; /* Adjust based on your header height */
+    top: 50px;
     right: 20px;
     z-index: 999999;
     display: flex;
@@ -167,7 +207,6 @@ div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("�
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Individual Icon Style */
 .theme-icon {
     cursor: pointer;
     width: 20px;
@@ -188,6 +227,7 @@ div[data-testid="column"] button:has(span:where(:contains("🌓"), :contains("�
     opacity: 1;
     filter: drop-shadow(0 0 5px var(--dynamic-accent));
 }
+
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
     border: 1px solid rgba(255, 245, 0, 0.2);
