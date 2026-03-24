@@ -111,50 +111,57 @@ inject_pwa_meta()
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. Reset container padding so the top-right corner is reachable */
+/* 1. Reset container padding for top-right alignment */
 .block-container {
     padding-top: 0rem !important;
 }
 
-/* 2. ONLY the Theme Selector floats in the top right */
-#theme-selector-anchor div[data-testid="stExpander"] {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 25% !important;
-    min-width: 120px !important;
-    z-index: 999999;
-    background-color: rgba(4, 17, 54, 0.8) !important;
-    border: 1px solid rgba(255, 245, 0, 0.3) !important;
-    border-radius: 12px !important;
-}
-
-/* 4. Hide radio labels ONLY inside the theme selector */
-#theme-selector-anchor div[data-testid="stRadio"] > label {
-    display: none !important;
-}
-
-/* Only target the expander inside our specific anchor div */
-#theme-selector-anchor div[data-testid="stExpander"] {
+/* 2. THE FIX: Target the ANCHOR first to define the 25% boundary */
+#theme-selector-anchor {
     position: absolute !important;
-    top: 5px !important;
-    right: 5px !important;
+    top: 10px !important;
+    right: 10px !important;
     width: 25% !important;
-    min-width: 120px !important;
+    min-width: 150px !important; /* Slightly wider for better icon spacing */
     z-index: 999999 !important;
-    background-color: #041136 !important; /* Matches your tennis theme dark blue */
+}
+
+/* 3. Force the Expander inside the anchor to fill only that 25% space */
+#theme-selector-anchor div[data-testid="stExpander"] {
+    width: 100% !important;
+    background-color: #041136 !important; /* Your Tennis Dark Blue */
     border: 1px solid rgba(255, 245, 0, 0.5) !important;
     border-radius: 12px !important;
 }
 
-/* Ensure the header inside the expander doesn't stretch */
+/* 4. Ensure the header (the 🎨 bar) respects the container width */
 #theme-selector-anchor [data-testid="stExpanderSummary"] {
     width: 100% !important;
+    justify-content: center !important;
 }
 
-/* 5. Clean up the default expander arrow for the theme selector ONLY */
+/* 5. Clean up: Hide default arrow and labels */
+#theme-selector-anchor [data-testid="stExpanderIcon"],
 #theme-selector-anchor [data-testid="stExpander"] svg {
     display: none !important;
+}
+
+#theme-selector-anchor div[data-testid="stRadio"] > label {
+    display: none !important;
+}
+
+#theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
+    justify-content: space-evenly !important;
+    gap: 10px !important;
+    padding: 5px !important;
+}
+
+/* 6. GLOBAL SAFETY: Ensure every OTHER expander in the app stays normal */
+div[data-testid="stExpander"] {
+    position: relative !important;
+    width: 100% !important;
+    top: auto !important;
+    right: auto !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
