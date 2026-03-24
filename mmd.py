@@ -117,7 +117,7 @@ st.markdown("""
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 .rank-badge {
-    background-color: var(--card-accent) !important;
+    background-color: var(--dynamic-accent) !important;
     color: #041136;
     font-weight: bold;
     border-radius: 5px;
@@ -140,36 +140,36 @@ st.markdown("""
 }
 [data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
 .profile-image {
-    width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--card-accent) !important;
+    width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--dynamic-accent) !important;
     border-radius: 15px; margin-right: 15px; vertical-align: middle;
     transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 .profile-image:hover { transform: scale(1.1); }
 .birthday-banner {
-    background: #FFFFFF; color: var(--card-text); padding: 15px;
+    background: #FFFFFF; color: var(--dynamic-text); padding: 15px;
     border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
     margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex; justify-content: center; align-items: center;
 }
 .whatsapp-share, .calendar-share {
-    background-color: var(--card-accent); padding: 5px 10px; border-radius: 5px; 
+    background-color: var(--dynamic-accent); padding: 5px 10px; border-radius: 5px; 
     text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
     font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
 }
 .whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
 .court-card {
-    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid var(--card-accent);
+    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid var(--dynamic-accent);
     border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, box-shadow 0.2s; text-align: center;
 }
 .court-card:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); }
-.court-card h4 { color: var(--card-accent) !important; margin-bottom: 10px; }
+.court-card h4 { color: var(--dynamic-accent) !important; margin-bottom: 10px; }
 .court-card a {
-    background-color: var(--card-accent) !important; color: #031827; padding: 8px 16px; border-radius: 5px;
+    background-color: var(--dynamic-accent) !important; color: #031827; padding: 8px 16px; border-radius: 5px;
     text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
     transition: background-color 0.2s;
 }
-.court-card a:hover { background-color: #ffd700; }
+.court-card a:hover { background-color: var(--dynamic-accent); }
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 { font-family: 'Offside', sans-serif !important; }
 h1 { font-size: 24px !important; }
@@ -186,13 +186,13 @@ h3 { font-size: 16px !important; }
 }
 .ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
 .rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-.rank-col { font-size: 2em; font-weight: bold; color: var(--card-accent) !important; margin-right: 15px; }
+.rank-col { font-size: 2em; font-weight: bold; color: var(--dynamic-accent) !important; margin-right: 15px; }
 .player-col { font-size: 1.4em; font-weight: bold; flex-grow: 1; }
-.badge { background: rgba(255, 215, 0, 0.2); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
+.badge { background: rgba(255, 215, 0, 0.2); color: var(--dynamic-accent); padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
 .stat-box { flex: 1; min-width: 100px; text-align: center; padding: 5px; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
 .stat-value { font-size: 1.1em; font-weight: bold; }
-.stat-highlight { color: var(--card-accent) !important; }
+.stat-highlight { color: var(--dynamic-accent) !important; }
 [data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
 .block-container { display: flex; flex-wrap: wrap; justify-content: center; }
 [data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
@@ -215,7 +215,7 @@ h3 { font-size: 16px !important; }
 .img-lightbox img {
     max-width: 90%;
     max-height: 90%;
-    border: 3px solid var(--card-accent) !important;
+    border: 3px solid var(--dynamic-accent) !important;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     object-fit: contain;
@@ -301,127 +301,105 @@ if 'theme' not in st.session_state:
     st.session_state.theme = "Default"
 
 def apply_custom_theme(theme_choice):
-    # Base colors and variables
+    # 1. Define CSS variables for each theme
     if theme_choice == "Light":
         root_vars = """
         :root {
-            --card-text: #1A1A1A;
-            --card-accent: #B24A00;
-            --card-bg: #FFFFFF;
-            --card-border: #B24A00;
+            --dynamic-text: #1A1A1A;
+            --dynamic-subtext: #444444;
+            --dynamic-accent: #B24A00;
+            --card-bg: #ffffff;
+            --card-border-color: #B24A00;
         }
         """
-        bg = "#E9ECEF"
-        st_header_bg = "linear-gradient(to top, #E9ECEF, #FFFFFF)"
-    else:  # Default / Dark
+        bg_color = "#E9ECEF"
+        header_bg = "linear-gradient(to top, #E9ECEF, #FFFFFF)"
+    else:  # Default or Dark
         root_vars = """
         :root {
-            --card-text: #ffffff;
-            --card-accent: #fff500;
-            --card-bg: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
-            --card-border: rgba(255, 245, 0, 0.2);
+            --dynamic-text: #ffffff;
+            --dynamic-subtext: #bbbbbb;
+            --dynamic-accent: #fff500;
+            --card-bg: rgba(255,255,255,0.05);
+            --card-border-color: rgba(255, 245, 0, 0.2);
         }
         """
         if theme_choice == "Dark":
-            bg = "#121212"
-            st_header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
-        else:
-            bg = "linear-gradient(to bottom, #041136, #21000a)"
-            st_header_bg = "linear-gradient(to top, #041136, #21000a)"
+            bg_color = "#121212"
+            header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
+        else: # Default
+            bg_color = "linear-gradient(to bottom, #041136, #21000a)"
+            header_bg = "linear-gradient(to top, #041136, #21000a)"
 
-    # Light Theme Contrast Overrides
-    light_overrides = ""
-    if theme_choice == "Light":
-        light_overrides = """
-        /* Force Internal Text Color for Light Theme */
-        .mobile-card *, .court-card *, .ranking-row *, .booking-card *, .booking-row *, .dynamic-text, .stat-value, .stat-highlight {
-            color: var(--card-accent) !important;
-        }
-        .stat-highlight {
-            color: var(--card-accent) !important;
-        }
-        .mobile-card, .court-card, .ranking-row {
-            background: var(--card-bg) !important;
-            border: 1px solid var(--card-border) !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-        }
-        """
-    else:
-        light_overrides = """
-        .mobile-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .court-card {
-            background: linear-gradient(to bottom, #031827, #07314f);
-            border: 1px solid var(--card-accent);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .ranking-row {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        """
-
+    # 2. Define CSS rules using the variables
     st.markdown(f"""
     <style>
     {root_vars}
-    {light_overrides}
-    
-    .mobile-card, .ranking-row, .court-card {{
+
+    /* --- Global App Style --- */
+    .stApp {{
+      background: {bg_color};
+      color: var(--dynamic-text);
+    }}
+    [data-testid="stHeader"] {{
+        background: {header_bg} !important;
+    }}
+    h1, h2, h3, h4, h5, h6, .dynamic-text {{
+        color: var(--dynamic-text) !important;
+    }}
+    .dynamic-subtext {{
+        color: var(--dynamic-subtext) !important;
+    }}
+
+    /* --- Card Base Styles --- */
+    .mobile-card, .ranking-row, .court-card, .booking-row {{
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border-color);
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
-        transition: transform 0.2s;
+        transition: transform 0.2s, box-shadow 0.2s;
     }}
-    
-    .mobile-card:hover, .ranking-row:hover, .court-card:hover {{
+    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
         transform: translateY(-2px);
     }}
+    
+    /* --- Light Theme Card Visibility --- */
+    {''.join([f".{c} {{ border: 1px solid #B24A00 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }}" for c in ["mobile-card", "ranking-row"]]) if theme_choice == "Light" else ""}
 
+    /* --- Component-Specific Styles --- */
+    .profile-image, .img-lightbox img {{
+        border: 3px solid var(--dynamic-accent);
+        border-radius: 10px;
+    }}
     .rank-badge {{
-        background: var(--card-accent);
-        color: #041136;
+        background: var(--dynamic-accent);
+        color: #041136; /* Keep dark text for contrast on yellow */
         font-weight: bold;
         border-radius: 5px;
         padding: 2px 8px;
-        font-size: 14px;
     }}
-    
-    .stApp {{
-      background: {bg};
-      background-attachment: scroll;
+    .rank-col, .stat-highlight {{
+        color: var(--dynamic-accent) !important;
     }}
-    
-    [data-testid="stHeader"] {{ background: {st_header_bg} !important; }}
-    
-    .profile-image {{
-        width: 80px; height: 80px; object-fit: cover; 
-        border: 2px solid var(--card-accent);
-        border-radius: 15px; margin-right: 15px; vertical-align: middle;
-        transition: transform 0.2s;
+    .player-col, .stat-value {{
+        color: var(--dynamic-text) !important;
     }}
-    
-    .court-card h4 {{ color: var(--card-accent); margin-bottom: 10px; }}
+    .stat-label {{
+        color: var(--dynamic-subtext);
+    }}
+    .court-card h4 {{
+        color: var(--dynamic-accent);
+    }}
     .court-card a {{
-        background-color: var(--card-accent); color: #031827; padding: 8px 16px; border-radius: 5px;
-        text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
+        background-color: var(--dynamic-accent);
+        color: #031827; /* Dark text for contrast */
     }}
-    
-    .rank-col {{ font-size: 2em; font-weight: bold; color: var(--card-accent); margin-right: 15px; }}
-    .player-col {{ font-size: 1.4em; font-weight: bold; color: var(--card-text); flex-grow: 1; }}
-    .stat-label {{ font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }}
-    .stat-value {{ font-size: 1.1em; color: var(--card-text); font-weight: bold; }}
-    .stat-highlight {{ color: var(--card-accent); }}
-    
+
+    /* Font import */
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
-    html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {{ font-family: 'Offside', sans-serif !important; }}
-    
-    .img-lightbox img {{
-        border: 3px solid var(--card-accent);
-        border-radius: 10px;
+    html, body, [class*="st-"] {{
+        font-family: 'Offside', sans-serif !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -769,7 +747,7 @@ def create_radar_chart(player_data, theme="Default"):
         template = 'plotly_white'
         fill_color = 'rgba(178, 74, 0, 0.3)'
     else:
-        accent = '#D4FC1E'
+        accent = 'var(--dynamic-accent)'
         template = 'plotly_dark'
         fill_color = 'rgba(255, 245, 0, 0.3)'
 
@@ -810,7 +788,7 @@ def create_radar_chart(player_data, theme="Default"):
             angularaxis=dict(
                 gridcolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)", 
                 linecolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)",
-                tickfont=dict(size=9, color="#aaa" if theme != "Light" else "#555")
+                tickfont=dict(size=9, color="var(--dynamic-subtext)")
             )
         ),
         showlegend=False,
@@ -1097,10 +1075,10 @@ def calculate_enhanced_doubles_odds(players, doubles_rank_df):
     team2_odds = (team2_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
 
     # Styled output
-    t1p1_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{team1[0]}</span>"
-    t1p2_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{team1[1]}</span>"
-    t2p1_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{team2[0]}</span>"
-    t2p2_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{team2[1]}</span>"
+    t1p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team1[0]}</span>"
+    t1p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team1[1]}</span>"
+    t2p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team2[0]}</span>"
+    t2p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team2[1]}</span>"
     pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
     
     return (pairing_text, team1_odds, team2_odds)
@@ -1250,7 +1228,7 @@ def plot_player_performance(player_name, matches_df, theme="Default"):
         accent = '#B24A00'
         template = 'plotly_white'
     else:
-        accent = '#D4FC1E'
+        accent = 'var(--dynamic-accent)'
         template = 'plotly_dark'
 
     # Filter matches involving the player
@@ -1572,21 +1550,21 @@ def display_hall_of_fame():
                         f"""
                         <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
-                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid var(--card-accent) !important;">
-                                <p style="font-size: 1.5em; font-weight: bold; color: var(--card-accent) !important; margin-top: 10px;">{player_name}</p>
+                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid var(--dynamic-accent) !important;">
+                                <p style="font-size: 1.5em; font-weight: bold; color: var(--dynamic-accent) !important; margin-top: 10px;">{player_name}</p>
                                 <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
-                                    {rank_emoji} Rank <span style="font-weight: bold; color: var(--card-accent) !important;">{rank}</span>
+                                    {rank_emoji} Rank <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{rank}</span>
                                 </p>
                             </div>
                             <div style="text-align: left; font-size: 0.95em; padding: 0 10px;">
                                 <p><strong>Data for the Season:</strong></p>
-                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{points_display}</span></p>
-                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{Games_won_display}</span></p>
-                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{win_rate_display}</span></p>
-                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{matches_played}</span></p>
-                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{gda_display}</span></p>
-                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{cumulative_GD_display}</span></p>
-                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: var(--card-accent) !important;">{performance_score}</span></p>
+                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{points_display}</span></p>
+                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{Games_won_display}</span></p>
+                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{win_rate_display}</span></p>
+                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{matches_played}</span></p>
+                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{gda_display}</span></p>
+                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{cumulative_GD_display}</span></p>
+                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{performance_score}</span></p>
                             </div>
                         </div>
                         """,
@@ -1742,19 +1720,19 @@ with tabs[0]:
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
                     <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                        <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
+                        <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
-                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid var(--card-accent) !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
                             </a>
                         </div>
                         <div id="{p_uid}" class="img-lightbox">
                             <a href="#" class="img-lightbox-close">&times;</a>
                             <img src="{photo}">
                         </div>
-                        <div style="margin: 5px 0; color: var(--card-accent) !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
+                        <div style="margin: 5px 0; color: var(--dynamic-accent) !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
                         <div class="dynamic-text" style="font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
-                        <div style="color: #aaa; font-size: 0.7em;">{player['Win %']}% Win</div>
+                        <div style="color: var(--dynamic-subtext); font-size: 0.7em;">{player['Win %']}% Win</div>
                     </div>
                 </div>
                 """
@@ -1788,7 +1766,7 @@ with tabs[0]:
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <a href="#{r_uid}">
-                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid var(--card-accent); box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
+                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid var(--dynamic-accent); box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         </a>
                         <div>
                             <div class="dynamic-text" style="font-size: 22px; font-weight: bold; line-height: 1.1;">{row['Player']}</div>
@@ -1796,10 +1774,10 @@ with tabs[0]:
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="background: #CCFF00; color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
+                        <div style="background: var(--dynamic-accent); color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
                             {row['Rank']}
                         </div>
-                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">
+                        <div style="color: var(--dynamic-subtext); font-size: 13px; margin-top: 6px; font-weight: bold;">
                             {score_display} {metric_label} {change_indicator}
                         </div>
                     </div>
@@ -1822,30 +1800,30 @@ with tabs[0]:
                     stats_html = f"""
                         <div style="text-align: right; padding-right: 5px;">
                             <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
-                                <div style="font-size: 24px; font-weight: bold; color: var(--card-accent);">{row['Win %']}%</div>
+                                <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 24px; font-weight: bold; color: var(--dynamic-accent);">{row['Win %']}%</div>
                             </div>
                             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">MATCHES</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Matches']}</div>
+                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">MATCHES</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">W/L</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">W/L</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
                             <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
-                                <div style="font-size: 18px; font-weight: bold; color: #eee;">{row.get('Game Diff Avg', 0)}</div>
+                                <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 18px; font-weight: bold; color: var(--dynamic-text);">{row.get('Game Diff Avg', 0)}</div>
                             </div>
                             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">CLUTCH</div>
+                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">CLUTCH</div>
                                     <div style="font-size: 14px; font-weight: bold; color: #00ff88;">{row.get('Clutch Factor', 0)}%</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: #888;">CONSISTENCY</div>
+                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">CONSISTENCY</div>
                                     <div style="font-size: 14px; font-weight: bold; color: #ff4b4b;">{row.get('Consistency Index', 0)}</div>
                                 </div>
                             </div>
@@ -1878,19 +1856,19 @@ with tabs[1]:
         }
         .gda-label {
             font-size: 0.85em;
-            color: var(--card-accent); /* Optic Yellow */
+            color: var(--dynamic-accent); /* Optic Yellow */
             font-weight: bold;
             margin-top: 4px;
             border-top: 1px solid rgba(255,255,255,0.1);
             padding-top: 4px;
         }
         .player-name-bold {
-            color: var(--card-accent); /* Optic Yellow */
+            color: var(--dynamic-accent); /* Optic Yellow */
             font-weight: bold;
             text-transform: uppercase;
         }
         .status-text-grey {
-            color: #888888; /* Grey */
+            color: var(--dynamic-subtext); /* Grey */
             font-size: 0.9em;
             font-weight: bold;
         }
@@ -2199,10 +2177,10 @@ with tabs[1]:
 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
     {img_html}
     <div style="padding: 15px;">
-        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+        <div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
         <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
         <div class="match-score-container">
-            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
+            <div style="font-size: 1.2em; font-weight: bold; color: var(--dynamic-accent);">{" | ".join(display_scores)}</div>
             <div class="gda-label">Game Diff Avg: +{match_gda}</div>
         </div>
     </div>
@@ -2418,14 +2396,14 @@ with tabs[2]:
     st.markdown("""
         <style>
         .badge {
-            background: var(--card-accent) !important; color: black; padding: 2px 8px; 
+            background: var(--dynamic-accent) !important; color: black; padding: 2px 8px; 
             border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
         }
         .stat-box {
             background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
             border-left: 4px solid #D4FC1E; margin-bottom: 10px;
         }
-        .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
+        .metric-label { font-size: 0.7em; color: var(--dynamic-subtext); text-transform: uppercase; }
         .metric-value { font-size: 1.1em; font-weight: bold; }
         </style>
     """, unsafe_allow_html=True)
@@ -2634,7 +2612,7 @@ with tabs[2]:
                             height: 120px; 
                             background-color: #262626; 
                             border-radius: 15px; 
-                            border: 3px solid var(--card-accent) !important; 
+                            border: 3px solid var(--dynamic-accent) !important; 
                             display: flex; 
                             justify-content: center; 
                             align-items: center; 
@@ -2657,7 +2635,7 @@ with tabs[2]:
                             <img src="{img}" style="max-width: 90%; max-height: 90%; object-fit: contain;">
                         </div>
                         <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
-                        <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
+                        <div style="color: var(--dynamic-accent); font-size: 0.85em;">{bday_str}</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -2667,7 +2645,7 @@ with tabs[2]:
                     st.markdown(f"""
                     <div class="stat-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                            <span style="color: var(--card-accent) !important; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
+                            <span style="color: var(--dynamic-accent) !important; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
                             <div>{badges_html}</div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
@@ -2940,8 +2918,8 @@ with tabs[4]:
             
             for _, row in upcoming_bookings.iterrows():
                 players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-                players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
-                standby_str = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
+                players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
+                standby_str = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
                 date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
                 time_value = str(row['time']).strip()
             
@@ -2958,7 +2936,7 @@ with tabs[4]:
                             time_ampm = "Invalid Time"
                 
                 court_url = court_url_mapping.get(row['court_name'], "#")
-                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#D4FC1E; text-decoration:none;'>{row['court_name']}</a>"
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:var(--dynamic-accent); text-decoration:none;'>{row['court_name']}</a>"
             
                 pairing_suggestion = ""
                 plain_suggestion = ""
@@ -2967,7 +2945,7 @@ with tabs[4]:
                         rank_df = doubles_rank_df
                         unranked = [p for p in players if p not in rank_df["Player"].values]
                         if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
                             message = f"Players {styled_unranked} are unranked, therefore no pairing odds available."
                             pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> {message}</div>"
                             plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no pairing odds available."
@@ -2988,8 +2966,8 @@ with tabs[4]:
                                 diff = abs(team1_score - team2_score)
                                 odds_team1 = (team1_score / (team1_score + team2_score)) * 100 if team1_score + team2_score > 0 else 50
                                 odds_team2 = 100 - odds_team1
-                                team1_str = ", ".join([f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{p}</span>" for p in team1])
-                                team2_str = ", ".join([f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{p}</span>" for p in team2])
+                                team1_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team1])
+                                team2_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team2])
                                 pairing_str = f"{team1_str} vs {team2_str}"
                                 plain_pairing_str = f"{', '.join(team1)} vs {', '.join(team2)}"
                                 all_pairings.append({
@@ -3005,8 +2983,8 @@ with tabs[4]:
                             for idx, pairing in enumerate(all_pairings[:3], 1):
                                 pairing_suggestion += (
                                     f"<div>Option {idx}: {pairing['pairing']} "
-                                    f"(<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
-                                    f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
+                                    f"(<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
+                                    f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
                                 )
                                 plain_suggestion += (
                                     f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
@@ -3019,15 +2997,15 @@ with tabs[4]:
                         rank_df = singles_rank_df
                         unranked = [p for p in players if p not in rank_df["Player"].values]
                         if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
                             message = f"Players {styled_unranked} are unranked, therefore no odds available."
                             pairing_suggestion = f"<div><strong class='dynamic-text'>Odds:</strong> {message}</div>"
                             plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no odds available."
                         else:
                             p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
                             if p1_odds is not None:
-                                p1_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{players[0]}</span>"
-                                p2_styled = f"<span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{players[1]}</span>"
+                                p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[0]}</span>"
+                                p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[1]}</span>"
                                 pairing_suggestion = (
                                     f"<div><strong class='dynamic-text'>Odds:</strong> "
                                     f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
@@ -3057,7 +3035,7 @@ with tabs[4]:
                 # Weather logic
                 lat, lon = get_court_coords(row['court_name'])
                 weather_info = get_weather(lat, lon, str(row['date']), str(row['time']))
-                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{weather_info}</span></div>"
+                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_info}</span></div>"
                 weather_share = f" | Weather: *{weather_info}*" if weather_info != "Weather N/A" else ""
 
                 share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}*{weather_share} | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
@@ -3065,12 +3043,12 @@ with tabs[4]:
                 whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
                 
                 booking_text = f"""
-                <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                    <div><strong>Date:</strong> <span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{date_str}</span></div>
+                <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                    <div><strong>Date:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{date_str}</span></div>
                     <div><strong>Court:</strong> {court_name_html}</div>
-                    <div><strong>Time:</strong> <span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{time_ampm}</span></div>
+                    <div><strong>Time:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{time_ampm}</span></div>
                     {weather_row}
-                    <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: var(--card-accent) !important; font-weight:bold;'>{row['match_type']}</span></div>
+                    <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['match_type']}</span></div>
                     <div><strong>Players:</strong> {players_str}</div>
                     <div><strong>Standby Player:</strong> {standby_str}</div>
                     {pairing_suggestion}
@@ -3105,7 +3083,7 @@ with tabs[4]:
                 for player_name, img_url in image_urls:
                     visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
                 for player_name, initial in placeholder_initials:
-                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid var(--card-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--card-accent) !important; font-weight: bold;">{initial}</div>'
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;">{initial}</div>'
                 visuals_html += '</div></div>'
                 booking_text += visuals_html + '</div>'
                 
@@ -3120,7 +3098,7 @@ with tabs[4]:
                     **Match Type:** {row['match_type']}  
                     **Players:** {', '.join(players) if players else 'No players'}  
                     **Standby Player:** {row.get('standby_player', 'None')}  
-                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:#D4FC1E;\'>', '').replace('</span>', '')}
+                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:var(--dynamic-accent);\'>', '').replace('</span>', '')}
                     """, unsafe_allow_html=True)
                     st.markdown(f"""
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -3148,7 +3126,7 @@ with tabs[4]:
                         for player_name, initial in placeholder_initials:
                             with cols[col_idx]:
                                 st.markdown(f"""
-                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid var(--card-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--card-accent) !important; font-weight: bold;'>{initial}</div>
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;'>{initial}</div>
                                 <div style='text-align: center;'>{player_name}</div>
                                 """, unsafe_allow_html=True)
                             col_idx += 1
@@ -3471,7 +3449,7 @@ with tabs[4]:
         <style>
         .availability-day-card {
             background: linear-gradient(to bottom, #031827, #07314f);
-            border: 2px solid var(--card-accent) !important;
+            border: 2px solid var(--dynamic-accent) !important;
             border-radius: 12px;
             padding: 15px;
             margin: 10px 0;
@@ -3484,7 +3462,7 @@ with tabs[4]:
             box-shadow: 0 6px 12px rgba(255, 245, 0, 0.4);
         }
         .day-header {
-            color: var(--card-accent) !important;
+            color: var(--dynamic-accent) !important;
             font-weight: bold;
             font-size: 1.2em;
             margin-bottom: 10px;
@@ -3502,7 +3480,7 @@ with tabs[4]:
         }
         .player-name {
             font-weight: bold;
-            color: var(--card-accent) !important;
+            color: var(--dynamic-accent) !important;
             margin-right: 8px;
             min-width: 80px;
         }
@@ -3685,7 +3663,7 @@ with tabs[6]:
                     st.markdown(f"""
                         <div style="margin-bottom: 20px; text-align: center;">
                             <a href="#{img_id}">
-                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid var(--card-accent) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                             </a>
                         </div>
                         <div id="{img_id}" class="img-lightbox">
@@ -3828,7 +3806,7 @@ with tabs[7]:
     else:
         st.warning("Not enough data to generate visual analytics. Add some matches first!")
         
-    st.markdown("<hr style='border: 2px solid var(--card-accent) !important;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border: 2px solid var(--dynamic-accent) !important;'>", unsafe_allow_html=True)
 
     # --- SECTION 2: AI EXPORT & FULL BACKUP SYSTEM (Original Code) ---
     st.header("🤖 Analyze League Data with Google Gemini")
@@ -3864,7 +3842,7 @@ with tabs[7]:
             st.markdown("""
             <a href="https://gemini.google.com/app" target="_blank">
                 <button style="
-                    background-color: var(--card-accent) !important;
+                    background-color: var(--dynamic-accent) !important;
                     color: #031827;
                     padding: 14px 20px;
                     border: none;
