@@ -1628,8 +1628,50 @@ partner_stats_global = {}
 if not st.session_state.matches_df.empty:
     rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
-# --- Main Layout ---
-st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
+# --- Header with Theme Toggle ---
+header_col, theme_col = st.columns([4, 1])
+with header_col:
+    st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=None)
+
+with theme_col:
+    # Header for theme selector
+    st.markdown("<p style='font-size:10px; margin-bottom:0; text-align:right;'>THEME</p>", unsafe_allow_html=True)
+    
+    # 3-sphere row
+    cols = st.columns(3)
+    themes = ["Default", "Dark", "Light"]
+    # Mapping theme names to color palettes for radial-gradients
+    sphere_styles = {
+        "Default": "radial-gradient(circle at 30% 30%, #4facfe, #004e92)",
+        "Dark": "radial-gradient(circle at 30% 30%, #444, #000)",
+        "Light": "radial-gradient(circle at 30% 30%, #fff, #ccc)"
+    }
+    
+    for i, theme in enumerate(themes):
+        with cols[i]:
+            is_active = st.session_state.theme == theme
+            glow = "0 0 10px 2px #FFD700" if is_active else "none"
+            
+            # Using button with a unique ID for styling via CSS
+            if st.button(" ", key=f"btn_theme_{theme}"):
+                st.session_state.theme = theme
+                st.rerun()
+            
+            st.markdown(f'''
+                <style>
+                    button[key="btn_theme_{theme}"] {{
+                        border-radius: 50% !important;
+                        width: 20px !important;
+                        height: 20px !important;
+                        padding: 0 !important;
+                        background: {sphere_styles[theme]} !important;
+                        box-shadow: {glow} !important;
+                        border: 2px solid #fff !important;
+                    }}
+                </style>
+            ''', unsafe_allow_html=True)
+
+
 get_birthday_banner(st.session_state.players_df)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "AI Data"]
@@ -3912,28 +3954,6 @@ with tabs[7]:
         st.warning("No match data available yet. Add some matches first!")
 
 
-st.markdown("----")
-col_theme, _ = st.columns([1, 2])
-with col_theme:
-    # Use segmented_control if available, otherwise radio
-    try:
-        new_theme = st.segmented_control(
-            "App Theme",
-            options=["Default", "Dark", "Light"],
-            default=st.session_state.theme,
-            key="theme_toggle_widget"
-        )
-    except AttributeError:
-        new_theme = st.radio(
-            "App Theme",
-            options=["Default", "Dark", "Light"],
-            index=["Default", "Dark", "Light"].index(st.session_state.theme),
-            horizontal=True,
-            key="theme_toggle_widget"
-        )
 
-if new_theme and new_theme != st.session_state.theme:
-    st.session_state.theme = new_theme
-    st.rerun()
-
+# --- Theme Selection & Footer ---
 st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
