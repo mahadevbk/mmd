@@ -128,10 +128,6 @@ with st.sidebar:
 # --- Custom CSS ---
 st.markdown("""
 <style>
-[data-testid="stIconMaterial"] {
-    display: none !important;
-}
-
 [data-testid="stIconMaterial"]::before {
     content: "🎨";                  /* Color palette emoji */
     font-size: 1.4em;
