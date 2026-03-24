@@ -105,90 +105,66 @@ def inject_pwa_meta():
 
 inject_pwa_meta()
 
-# --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-# ────── FINAL CLEAN THEME SELECTOR (Only the nice pill) ──────
-col_spacer, col_pill = st.columns([14, 3])
+# --- Elegant Theme Selector (Top of App) ---
+# Create 4 columns: one large one to push others to the right, and 3 small ones for icons
+t_col1, t_col2, t_col3, t_col4 = st.columns([15, 1, 1, 1])
 
-with col_pill:
-    # Beautiful pill you see in the screenshot
-    st.markdown("""
-    <div class="theme-pill">
-        <span class="theme-btn" title="Default Theme" 
-              onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</span>
-        <span class="theme-btn" title="Dark Theme" 
-              onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</span>
-        <span class="theme-btn" title="Light Theme" 
-              onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</span>
-    </div>
-    """, unsafe_allow_html=True)
+with t_col2:
+    # Default / Mixed Theme Icon
+    if st.button("🌓", help="Default Theme", key="theme_def"):
+        st.session_state.theme = "Default"
+        st.rerun()
 
-    # Hidden buttons - placed in an expander with zero height trick
-    with st.expander(" ", expanded=False):
-        if st.button("🌓", key="theme_def", help="Default Theme"):
-            st.session_state.theme = "Default"
-            st.rerun()
-        if st.button("🌑", key="theme_dark", help="Dark Theme"):
-            st.session_state.theme = "Dark"
-            st.rerun()
-        if st.button("🌞", key="theme_light", help="Light Theme"):
-            st.session_state.theme = "Light"
-            st.rerun()
+with t_col3:
+    # Dark Theme Icon
+    if st.button("🌑", help="Dark Theme", key="theme_dark"):
+        st.session_state.theme = "Dark"
+        st.rerun()
+
+with t_col4:
+    # Light Theme Icon
+    if st.button("🌞", help="Light Theme", key="theme_light"):
+        st.session_state.theme = "Light"
+        st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === FINAL CLEAN THEME PILL - NO BLUE SQUARES === */
-.theme-pill {
-    display: flex;
-    background: rgba(255, 255, 255, 0.09);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 245, 0, 0.3);
-    border-radius: 50px;
-    padding: 5px 10px;
-    gap: 6px;
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+/* Container for the top-right theme icons */
+.theme-container {
+    position: fixed;
+    top: 50px; /* Adjust based on your header height */
+    right: 20px;
     z-index: 999999;
-    align-items: center;
-    margin-bottom: 8px;
+    display: flex;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.theme-btn {
-    background: transparent !important;
-    border: none !important;
-    font-size: 29px !important;
-    width: 42px;
-    height: 42px;
+/* Individual Icon Style */
+.theme-icon {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.6;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    color: var(--dynamic-text);
 }
 
-.theme-btn:hover {
-    background: rgba(255, 245, 0, 0.35) !important;
+.theme-icon:hover {
     transform: scale(1.2);
-    color: var(--dynamic-accent);
+    opacity: 1;
 }
 
-/* Hide the expander completely + the buttons inside it */
-.st-expander {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.st-expander > div {
-    display: none !important;
-}
-
-/* Extra safety - hide any button with theme keys */
-button[key^="theme_"] {
-    display: none !important;
+.theme-icon.active {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--dynamic-accent));
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
