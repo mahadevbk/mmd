@@ -275,7 +275,7 @@ h3 { font-size: 16px !important; }
 .img-lightbox img {
     max-width: 90%;
     max-height: 90%;
-    border: 3px solid var(--dynamic-accent) !important;
+    border: 2px solid var(--dynamic-accent) !important;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     object-fit: contain;
@@ -452,7 +452,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #444444;
             --dynamic-accent: #B24A00;
             --card-bg: #ffffff;
-            --card-border-color: rgba(178, 74, 0, 0.6);
+            --card-border-color: rgba(0, 0, 0, 0.15);
             --divider-color: rgba(0, 0, 0, 0.1);
         }
         """
@@ -533,7 +533,7 @@ def apply_custom_theme(theme_choice):
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
-        border: 1.5px solid var(--card-border-color) !important;
+        border: 1px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
@@ -548,12 +548,12 @@ def apply_custom_theme(theme_choice):
     div[data-testid="stVerticalBlockBorderWrapper"] > div,
     div.st-emotion-cache-12w0qpk,
     div.st-emotion-cache-ke6n6u {{
-        border: 1.5px solid var(--card-border-color) !important;
+        border: 1px solid var(--card-border-color) !important;
     }}
     
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
-        border: 3px solid var(--dynamic-accent);
+        border: 2px solid var(--dynamic-accent);
         border-radius: 10px;
     }}
     .rank-badge {{
@@ -1734,7 +1734,7 @@ def display_hall_of_fame():
                         f"""
                         <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between; background-color: var(--card-bg);">
                             <div>
-                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid var(--dynamic-accent) !important;">
+                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 2px solid var(--dynamic-accent) !important;">
                                 <p style="font-size: 1.5em; font-weight: bold; color: var(--dynamic-text) !important; margin-top: 10px;">{player_name}</p>
                                 <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
                                     {rank_emoji} Rank <span style="font-weight: bold; color: var(--dynamic-text) !important;">{rank}</span>
@@ -1950,7 +1950,7 @@ with tabs[0]:
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <a href="#{r_uid}">
-                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid var(--dynamic-accent); box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
+                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 2px solid var(--dynamic-accent); box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         </a>
                         <div>
                             <div class="dynamic-text" style="font-size: 22px; font-weight: bold; line-height: 1.1;">{row['Player']}</div>
@@ -2816,7 +2816,7 @@ with tabs[2]:
                             height: 120px; 
                             background-color: #262626; 
                             border-radius: 15px; 
-                            border: 3px solid var(--dynamic-accent) !important; 
+                            border: 2px solid var(--dynamic-accent) !important; 
                             display: flex; 
                             justify-content: center; 
                             align-items: center; 
