@@ -245,7 +245,7 @@ h3 { font-size: 16px !important; }
     overflow: visible; transition: transform 0.2s;
 }
 .ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
-.rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+.rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--divider-color); padding-bottom: 10px; }
 .rank-col { font-size: 2em; font-weight: bold; color: var(--dynamic-accent) !important; margin-right: 15px; }
 .player-col { font-size: 1.4em; font-weight: bold; flex-grow: 1; }
 .badge { background: rgba(255, 215, 0, 0.2); color: var(--dynamic-accent); padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
@@ -452,7 +452,8 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #444444;
             --dynamic-accent: #B24A00;
             --card-bg: #ffffff;
-            --card-border-color: #B24A00;
+            --card-border-color: rgba(178, 74, 0, 0.4);
+            --divider-color: rgba(0, 0, 0, 0.1);
         }
         """
         bg_color = "#E9ECEF"
@@ -465,6 +466,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-accent: #fff500;
             --card-bg: rgba(255,255,255,0.05);
             --card-border-color: rgba(255, 245, 0, 0.2);
+            --divider-color: rgba(255, 255, 255, 0.1);
         }
         """
         if theme_choice == "Dark":
@@ -505,11 +507,6 @@ def apply_custom_theme(theme_choice):
             border-radius: 8px !important;
             border: 1px solid #ddd !important;
         }
-
-        /* 4. Fix st.container(border=True) border */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            border: 1px solid var(--card-border-color) !important;
-        }
         """
 
     # 2. Define CSS rules using the variables
@@ -534,17 +531,22 @@ def apply_custom_theme(theme_choice):
     }}
 
     /* --- Card Base Styles --- */
-    .mobile-card, .ranking-row, .court-card, .booking-row {{
+    .mobile-card, .ranking-row, .court-card, .booking-row {
         background-color: var(--card-bg);
-        border: 1px solid var(--card-border-color);
+        border: 1.5px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
         transition: transform 0.2s, box-shadow 0.2s;
-    }}
-    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
+    }
+    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {
         transform: translateY(-2px);
-    }}
+    }
+
+    /* Target Streamlit's internal container borders globally */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1.5px solid var(--card-border-color) !important;
+    }
     
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
@@ -965,8 +967,8 @@ def create_radar_chart(player_data, theme="Default"):
             bgcolor='rgba(0,0,0,0)',
             radialaxis=dict(visible=False, range=[0, 100]),
             angularaxis=dict(
-                gridcolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)", 
-                linecolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)",
+                gridcolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.2)", 
+                linecolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.2)",
                 tickfont=dict(size=9, color="var(--dynamic-subtext)")
             )
         ),
@@ -2038,7 +2040,7 @@ with tabs[1]:
             color: var(--dynamic-accent); /* Optic Yellow */
             font-weight: bold;
             margin-top: 4px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid var(--divider-color);
             padding-top: 4px;
         }
         .player-name-bold {
@@ -2823,7 +2825,7 @@ with tabs[2]:
                     badges_html = "".join([f"<span class='badge'>{b}</span>" for b in s.get('Badges', [])])
                     st.markdown(f"""
                     <div class="stat-box">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--divider-color); padding-bottom: 5px;">
                             <span style="color: var(--dynamic-accent) !important; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
                             <div>{badges_html}</div>
                         </div>
