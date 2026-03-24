@@ -133,10 +133,8 @@ st.markdown("""
 }
 
 [data-testid="stIconMaterial"]::before {
-    content: "palette";
-    font-family: "Material Symbols Rounded";
-    font-size: 26px;
-    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;  /* Makes it filled & nice */
+    content: "🎨";                  /* Color palette emoji */
+    font-size: 1.4em;
 }
 /* Container for the top-right theme icons */
 .theme-container {
