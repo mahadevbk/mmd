@@ -107,10 +107,11 @@ inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
 # --- Clean Theme Selector - Single Pill Only ---
+# --- Clean Theme Selector - Nice Pill Only (No Duplicates) ---
 col_spacer, col_icons = st.columns([14, 3])
 
 with col_icons:
-    # Beautiful pill container (visible)
+    # Visible nice pill
     st.markdown("""
     <div class="theme-pill">
         <span class="theme-btn" title="Default Theme" 
@@ -122,7 +123,7 @@ with col_icons:
     </div>
     """, unsafe_allow_html=True)
 
-    # Hidden functionality buttons (completely invisible)
+    # Hidden functionality (zero space)
     if st.button("🌓", key="theme_def", help="Default Theme"):
         st.session_state.theme = "Default"
         st.rerun()
@@ -136,7 +137,7 @@ with col_icons:
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === CLEAN THEME PILL - SINGLE ROW ONLY === */
+/* === CLEAN THEME PILL - ONLY ONE ROW === */
 .theme-pill {
     display: flex;
     background: rgba(255, 255, 255, 0.08);
@@ -173,16 +174,18 @@ st.markdown("""
     color: var(--dynamic-accent);
 }
 
-/* Hide ALL Streamlit buttons and containers for theme keys */
+/* AGGRESSIVE HIDING - Zero space for the real buttons */
 .stButton button[key^="theme_"],
 button[key^="theme_"],
-div:has(button[key^="theme_"]) {
+div[data-testid="stVerticalBlock"] > div:has(button[key^="theme_"]),
+.element-container:has(button[key^="theme_"]) {
     display: none !important;
     visibility: hidden !important;
-    height: 0px !important;
-    width: 0px !important;
+    height: 0 !important;
+    width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
     position: absolute !important;
 }
