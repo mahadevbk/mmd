@@ -110,31 +110,42 @@ inject_pwa_meta()
 col_main, col_side = st.columns([3, 1])
 
 with col_side:
+    # 2. CSS to center the horizontal icons and hide the radio label
+    st.markdown("""
+        <style>
+        /* Hide the radio button label "Select Theme" */
+        div[data-testid="stRadio"] > label {
+            display: none;
+        }
+        /* Center the horizontal radio options */
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+            justify-content: center;
+            gap: 15px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     with st.expander("🎨", expanded=False):
-        # 2. Create 3 sub-columns inside the expander for the icons
-        sub_col1, sub_col2, sub_col3 = st.columns(3)
-        
-        # Initialize state
+        # Map labels to icons
+        theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
+
         if 'theme' not in st.session_state:
             st.session_state.theme = "Default"
 
-        # Column 1: Default
-        with sub_col1:
-            if st.button("🌓", help="Default", key="btn_def", use_container_width=True):
-                st.session_state.theme = "Default"
-                st.rerun()
+        # The Radio Selector
+        selected_theme = st.radio(
+            "Select Theme", # This label is hidden by the CSS above
+            options=list(theme_map.keys()),
+            format_func=lambda x: theme_map[x], # This shows ONLY the icon
+            index=list(theme_map.keys()).index(st.session_state.theme),
+            horizontal=True,
+            key="icon_radio_theme"
+        )
 
-        # Column 2: Dark
-        with sub_col2:
-            if st.button("🌑", help="Dark", key="btn_dark", use_container_width=True):
-                st.session_state.theme = "Dark"
-                st.rerun()
-
-        # Column 3: Light
-        with sub_col3:
-            if st.button("🌞", help="Light", key="btn_light", use_container_width=True):
-                st.session_state.theme = "Light"
-                st.rerun()
+        # 3. Update state and rerun only if changed
+        if st.session_state.theme != selected_theme:
+            st.session_state.theme = selected_theme
+            st.rerun()
 
 
 # --- Custom CSS ---
