@@ -111,58 +111,46 @@ inject_pwa_meta()
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. Reset container padding for top-right alignment */
+/* 1. Reset container padding so the top-right corner is reachable */
 .block-container {
-padding-top: 1rem !important;
+    padding-top: 0rem !important;
 }
 
-/* 2. The Expander "Button" in the Top Right */
-/* 1. Only target the expander inside our specific anchor div */
+/* 2. ONLY the Theme Selector floats in the top right */
 #theme-selector-anchor div[data-testid="stExpander"] {
-position: absolute;
-top: 10px;
-right: 10px;
-width: 25% !important;
-min-width: 120px !important;
-z-index: 999999;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 25% !important;
+    min-width: 120px !important;
+    z-index: 999999;
+    background-color: rgba(4, 17, 54, 0.8) !important;
+    border: 1px solid rgba(255, 245, 0, 0.3) !important;
+    border-radius: 12px !important;
 }
 
-/* 2. Hide radio label ONLY for this specific expander */
-#theme-selector-anchor div[data-testid="stRadio"] > label {
-display: none !important;
-}
-
-/* 3. Keep all other expanders in the app normal */
+/* 3. ENSURE ALL OTHER EXPANDERS STAY NORMAL */
 div[data-testid="stExpander"] {
-position: relative;
-width: 100%;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    width: 100% !important;
 }
 
-/* 3. Style the internal Radio Buttons */
-div[data-testid="stRadio"] > label {
-display: none !important;
+/* 4. Hide radio labels ONLY inside the theme selector */
+#theme-selector-anchor div[data-testid="stRadio"] > label {
+    display: none !important;
 }
 
-div[data-testid="stRadio"] > div[role="radiogroup"] {
-justify-content: space-evenly !important;
-gap: 10px !important;
-padding: 5px !important;
+#theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
+    justify-content: space-evenly !important;
+    gap: 10px !important;
+    padding: 5px !important;
 }
 
-/* 4. Make icons pop */
-div[data-testid="stRadio"] label {
-font-size: 1.4rem !important;
-cursor: pointer;
-}
-
-/* 5. Clean up the default expander arrow/icon */
-[data-testid="stExpander"] svg {
-display: none !important;
-}
-
-/* Ensure the expander doesn't have a massive white background in dark mode */
-.stExpander {
-background-color: transparent !important;
+/* 5. Clean up the default expander arrow for the theme selector ONLY */
+#theme-selector-anchor [data-testid="stExpander"] svg {
+    display: none !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
