@@ -106,24 +106,28 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
+
 with st.sidebar:
-    # Sidebar theme selection
     st.header("🎨 Themes")
     
-    # Default / Mixed Theme Icon
-    if st.button("🌓 Default", help="Default Theme", key="theme_def"):
-        st.session_state.theme = "Default"
-        st.rerun()
+    # We use a fragment or a container to ensure layout stability
+    container = st.container()
+    
+    with container:
+        # Default Theme
+        if st.button("🌓 Default", help="Default Theme", key="theme_def", use_container_width=True):
+            st.session_state.theme = "Default"
+            st.rerun()
 
-    # Dark Theme Icon
-    if st.button("🌑 Dark", help="Dark Theme", key="theme_dark"):
-        st.session_state.theme = "Dark"
-        st.rerun()
+        # Dark Theme
+        if st.button("🌑 Dark", help="Dark Theme", key="theme_dark", use_container_width=True):
+            st.session_state.theme = "Dark"
+            st.rerun()
 
-    # Light Theme Icon
-    if st.button("🌞 Light", help="Light Theme", key="theme_light"):
-        st.session_state.theme = "Light"
-        st.rerun()
+        # Light Theme
+        if st.button("🌞 Light", help="Light Theme", key="theme_light", use_container_width=True):
+            st.session_state.theme = "Light"
+            st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
