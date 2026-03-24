@@ -129,23 +129,27 @@ st.markdown("""
     border-radius: 12px !important;
 }
 
-/* 3. ENSURE ALL OTHER EXPANDERS STAY NORMAL */
-div[data-testid="stExpander"] {
-    position: relative !important;
-    top: auto !important;
-    right: auto !important;
-    width: 100% !important;
-}
-
 /* 4. Hide radio labels ONLY inside the theme selector */
 #theme-selector-anchor div[data-testid="stRadio"] > label {
     display: none !important;
 }
 
-#theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
-    justify-content: space-evenly !important;
-    gap: 10px !important;
-    padding: 5px !important;
+/* Only target the expander inside our specific anchor div */
+#theme-selector-anchor div[data-testid="stExpander"] {
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
+    width: 25% !important;
+    min-width: 120px !important;
+    z-index: 999999 !important;
+    background-color: #041136 !important; /* Matches your tennis theme dark blue */
+    border: 1px solid rgba(255, 245, 0, 0.5) !important;
+    border-radius: 12px !important;
+}
+
+/* Ensure the header inside the expander doesn't stretch */
+#theme-selector-anchor [data-testid="stExpanderSummary"] {
+    width: 100% !important;
 }
 
 /* 5. Clean up the default expander arrow for the theme selector ONLY */
