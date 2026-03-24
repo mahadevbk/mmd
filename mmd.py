@@ -117,7 +117,7 @@ st.markdown("""
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 .rank-badge {
-    background-color: var(--dynamic-accent) !important;
+    background-color: #1A1A1A !important;
     color: #041136;
     font-weight: bold;
     border-radius: 5px;
@@ -140,36 +140,36 @@ st.markdown("""
 }
 [data-testid="stHeader"] { background: linear-gradient(to top, #041136 , #21000a) !important; }
 .profile-image {
-    width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--dynamic-accent) !important;
+    width: 80px; height: 80px; object-fit: cover; border: 2px solid #B24A00 !important;
     border-radius: 15px; margin-right: 15px; vertical-align: middle;
     transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 .profile-image:hover { transform: scale(1.1); }
 .birthday-banner {
-    background: #FFFFFF; color: var(--dynamic-text); padding: 15px;
+    background: #FFFFFF; color: #1A1A1A; padding: 15px;
     border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
     margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex; justify-content: center; align-items: center;
 }
 .whatsapp-share, .calendar-share {
-    background-color: var(--dynamic-accent); padding: 5px 10px; border-radius: 5px; 
+    background-color: #B24A00; class='dynamic-text' !important; padding: 5px 10px; border-radius: 5px; 
     text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
     font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
 }
 .whatsapp-share img { width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }
 .court-card {
-    background: var(--card-bg); border: 1px solid var(--dynamic-accent);
+    background: linear-gradient(to bottom, #031827, #07314f); border: 1px solid #B24A00;
     border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, box-shadow 0.2s; text-align: center;
 }
 .court-card:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); }
-.court-card h4 { color: var(--dynamic-accent) !important; margin-bottom: 10px; }
+.court-card h4 { color: #1A1A1A !important; margin-bottom: 10px; }
 .court-card a {
-    background-color: var(--dynamic-accent) !important; color: #031827; padding: 8px 16px; border-radius: 5px;
+    background-color: #1A1A1A !important; color: #031827; padding: 8px 16px; border-radius: 5px;
     text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
     transition: background-color 0.2s;
 }
-.court-card a:hover { background-color: var(--dynamic-accent); }
+.court-card a:hover { background-color: #ffd700; }
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 { font-family: 'Offside', sans-serif !important; }
 h1 { font-size: 24px !important; }
@@ -186,13 +186,13 @@ h3 { font-size: 16px !important; }
 }
 .ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
 .rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-.rank-col { font-size: 2em; font-weight: bold; color: var(--dynamic-accent) !important; margin-right: 15px; }
-.player-col { font-size: 1.4em; font-weight: bold; flex-grow: 1; }
-.badge { background: rgba(255, 215, 0, 0.2); color: var(--dynamic-accent); padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
+.rank-col { font-size: 2em; font-weight: bold; color: #1A1A1A !important; margin-right: 15px; }
+.player-col { font-size: 1.4em; font-weight: bold; class='dynamic-text'ff; flex-grow: 1; }
+.badge { background: rgba(255, 215, 0, 0.2); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid rgba(255, 215, 0, 0.4); vertical-align: middle; }
 .stat-box { flex: 1; min-width: 100px; text-align: center; padding: 5px; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-.stat-value { font-size: 1.1em; font-weight: bold; }
-.stat-highlight { color: var(--dynamic-accent) !important; }
+.stat-value { font-size: 1.1em; class='dynamic-text' font-weight: bold; }
+.stat-highlight { color: #1A1A1A !important; }
 [data-testid="stMetric"] > div:nth-of-type(1) { color: #FF7518 !important; }
 .block-container { display: flex; flex-wrap: wrap; justify-content: center; }
 [data-testid="stHorizontalBlock"] { flex: 1 1 100% !important; margin: 10px 0; }
@@ -215,7 +215,7 @@ h3 { font-size: 16px !important; }
 .img-lightbox img {
     max-width: 90%;
     max-height: 90%;
-    border: 3px solid var(--dynamic-accent) !important;
+    border: 3px solid #B24A00 !important;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
     object-fit: contain;
@@ -224,6 +224,7 @@ h3 { font-size: 16px !important; }
     position: absolute;
     top: 20px;
     right: 30px;
+    class='dynamic-text';
     font-size: 50px;
     font-weight: bold;
     text-decoration: none;
@@ -296,144 +297,222 @@ KNOWN_COURT_URLS = {
 
 COURT_NAMES = sorted(list(KNOWN_COURT_URLS.keys()))
 
-# --- Theme Initialization & URL Sync ---
-if "theme" in st.query_params:
-    st.session_state.theme = st.query_params["theme"]
-
+# --- Session State Init ---
 if 'theme' not in st.session_state:
     st.session_state.theme = "Default"
 
 def apply_custom_theme(theme_choice):
-    # 1. Define CSS variables for each theme
-    if theme_choice == "Light":
-        root_vars = """
-        :root {
-            --dynamic-text: #1A1A1A;
-            --dynamic-subtext: #444444;
-            --dynamic-accent: #B24A00;
-            --card-bg: #ffffff;
-            --card-border-color: #B24A00;
-        }
-        """
-        bg_color = "#E9ECEF"
-        header_bg = "linear-gradient(to top, #E9ECEF, #FFFFFF)"
-    else:  # Default or Dark
-        root_vars = """
-        :root {
-            --dynamic-text: #ffffff;
-            --dynamic-subtext: #bbbbbb;
-            --dynamic-accent: #fff500;
-            --card-bg: rgba(255,255,255,0.05);
-            --card-border-color: rgba(255, 245, 0, 0.2);
-        }
-        """
-        if theme_choice == "Dark":
-            bg_color = "#121212"
-            header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
-        else: # Default
-            bg_color = "linear-gradient(to bottom, #041136, #21000a)"
-            header_bg = "linear-gradient(to top, #041136, #21000a)"
+    # Base colors and variables
+    if theme_choice == "Dark":
+        bg = "#121212"
+        surface = "#1E1E1E"
+        text = "#E0E0E0"
+        accent = "#BB86FC"
+        card_bg = "linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)"
+        border_color = "rgba(187, 134, 252, 0.3)"
+        secondary_text = "#aaaaaa"
+        table_row_bg = "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)"
+        table_row_hover = "rgba(187, 134, 252, 0.1)"
+        st_header_bg = "linear-gradient(to top, #121212, #1e1e1e)"
+    elif theme_choice == "Light":
+        bg = "#E9ECEF"
+        surface = "#FFFFFF"
+        text = "#1A1A1A"
+        accent = "#D4FC1E" # Tennis Volt
+        clay_accent = "#B24A00" # Deeper Clay
+        card_bg = "#FFFFFF"
+        border_color = "#B24A00"
+        secondary_text = "#444444"
+        table_row_bg = "#FFFFFF"
+        table_row_hover = "rgba(178, 74, 0, 0.05)"
+        st_header_bg = "linear-gradient(to top, #E9ECEF, #FFFFFF)"
+    else:  # Default (Neon Court)
+        bg = "linear-gradient(to bottom, #041136, #21000a)"
+        surface = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
+        text = "#FFFFFF"
+        accent = "#D4FC1E"
+        card_bg = "linear-gradient(135deg, #071a3d 0%, #0c0014 100%)"
+        border_color = "rgba(255, 245, 0, 0.2)"
+        secondary_text = "#aaaaaa"
+        table_row_bg = "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)"
+        table_row_hover = "rgba(255, 245, 0, 0.1)"
+        st_header_bg = "linear-gradient(to top, #041136, #21000a)"
 
-    # Light Theme Specific Overrides
+    # Light Theme Contrast Overrides
     light_overrides = ""
     if theme_choice == "Light":
-        light_overrides = """
-        /* Force Dark Labels for Tabs and Radio Buttons in Light Mode */
-        button[data-baseweb='tab'] p, .stRadio label p, div[data-baseweb="radio"] label, label[data-testid="stWidgetLabel"] { 
-            color: #1A1A1A !important; 
-        }
-
-        /* 1. Everything target: strip all yellow/blue/transparent */
-        div[data-testid='stSegmentedControl'] *, 
-        div[data-testid='stSegmentedControl'] [data-testid='stBaseButton-secondary'] {
+        light_overrides = f"""
+        /* Force Internal Text Color for Light Theme */
+        .mobile-card *, .court-card *, .ranking-row *, .booking-card *, .booking-row *, .dynamic-text {{
             color: #1A1A1A !important;
-            background-color: transparent !important;
-            border-color: transparent !important;
-        }
-
-        /* 2. Forces the SELECTED/ACTIVE button to Clay Orange */
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'],
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'] div,
-        div[data-testid='stSegmentedControl'] button[aria-checked='true'] p {
-            background-color: #B24A00 !important;
+        }}
+        .card-subtitle, .card-detail, .stat-label {{
+            color: #1A1A1A !important;
+        }}
+        .stat-value, .stat-highlight {{
+            color: {clay_accent} !important;
+            font-weight: bold !important;
+        }}
+        .mobile-card, .court-card, .ranking-row, .booking-row {{
+            background-color: #FFFFFF !important;
+            border: 1px solid #B24A00 !important;
+        }}
+        /* Ensure buttons in cards are readable */
+        .mobile-card .stButton>button, .court-card .stButton>button, .ranking-row .stButton>button {{
             color: #FFFFFF !important;
-        }
-
-        /* 3. Fix container background */
-        div[data-testid='stSegmentedControl'] {
-            background-color: #f0f2f6 !important;
-            border-radius: 8px !important;
-            border: 1px solid #ddd !important;
-        }
+            background-color: #1A1A1A !important;
+        }}
+        """
+    else:
+        light_overrides = """
+        .dynamic-text { color: white !important; }
         """
 
-    # 2. Define CSS rules using the variables
     st.markdown(f"""
     <style>
-    {root_vars}
     {light_overrides}
-
-    /* --- Global App Style --- */
-    .stApp {{
-      background: {bg_color};
-      color: var(--dynamic-text);
-    }}
-    [data-testid="stHeader"] {{
-        background: {header_bg} !important;
-    }}
-    h1, h2, h3, h4, h5, h6, .dynamic-text {{
-        color: var(--dynamic-text) !important;
-    }}
-    .dynamic-subtext {{
-        color: var(--dynamic-subtext) !important;
-    }}
-
-    /* --- Card Base Styles --- */
-    .mobile-card, .ranking-row, .court-card, .booking-row {{
-        background-color: var(--card-bg);
-        border: 1px solid var(--card-border-color);
-        border-radius: 12px;
+    .mobile-card {{
+        background: {card_bg};
+        border: 1px solid #B24A00 !important;
+        border-radius: 15px;
         padding: 15px;
         margin-bottom: 15px;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }}
-    .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
-        transform: translateY(-2px);
-    }}
-    
-    /* --- Component-Specific Styles --- */
-    .profile-image, .img-lightbox img {{
-        border: 3px solid var(--dynamic-accent);
-        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }}
     .rank-badge {{
-        background: var(--dynamic-accent);
-        color: #041136; /* Keep dark text for contrast on yellow/orange */
+        background-color: #1A1A1A !important;
+        color: #FFFFFF !important;
         font-weight: bold;
         border-radius: 5px;
         padding: 2px 8px;
+        font-size: 14px;
     }}
-    .rank-col, .stat-highlight {{
-        color: var(--dynamic-accent) !important;
+    .trend-dot {{
+        height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 3px;
     }}
-    .player-col, .stat-value {{
-        color: var(--dynamic-text) !important;
+    .dot-w {{ background-color: #00ff88; box-shadow: 0 0 5px #00ff88; }}
+    .dot-l {{ background-color: #ff4b4b; }}
+    .stApp {{
+      background: {bg};
+      background-attachment: scroll;
+      color: #1A1A1A !important;
     }}
-    .stat-label {{
-        color: var(--dynamic-subtext);
+    @media print {{
+      html, body {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+      body {{ background: {bg} !important; height: 100vh; margin: 0; padding: 0; }}
+      header, .stToolbar {{ display: none; }}
     }}
-    .court-card h4 {{
-        color: var(--dynamic-accent);
+    [data-testid="stHeader"] {{ background: {st_header_bg} !important; }}
+    .profile-image {{
+        width: 80px; height: 80px; object-fit: cover; border: 2px solid {clay_accent};
+        border-radius: 15px; margin-right: 15px; vertical-align: middle;
+        transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 15px {border_color if theme_choice == "Light" else 'rgba(255, 245, 0, 0.6)'};
     }}
+    .profile-image:hover {{ transform: scale(1.1); }}
+    .birthday-banner {{
+        background: #FFFFFF; color: #1A1A1A; padding: 15px;
+        border-radius: 10px; text-align: center; font-size: 1.2em; font-weight: bold;
+        margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        display: flex; justify-content: center; align-items: center;
+    }}
+    .whatsapp-share, .calendar-share {{
+        background-color: #B24A00; class='dynamic-text' !important; padding: 5px 10px; border-radius: 5px; 
+        text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;
+        font-size: 0.8em; border: none; cursor: pointer; margin-top: 5px;
+    }}
+    .whatsapp-share img {{ width: 18px; vertical-align: middle; margin-right: 5px; filter: brightness(0) invert(1); }}
+    .court-card {{
+        background: {card_bg}; border: {'1px solid #B24A00' if theme_choice == "Light" else '1px solid ' + accent};
+        border-radius: 10px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+        transition: transform 0.2s, box-shadow 0.2s; text-align: center;
+    }}
+    .court-card:hover {{ transform: scale(1.05); box-shadow: 0 6px 12px {border_color}; }}
+    .court-card h4 {{ color: #1A1A1A !important; margin-bottom: 10px; }}
     .court-card a {{
-        background-color: var(--dynamic-accent);
-        color: #031827; /* Dark text for contrast */
+        background-color: #1A1A1A !important; color: #FFFFFF !important; padding: 8px 16px; border-radius: 5px;
+        text-decoration: none; font-weight: bold; display: inline-block; margin-top: 10px;
+        transition: background-color 0.2s;
     }}
-
-    /* Font import */
+    .court-card a:hover {{ background-color: #1A1A1A !important; opacity: 0.8; }}
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
-    html, body, [class*="st-"] {{
-        font-family: 'Offside', sans-serif !important;
+    html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {{ font-family: 'Offside', sans-serif !important; color: #1A1A1A !important; }}
+    h1 {{ font-size: 24px !important; }}
+    h2 {{ font-size: 22px !important; }}
+    h3 {{ font-size: 16px !important; }}
+    .rankings-table-container {{
+        width: 100%; margin-top: 0px !important; padding: 5px;
+    }}
+    .ranking-row {{
+        display: block; padding: 15px; margin-bottom: 15px; border: 1px solid #B24A00 !important;
+        border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        background: {table_row_bg};
+        overflow: visible; transition: transform 0.2s;
+    }}
+    .ranking-row:hover {{ transform: translateY(-2px); border-color: #1A1A1A !important; background: rgba(178, 74, 0, 0.05); }}
+    .rank-profile-player-group {{ display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #B24A00 !important; padding-bottom: 10px; }}
+    .rank-col {{ font-size: 2em; font-weight: bold; color: #1A1A1A !important; margin-right: 15px; }}
+    .player-col {{ font-size: 1.4em; font-weight: bold; color: #1A1A1A !important; flex-grow: 1; }}
+    .badge {{ background: {border_color if theme_choice != "Light" else 'rgba(178, 74, 0, 0.1)'}; color: #1A1A1A !important; padding: 2px 6px; border-radius: 4px; font-size: 0.6em; margin-right: 5px; border: 1px solid {border_color}; vertical-align: middle; }}
+    .stat-box {{ flex: 1; min-width: 100px; text-align: center; padding: 5px; }}
+    .stat-label {{ font-size: 0.75em; color: {secondary_text}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }}
+    .stat-value {{ font-size: 1.1em; color: #1A1A1A !important; font-weight: bold; }}
+    .stat-highlight {{ color: #1A1A1A !important; }}
+    [data-testid="stMetric"] > div:nth-of-type(1) {{ color: #FF7518 !important; }}
+    .block-container {{ display: flex; flex-wrap: wrap; justify-content: center; }}
+    [data-testid="stHorizontalBlock"] {{ flex: 1 1 100% !important; margin: 10px 0; }}
+    [data-testid="stExpander"] i, [data-testid="stExpander"] span.icon {{ font-family: 'Material Icons' !important; }}
+    
+    /* Volt Icon Highlights for Light Theme */
+    [data-testid="stExpanderIcon"] {{ color: {accent if theme_choice == "Light" else 'inherit'} !important; }}
+
+    .img-lightbox {{
+        display: none;
+        position: fixed;
+        z-index: 99999;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.9);
+        align-items: center;
+        justify-content: center;
+    }}
+    .img-lightbox:target {{
+        display: flex;
+    }}
+    .img-lightbox img {{
+        max-width: 90%;
+        max-height: 90%;
+        border: 3px solid {accent if theme_choice != "Light" else clay_accent};
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        object-fit: contain;
+    }}
+    .img-lightbox-close {{
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        class='dynamic-text';
+        font-size: 50px;
+        font-weight: bold;
+        text-decoration: none;
+        cursor: pointer;
+    }}
+    .clickable-img {{
+        cursor: pointer;
+        transition: 0.3s;
+    }}
+    .clickable-img:hover {{
+        opacity: 0.8;
+    }}
+    /* Button theming */
+    .stButton>button {{
+        background-color: #1A1A1A !important; color: #FFFFFF !important; border: 1px solid #B24A00 !important;
+    }}
+    .stButton>button:hover {{
+        border-color: #1A1A1A !important;
+        color: #FFFFFF !important;
+        opacity: 0.9;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -781,7 +860,7 @@ def create_radar_chart(player_data, theme="Default"):
         template = 'plotly_white'
         fill_color = 'rgba(178, 74, 0, 0.3)'
     else:
-        accent = 'var(--dynamic-accent)'
+        accent = '#D4FC1E'
         template = 'plotly_dark'
         fill_color = 'rgba(255, 245, 0, 0.3)'
 
@@ -822,7 +901,7 @@ def create_radar_chart(player_data, theme="Default"):
             angularaxis=dict(
                 gridcolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)", 
                 linecolor="rgba(255,255,255,0.1)" if theme != "Light" else "rgba(0,0,0,0.1)",
-                tickfont=dict(size=9, color="var(--dynamic-subtext)")
+                tickfont=dict(size=9, color="#aaa" if theme != "Light" else "#555")
             )
         ),
         showlegend=False,
@@ -1109,10 +1188,10 @@ def calculate_enhanced_doubles_odds(players, doubles_rank_df):
     team2_odds = (team2_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
 
     # Styled output
-    t1p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team1[0]}</span>"
-    t1p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team1[1]}</span>"
-    t2p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team2[0]}</span>"
-    t2p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{team2[1]}</span>"
+    t1p1_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{team1[0]}</span>"
+    t1p2_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{team1[1]}</span>"
+    t2p1_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{team2[0]}</span>"
+    t2p2_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{team2[1]}</span>"
     pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
     
     return (pairing_text, team1_odds, team2_odds)
@@ -1262,7 +1341,7 @@ def plot_player_performance(player_name, matches_df, theme="Default"):
         accent = '#B24A00'
         template = 'plotly_white'
     else:
-        accent = 'var(--dynamic-accent)'
+        accent = '#D4FC1E'
         template = 'plotly_dark'
 
     # Filter matches involving the player
@@ -1369,8 +1448,8 @@ def get_birthday_banner(players_df):
                 animation: pulse 2s infinite;
                 box-shadow: 0 4px 15px rgba(255, 245, 0, 0.4);
             ">
-                <h2 class="dynamic-text" style="margin: 0; font-size: 1.5em;">🎂 Happy Birthday, {names}! 🥳</h2>
-                <p class="dynamic-text" style="margin: 5px 0 0 0; opacity: 0.9;">Wishing you a great day on and off the court!</p>
+                <h2 style="class='dynamic-text'; margin: 0; font-size: 1.5em;">🎂 Happy Birthday, {names}! 🥳</h2>
+                <p style="class='dynamic-text'; margin: 5px 0 0 0; opacity: 0.9;">Wishing you a great day on and off the court!</p>
             </div>
             <style>
             @keyframes pulse {{
@@ -1582,23 +1661,23 @@ def display_hall_of_fame():
                     # --- Display Card ---
                     st.markdown(
                         f"""
-                        <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between; background-color: var(--card-bg);">
+                        <div class="court-card" style="text-align: center; padding: 15px; min-height: 390px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
-                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid var(--dynamic-accent) !important;">
-                                <p style="font-size: 1.5em; font-weight: bold; color: var(--dynamic-text) !important; margin-top: 10px;">{player_name}</p>
+                                <img src="{profile_image}" class="profile-image" style="width:120px; height:120px; border-radius: 10%; border: 3px solid #B24A00 !important;">
+                                <p style="font-size: 1.5em; font-weight: bold; color: #1A1A1A !important; margin-top: 10px;">{player_name}</p>
                                 <p style="font-size: 1.5em; margin-top: -10px; font-weight: bold;">
-                                    {rank_emoji} Rank <span style="font-weight: bold; color: var(--dynamic-text) !important;">{rank}</span>
+                                    {rank_emoji} Rank <span style="font-weight: bold; color: #1A1A1A !important;">{rank}</span>
                                 </p>
                             </div>
                             <div style="text-align: left; font-size: 0.95em; padding: 0 10px;">
                                 <p><strong>Data for the Season:</strong></p>
-                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{points_display}</span></p>
-                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{Games_won_display}</span></p>
-                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{win_rate_display}</span></p>
-                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{matches_played}</span></p>
-                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{gda_display}</span></p>
-                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{cumulative_GD_display}</span></p>
-                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: var(--dynamic-accent) !important;">{performance_score}</span></p>
+                                <p><strong>Points won:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{points_display}</span></p>
+                                <p><strong>Games Won:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{Games_won_display}</span></p>
+                                <p><strong>Win Rate:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{win_rate_display}</span></p>
+                                <p><strong>Matches Played:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{matches_played}</span></p>
+                                <p><strong>Game Differential Avg:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{gda_display}</span></p>
+                                <p><strong>Cumulative Game Differential:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{cumulative_GD_display}</span></p>
+                                <p><strong>Performance Score:</strong> <span style="font-weight: bold; color: #1A1A1A !important;">{performance_score}</span></p>
                             </div>
                         </div>
                         """,
@@ -1631,38 +1710,8 @@ partner_stats_global = {}
 if not st.session_state.matches_df.empty:
     rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
-# --- Header ---
-st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=700)
-
-# --- Floating Theme Spheres ---
-themes = ["Default", "Dark", "Light"]
-sphere_gradients = {
-    "Default": "radial-gradient(circle at 30% 30%, #4facfe, #001e3c)",
-    "Dark": "radial-gradient(circle at 30% 30%, #555, #000)",
-    "Light": "radial-gradient(circle at 30% 30%, #ffffff, #888)"
-}
-glows = {
-    "Default": "0 0 15px 5px rgba(79, 172, 254, 0.7)",
-    "Dark": "0 0 15px 5px rgba(255, 255, 255, 0.3)",
-    "Light": "0 0 15px 5px rgba(178, 74, 0, 0.6)"
-}
-
-for i, t in enumerate(themes):
-    if st.button(" ", key=f"theme_{t}"):
-        st.session_state.theme = t
-        st.rerun()
-    glow = glows[t] if st.session_state.theme == t else "none"
-    st.markdown(f"""
-        <style>
-            button[key="theme_{t}"] {{
-                position: fixed; top: 15px; right: {15 + (i * 30)}px; z-index: 1000;
-                background: {sphere_gradients[t]} !important;
-                box-shadow: {glow} !important;
-                width: 20px !important; height: 20px !important; border-radius: 50% !important; padding: 0 !important; border: 2px solid #fff !important;
-            }}
-        </style>
-    """, unsafe_allow_html=True)
-
+# --- Main Layout ---
+st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "AI Data"]
@@ -1783,20 +1832,20 @@ with tabs[0]:
 
                 podium_html_content += f"""
                 <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                        <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
+                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <div style="font-size: 1.2em; margin-bottom: 5px; color: #FFD700; font-weight: bold;">{player['Rank']}</div>
                         <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                             <a href="#{p_uid}">
-                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid #B24A00 !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
                             </a>
                         </div>
                         <div id="{p_uid}" class="img-lightbox">
                             <a href="#" class="img-lightbox-close">&times;</a>
                             <img src="{photo}">
                         </div>
-                        <div style="margin: 5px 0; color: var(--dynamic-accent) !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
-                        <div class="dynamic-text" style="font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
-                        <div style="color: var(--dynamic-subtext); font-size: 0.7em;">{player['Win %']}% Win</div>
+                        <div style="margin: 5px 0; color: #1A1A1A !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
+                        <div style="class='dynamic-text'; font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
+                        <div style="color: #aaa; font-size: 0.7em;">{player['Win %']}% Win</div>
                     </div>
                 </div>
                 """
@@ -1830,18 +1879,18 @@ with tabs[0]:
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
                         <a href="#{r_uid}">
-                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid var(--dynamic-accent); box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
+                            <img src="{profile_pic}" class="clickable-img" style="width: 110px; height: 110px; border-radius: 12px; margin-right: 15px; object-fit: contain; border: 3px solid #B24A00; box-shadow: 0 0 15px rgba(204, 255, 0, 0.5);">
                         </a>
                         <div>
-                            <div class="dynamic-text" style="font-size: 22px; font-weight: bold; line-height: 1.1;">{row['Player']}</div>
+                            <div style="font-size: 22px; font-weight: bold; class='dynamic-text'; line-height: 1.1;">{row['Player']}</div>
                             <div style="font-size: 13px; color: #00ff88; margin-top: 5px; font-weight: 500;">{trend}</div>
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="background: var(--dynamic-accent); color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
+                        <div style="background: #CCFF00; color: #041136; font-weight: bold; border-radius: 6px; padding: 4px 10px; font-size: 16px; display: inline-block;">
                             {row['Rank']}
                         </div>
-                        <div style="color: var(--dynamic-subtext); font-size: 13px; margin-top: 6px; font-weight: bold;">
+                        <div style="color: #ccc; font-size: 13px; margin-top: 6px; font-weight: bold;">
                             {score_display} {metric_label} {change_indicator}
                         </div>
                     </div>
@@ -1864,30 +1913,30 @@ with tabs[0]:
                     stats_html = f"""
                         <div style="text-align: right; padding-right: 5px;">
                             <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">WIN RATE</div>
-                                <div style="font-size: 24px; font-weight: bold; color: var(--dynamic-accent);">{row['Win %']}%</div>
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">WIN RATE</div>
+                                <div style="font-size: 24px; font-weight: bold; color: #B24A00;">{row['Win %']}%</div>
                             </div>
                             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">MATCHES</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Matches']}</div>
+                                    <div style="font-size: 9px; color: #888;">MATCHES</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">W/L</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 9px; color: #888;">W/L</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #eee;">{row['Wins']}/{row['Losses']}</div>
                                 </div>
                             </div>
                             <div style="margin-bottom: 12px;">
-                                <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">AVG GDA</div>
-                                <div style="font-size: 18px; font-weight: bold; color: var(--dynamic-text);">{row.get('Game Diff Avg', 0)}</div>
+                                <div style="font-size: 10px; color: #888; letter-spacing: 1px;">AVG GDA</div>
+                                <div style="font-size: 18px; font-weight: bold; color: #eee;">{row.get('Game Diff Avg', 0)}</div>
                             </div>
                             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 12px;">
                                 <div>
-                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">CLUTCH</div>
+                                    <div style="font-size: 9px; color: #888;">CLUTCH</div>
                                     <div style="font-size: 14px; font-weight: bold; color: #00ff88;">{row.get('Clutch Factor', 0)}%</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">CONSISTENCY</div>
+                                    <div style="font-size: 9px; color: #888;">CONSISTENCY</div>
                                     <div style="font-size: 14px; font-weight: bold; color: #ff4b4b;">{row.get('Consistency Index', 0)}</div>
                                 </div>
                             </div>
@@ -1920,19 +1969,19 @@ with tabs[1]:
         }
         .gda-label {
             font-size: 0.85em;
-            color: var(--dynamic-accent); /* Optic Yellow */
+            color: #B24A00; /* Optic Yellow */
             font-weight: bold;
             margin-top: 4px;
             border-top: 1px solid rgba(255,255,255,0.1);
             padding-top: 4px;
         }
         .player-name-bold {
-            color: var(--dynamic-accent); /* Optic Yellow */
+            color: #B24A00; /* Optic Yellow */
             font-weight: bold;
             text-transform: uppercase;
         }
         .status-text-grey {
-            color: var(--dynamic-subtext); /* Grey */
+            color: #888888; /* Grey */
             font-size: 0.9em;
             font-weight: bold;
         }
@@ -2238,13 +2287,13 @@ with tabs[1]:
                 img_html = f'<div class="match-img-wrapper"><a href="#{m_uid}"><img src="{row.match_image_url}" class="match-img-content clickable-img"></a></div><div id="{m_uid}" class="img-lightbox"><a href="#" class="img-lightbox-close">&times;</a><img src="{row.match_image_url}"></div>' if row.match_image_url else ""
                 
                 card_html = f"""
-<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
+<div style="background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; overflow: hidden;">
     {img_html}
     <div style="padding: 15px;">
-        <div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+        <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
         <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
         <div class="match-score-container">
-            <div style="font-size: 1.2em; font-weight: bold; color: var(--dynamic-accent);">{" | ".join(display_scores)}</div>
+            <div style="font-size: 1.2em; font-weight: bold; color: #FF7518;">{" | ".join(display_scores)}</div>
             <div class="gda-label">Game Diff Avg: +{match_gda}</div>
         </div>
     </div>
@@ -2460,14 +2509,14 @@ with tabs[2]:
     st.markdown("""
         <style>
         .badge {
-            background: var(--dynamic-accent) !important; color: black; padding: 2px 8px; 
+            background: #B24A00 !important; color: black; padding: 2px 8px; 
             border-radius: 10px; font-size: 0.75em; font-weight: bold; margin-left: 5px;
         }
         .stat-box {
-            background: var(--card-bg); padding: 15px; border-radius: 10px; 
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; 
             border-left: 4px solid #D4FC1E; margin-bottom: 10px;
         }
-        .metric-label { font-size: 0.7em; color: var(--dynamic-subtext); text-transform: uppercase; }
+        .metric-label { font-size: 0.7em; color: #aaa; text-transform: uppercase; }
         .metric-value { font-size: 1.1em; font-weight: bold; }
         </style>
     """, unsafe_allow_html=True)
@@ -2676,7 +2725,7 @@ with tabs[2]:
                             height: 120px; 
                             background-color: #262626; 
                             border-radius: 15px; 
-                            border: 3px solid var(--dynamic-accent) !important; 
+                            border: 3px solid #B24A00 !important; 
                             display: flex; 
                             justify-content: center; 
                             align-items: center; 
@@ -2699,7 +2748,7 @@ with tabs[2]:
                             <img src="{img}" style="max-width: 90%; max-height: 90%; object-fit: contain;">
                         </div>
                         <div style="margin-top: 10px; font-weight: bold; font-size: 1.2em;">{p_name}</div>
-                        <div style="color: var(--dynamic-accent); font-size: 0.85em;">{bday_str}</div>
+                        <div style="color: #ffd700; font-size: 0.85em;">{bday_str}</div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -2709,7 +2758,7 @@ with tabs[2]:
                     st.markdown(f"""
                     <div class="stat-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                            <span style="color: var(--dynamic-accent) !important; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
+                            <span style="color: #1A1A1A !important; font-weight: bold; font-size: 1.1em;">Ranks: Pts #{s.get('Points Rank', 'N/A')} | Elo: {s.get('Elo', 'N/A')} | UTR: {s.get('UTR', 'N/A')}</span>
                             <div>{badges_html}</div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
@@ -2982,8 +3031,8 @@ with tabs[4]:
             
             for _, row in upcoming_bookings.iterrows():
                 players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-                players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
-                standby_str = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
+                players_str = ", ".join([f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
+                standby_str = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
                 date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
                 time_value = str(row['time']).strip()
             
@@ -3000,7 +3049,7 @@ with tabs[4]:
                             time_ampm = "Invalid Time"
                 
                 court_url = court_url_mapping.get(row['court_name'], "#")
-                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:var(--dynamic-accent); text-decoration:none;'>{row['court_name']}</a>"
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#D4FC1E; text-decoration:none;'>{row['court_name']}</a>"
             
                 pairing_suggestion = ""
                 plain_suggestion = ""
@@ -3009,9 +3058,9 @@ with tabs[4]:
                         rank_df = doubles_rank_df
                         unranked = [p for p in players if p not in rank_df["Player"].values]
                         if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{p}</span>" for p in unranked])
                             message = f"Players {styled_unranked} are unranked, therefore no pairing odds available."
-                            pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> {message}</div>"
+                            pairing_suggestion = f"<div><strong style='class='dynamic-text';'>Pairing Odds:</strong> {message}</div>"
                             plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no pairing odds available."
                         else:
                             all_pairings = []
@@ -3030,8 +3079,8 @@ with tabs[4]:
                                 diff = abs(team1_score - team2_score)
                                 odds_team1 = (team1_score / (team1_score + team2_score)) * 100 if team1_score + team2_score > 0 else 50
                                 odds_team2 = 100 - odds_team1
-                                team1_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team1])
-                                team2_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team2])
+                                team1_str = ", ".join([f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{p}</span>" for p in team1])
+                                team2_str = ", ".join([f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{p}</span>" for p in team2])
                                 pairing_str = f"{team1_str} vs {team2_str}"
                                 plain_pairing_str = f"{', '.join(team1)} vs {', '.join(team2)}"
                                 all_pairings.append({
@@ -3042,41 +3091,41 @@ with tabs[4]:
                                     'diff': diff
                                 })
                             all_pairings.sort(key=lambda x: x['diff'])
-                            pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Combos and Odds:</strong></div>"
+                            pairing_suggestion = "<div><strong style='class='dynamic-text';'>Pairing Combos and Odds:</strong></div>"
                             plain_suggestion = "*Pairing Combos and Odds:* | "
                             for idx, pairing in enumerate(all_pairings[:3], 1):
                                 pairing_suggestion += (
                                     f"<div>Option {idx}: {pairing['pairing']} "
-                                    f"(<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
-                                    f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
+                                    f"(<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
+                                    f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
                                 )
                                 plain_suggestion += (
                                     f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
                                 )
                             plain_suggestion = plain_suggestion.rstrip(" | ")
                     elif row['match_type'] == "Doubles" and len(players) < 4:
-                        pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
+                        pairing_suggestion = "<div><strong style='class='dynamic-text';'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
                         plain_suggestion = "Not enough players for pairing odds"
                     elif row['match_type'] == "Singles" and len(players) == 2:
                         rank_df = singles_rank_df
                         unranked = [p for p in players if p not in rank_df["Player"].values]
                         if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{p}</span>" for p in unranked])
                             message = f"Players {styled_unranked} are unranked, therefore no odds available."
-                            pairing_suggestion = f"<div><strong class='dynamic-text'>Odds:</strong> {message}</div>"
+                            pairing_suggestion = f"<div><strong style='class='dynamic-text';'>Odds:</strong> {message}</div>"
                             plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no odds available."
                         else:
                             p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
                             if p1_odds is not None:
-                                p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[0]}</span>"
-                                p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[1]}</span>"
+                                p1_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{players[0]}</span>"
+                                p2_styled = f"<span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{players[1]}</span>"
                                 pairing_suggestion = (
-                                    f"<div><strong class='dynamic-text'>Odds:</strong> "
+                                    f"<div><strong style='class='dynamic-text';'>Odds:</strong> "
                                     f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
                                 )
                                 plain_suggestion = f"Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)"
                 except Exception as e:
-                    pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> Error calculating: {e}</div>"
+                    pairing_suggestion = f"<div><strong style='class='dynamic-text';'>Pairing Odds:</strong> Error calculating: {e}</div>"
                     plain_suggestion = f"Error calculating odds: {str(e)}"
                 
                 # Generate ICS for calendar
@@ -3099,7 +3148,7 @@ with tabs[4]:
                 # Weather logic
                 lat, lon = get_court_coords(row['court_name'])
                 weather_info = get_weather(lat, lon, str(row['date']), str(row['time']))
-                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_info}</span></div>"
+                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{weather_info}</span></div>"
                 weather_share = f" | Weather: *{weather_info}*" if weather_info != "Weather N/A" else ""
 
                 share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}*{weather_share} | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
@@ -3107,12 +3156,12 @@ with tabs[4]:
                 whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
                 
                 booking_text = f"""
-                <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                    <div><strong>Date:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{date_str}</span></div>
+                <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                    <div><strong>Date:</strong> <span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{date_str}</span></div>
                     <div><strong>Court:</strong> {court_name_html}</div>
-                    <div><strong>Time:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{time_ampm}</span></div>
+                    <div><strong>Time:</strong> <span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{time_ampm}</span></div>
                     {weather_row}
-                    <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['match_type']}</span></div>
+                    <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: #1A1A1A !important; font-weight:bold;'>{row['match_type']}</span></div>
                     <div><strong>Players:</strong> {players_str}</div>
                     <div><strong>Standby Player:</strong> {standby_str}</div>
                     {pairing_suggestion}
@@ -3147,7 +3196,7 @@ with tabs[4]:
                 for player_name, img_url in image_urls:
                     visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
                 for player_name, initial in placeholder_initials:
-                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;">{initial}</div>'
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #B24A00 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #1A1A1A !important; font-weight: bold;">{initial}</div>'
                 visuals_html += '</div></div>'
                 booking_text += visuals_html + '</div>'
                 
@@ -3162,7 +3211,7 @@ with tabs[4]:
                     **Match Type:** {row['match_type']}  
                     **Players:** {', '.join(players) if players else 'No players'}  
                     **Standby Player:** {row.get('standby_player', 'None')}  
-                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:var(--dynamic-accent);\'>', '').replace('</span>', '')}
+                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:#D4FC1E;\'>', '').replace('</span>', '')}
                     """, unsafe_allow_html=True)
                     st.markdown(f"""
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -3190,7 +3239,7 @@ with tabs[4]:
                         for player_name, initial in placeholder_initials:
                             with cols[col_idx]:
                                 st.markdown(f"""
-                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;'>{initial}</div>
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #B24A00 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #1A1A1A !important; font-weight: bold;'>{initial}</div>
                                 <div style='text-align: center;'>{player_name}</div>
                                 """, unsafe_allow_html=True)
                             col_idx += 1
@@ -3512,8 +3561,8 @@ with tabs[4]:
         st.markdown("""
         <style>
         .availability-day-card {
-            background: var(--card-bg);
-            border: 2px solid var(--dynamic-accent) !important;
+            background: linear-gradient(to bottom, #031827, #07314f);
+            border: 2px solid #B24A00 !important;
             border-radius: 12px;
             padding: 15px;
             margin: 10px 0;
@@ -3526,7 +3575,7 @@ with tabs[4]:
             box-shadow: 0 6px 12px rgba(255, 245, 0, 0.4);
         }
         .day-header {
-            color: var(--dynamic-accent) !important;
+            color: #1A1A1A !important;
             font-weight: bold;
             font-size: 1.2em;
             margin-bottom: 10px;
@@ -3544,11 +3593,12 @@ with tabs[4]:
         }
         .player-name {
             font-weight: bold;
-            color: var(--dynamic-accent) !important;
+            color: #1A1A1A !important;
             margin-right: 8px;
             min-width: 80px;
         }
         .player-comment {
+            class='dynamic-text'ff;
             font-size: 0.9em;
             flex-grow: 1;
             white-space: pre-line;
@@ -3727,7 +3777,7 @@ with tabs[6]:
                     st.markdown(f"""
                         <div style="margin-bottom: 20px; text-align: center;">
                             <a href="#{img_id}">
-                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                                <img src="{img_url}" class="clickable-img" style="width: 100%; height: 180px; object-fit: contain; background-color: black; border-radius: 10px; border: 2px solid #B24A00 !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                             </a>
                         </div>
                         <div id="{img_id}" class="img-lightbox">
@@ -3870,7 +3920,7 @@ with tabs[7]:
     else:
         st.warning("Not enough data to generate visual analytics. Add some matches first!")
         
-    st.markdown("<hr style='border: 2px solid var(--dynamic-accent) !important;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border: 2px solid #B24A00 !important;'>", unsafe_allow_html=True)
 
     # --- SECTION 2: AI EXPORT & FULL BACKUP SYSTEM (Original Code) ---
     st.header("🤖 Analyze League Data with Google Gemini")
@@ -3906,7 +3956,7 @@ with tabs[7]:
             st.markdown("""
             <a href="https://gemini.google.com/app" target="_blank">
                 <button style="
-                    background-color: var(--dynamic-accent) !important;
+                    background-color: #1A1A1A !important;
                     color: #031827;
                     padding: 14px 20px;
                     border: none;
@@ -3945,6 +3995,28 @@ with tabs[7]:
         st.warning("No match data available yet. Add some matches first!")
 
 
+st.markdown("----")
+col_theme, _ = st.columns([1, 2])
+with col_theme:
+    # Use segmented_control if available, otherwise radio
+    try:
+        new_theme = st.segmented_control(
+            "App Appearance",
+            options=["Default", "Dark", "Light"],
+            default=st.session_state.theme,
+            key="theme_toggle_widget"
+        )
+    except AttributeError:
+        new_theme = st.radio(
+            "App Appearance",
+            options=["Default", "Dark", "Light"],
+            index=["Default", "Dark", "Light"].index(st.session_state.theme),
+            horizontal=True,
+            key="theme_toggle_widget"
+        )
 
-# --- Theme Selection & Footer ---
+if new_theme and new_theme != st.session_state.theme:
+    st.session_state.theme = new_theme
+    st.rerun()
+
 st.info("Built with ❤️ using [Streamlit](https://streamlit.io/) — free and open source. [Other Scripts by dev](https://devs-scripts.streamlit.app/) on Streamlit.")
