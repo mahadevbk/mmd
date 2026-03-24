@@ -106,7 +106,7 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Sidebar) ---
-col_main, col_side = st.columns([4, 1])
+col_main, col_side = st.columns([3, 1])
 
 with col_side:
     # 2. Place the expander inside the 25% column
