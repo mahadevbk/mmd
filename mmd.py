@@ -106,39 +106,38 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-# --- Elegant Theme Selector with Clean Pill Container ---
+# --- Elegant Theme Selector - Clean Pill Only (No duplicate row) ---
 col_spacer, col_icons = st.columns([14, 3])
 
 with col_icons:
-    # Clean pill container using HTML + CSS
+    # Nice pill container (visible)
     st.markdown("""
     <div class="theme-pill">
-        <span class="theme-btn" title="Default Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_def\\']').click()">🌓</span>
-        <span class="theme-btn" title="Dark Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_dark\\']').click()">🌑</span>
-        <span class="theme-btn" title="Light Theme" onclick="document.querySelector('button[data-baseweb=\\'button\\'][key=\\'theme_light\\']').click()">🌞</span>
+        <span class="theme-btn" title="Default Theme" 
+              onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</span>
+        <span class="theme-btn" title="Dark Theme" 
+              onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</span>
+        <span class="theme-btn" title="Light Theme" 
+              onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # Hidden real Streamlit buttons (they handle the actual logic)
+    # Hidden real buttons (functionality only - completely invisible)
     with st.container():
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            if st.button("🌓", help="Default Theme", key="theme_def"):
-                st.session_state.theme = "Default"
-                st.rerun()
-        with col2:
-            if st.button("🌑", help="Dark Theme", key="theme_dark"):
-                st.session_state.theme = "Dark"
-                st.rerun()
-        with col3:
-            if st.button("🌞", help="Light Theme", key="theme_light"):
-                st.session_state.theme = "Light"
-                st.rerun()
+        if st.button("🌓", help="Default Theme", key="theme_def"):
+            st.session_state.theme = "Default"
+            st.rerun()
+        if st.button("🌑", help="Dark Theme", key="theme_dark"):
+            st.session_state.theme = "Dark"
+            st.rerun()
+        if st.button("🌞", help="Light Theme", key="theme_light"):
+            st.session_state.theme = "Light"
+            st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === CLEAN THEME PILL CONTAINER === */
+/* === CLEAN THEME PILL CONTAINER (Top Right) === */
 .theme-pill {
     display: flex;
     background: rgba(255, 255, 255, 0.08);
@@ -146,10 +145,11 @@ st.markdown("""
     border: 1px solid rgba(255, 245, 0, 0.25);
     border-radius: 50px;
     padding: 6px 12px;
-    gap: 6px;
+    gap: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 999999;
     align-items: center;
+    margin-bottom: 8px;   /* small spacing */
 }
 
 .theme-btn {
@@ -170,18 +170,20 @@ st.markdown("""
 
 .theme-btn:hover {
     background: rgba(255, 245, 0, 0.3) !important;
-    transform: scale(1.2);
+    transform: scale(1.18);
     color: var(--dynamic-accent);
 }
 
-/* Completely hide the real Streamlit buttons */
-.stButton button[key^="theme_"] {
+/* Completely hide the real Streamlit buttons and their container */
+.stButton button[key^="theme_"],
+button[key^="theme_"],
+div:has(> button[key^="theme_"]) {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
     width: 0 !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
     overflow: hidden !important;
 }
 .mobile-card {
