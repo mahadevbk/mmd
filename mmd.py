@@ -116,49 +116,6 @@ st.markdown("""
     padding-top: 0rem !important;
 }
 
-/* 2. THE FIX: Target the ANCHOR first to define the 25% boundary */
-#theme-selector-anchor {
-    position: absolute !important;
-    top: 10px !important;
-    left: 10px !important;
-    width: 25% !important;
-    min-width: 150px !important; /* Ensures icons aren't squished on mobile */
-    z-index: 999999 !important;
-    display: block !important;
-}
-
-/* 3. Force the Expander inside the anchor to fill only that 25% space */
-#theme-selector-anchor div[data-testid="stExpander"] {
-    width: 100% !important;
-    background-color: #041136 !important; /* Your Tennis Dark Blue */
-    border: 1px solid rgba(255, 245, 0, 0.5) !important;
-    border-radius: 12px !important;
-    margin: 0 !important;
-}
-
-/* 4. Ensure the header (the 🎨 bar) respects the container width */
-#theme-selector-anchor [data-testid="stExpanderSummary"] {
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-}
-
-/* 5. Clean up: Hide default arrow and internal labels */
-#theme-selector-anchor [data-testid="stExpanderIcon"],
-#theme-selector-anchor [data-testid="stExpander"] svg {
-    display: none !important;
-}
-
-#theme-selector-anchor div[data-testid="stRadio"] > label {
-    display: none !important;
-}
-
-#theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
-    justify-content: space-evenly !important;
-    gap: 10px !important;
-    padding: 5px !important;
-}
-
 /* 6. GLOBAL SAFETY: Ensure every OTHER expander in the app stays normal */
 div[data-testid="stExpander"] {
     position: relative !important;
@@ -339,6 +296,56 @@ h3 { font-size: 16px !important; }
 .clickable-img:hover {
     opacity: 0.8;
 }
+
+/* 2. THE FIX: Target the theme expander specifically */
+/* We target the div containing the expander that follows the markdown container with our anchor */
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"],
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stVerticalBlock"] div[data-testid="stExpander"],
+#theme-selector-anchor {
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    width: 25% !important;
+    min-width: 150px !important;
+    z-index: 999999 !important;
+    display: block !important;
+}
+
+/* Ensure the expander inside the fixed container behaves */
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] div[data-testid="stExpander"],
+#theme-selector-anchor div[data-testid="stExpander"] {
+    width: 100% !important;
+    background-color: #041136 !important;
+    border: 1px solid rgba(255, 245, 0, 0.5) !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+}
+
+/* 4. Ensure the header (the 🎨 bar) respects the container width */
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] [data-testid="stExpanderSummary"],
+#theme-selector-anchor [data-testid="stExpanderSummary"] {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+/* 5. Clean up: Hide default arrow and internal labels */
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] [data-testid="stExpanderIcon"],
+#theme-selector-anchor [data-testid="stExpanderIcon"] {
+    display: none !important;
+}
+
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] div[data-testid="stRadio"] > label,
+#theme-selector-anchor div[data-testid="stRadio"] > label {
+    display: none !important;
+}
+
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] div[data-testid="stRadio"] > div[role="radiogroup"],
+#theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
+    justify-content: space-evenly !important;
+    gap: 10px !important;
+    padding: 5px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -346,7 +353,7 @@ h3 { font-size: 16px !important; }
 #------theme selection
 # --- Elegant Theme Selector (Targeted) ---
 # We wrap this in a div with a unique ID
-st.markdown('<div id="theme-selector-anchor">', unsafe_allow_html=True)
+st.markdown('<div id="theme-selector-anchor"></div>', unsafe_allow_html=True)
 
 with st.expander("🎨", expanded=False):
     theme_map = {"Default": "🌓", "Dark": "🌑", "Light": "🌞"}
@@ -366,9 +373,6 @@ with st.expander("🎨", expanded=False):
     if st.session_state.theme != selected_theme:
         st.session_state.theme = selected_theme
         st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
-
 
 # --- Supabase Initialization ---
 try:
