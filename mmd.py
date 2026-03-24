@@ -312,13 +312,21 @@ div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-
 }
 
 /* Ensure the expander inside the fixed container behaves */
-div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] div[data-testid="stExpander"],
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"],
 #theme-selector-anchor div[data-testid="stExpander"] {
     width: 100% !important;
-    background-color: #041136 !important;
-    border: 1px solid rgba(255, 245, 0, 0.5) !important;
-    border-radius: 12px !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     margin: 0 !important;
+}
+
+/* Give the radio buttons a background so they are readable when expanded */
+div[data-testid="stVerticalBlock"] > div:has(#theme-selector-anchor) + div[data-testid="stExpander"] div[role="radiogroup"],
+#theme-selector-anchor div[role="radiogroup"] {
+    background-color: #041136 !important;
+    border: 1px solid rgba(255, 245, 0, 0.3) !important;
+    border-radius: 10px !important;
 }
 
 /* 4. Ensure the header (the 🎨 bar) respects the container width */
