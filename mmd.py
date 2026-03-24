@@ -106,38 +106,38 @@ def inject_pwa_meta():
 inject_pwa_meta()
 
 # --- Elegant Theme Selector (Top of App) - Clean Icons Only ---
-# ─────────────────────────────────────────────────────────────
-#   FINAL CLEAN THEME SELECTOR - Beautiful Pill (No duplicates)
-# ─────────────────────────────────────────────────────────────
+# ────── CLEAN THEME SELECTOR - ONLY THE PILL ──────
 col_spacer, col_pill = st.columns([14, 3])
 
 with col_pill:
-    st.markdown("""
+    # The nice pill you want to see
+    st.markdown('''
     <div class="theme-pill">
-        <span onclick="document.querySelector('button[key=\\'theme_def\\']').click()" 
-              class="theme-btn" title="Default Theme">🌓</span>
-        <span onclick="document.querySelector('button[key=\\'theme_dark\\']').click()" 
-              class="theme-btn" title="Dark Theme">🌑</span>
-        <span onclick="document.querySelector('button[key=\\'theme_light\\']').click()" 
-              class="theme-btn" title="Light Theme">🌞</span>
+        <span class="theme-btn" title="Default Theme" 
+              onclick="document.querySelector('button[key=\\'theme_def\\']').click()">🌓</span>
+        <span class="theme-btn" title="Dark Theme" 
+              onclick="document.querySelector('button[key=\\'theme_dark\\']').click()">🌑</span>
+        <span class="theme-btn" title="Light Theme" 
+              onclick="document.querySelector('button[key=\\'theme_light\\']').click()">🌞</span>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
-    # These buttons are completely hidden but handle the actual logic
-    if st.button("🌓", key="theme_def"):
-        st.session_state.theme = "Default"
-        st.rerun()
-    if st.button("🌑", key="theme_dark"):
-        st.session_state.theme = "Dark"
-        st.rerun()
-    if st.button("🌞", key="theme_light"):
-        st.session_state.theme = "Light"
-        st.rerun()
+    # Hidden buttons - placed in a zero-height container
+    with st.container(height=0, border=False):
+        if st.button("🌓", key="theme_def", help="Default Theme"):
+            st.session_state.theme = "Default"
+            st.rerun()
+        if st.button("🌑", key="theme_dark", help="Dark Theme"):
+            st.session_state.theme = "Dark"
+            st.rerun()
+        if st.button("🌞", key="theme_light", help="Light Theme"):
+            st.session_state.theme = "Light"
+            st.rerun()
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* === FINAL CLEAN THEME PILL (Top Right) === */
+/* === FINAL CLEAN THEME PILL - NO BLUE SQUARES === */
 .theme-pill {
     display: flex;
     background: rgba(255, 255, 255, 0.09);
@@ -149,6 +149,7 @@ st.markdown("""
     box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
     z-index: 999999;
     align-items: center;
+    margin-bottom: 8px;
 }
 
 .theme-btn {
@@ -162,7 +163,7 @@ st.markdown("""
     justify-content: center;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     color: var(--dynamic-text);
 }
 
@@ -172,10 +173,11 @@ st.markdown("""
     color: var(--dynamic-accent);
 }
 
-/* FORCE HIDE the real Streamlit buttons and any wrapper */
+/* FORCE HIDE the real Streamlit theme buttons and their containers */
 .stButton button[key^="theme_"],
 button[key^="theme_"],
-div:has(> button[key^="theme_"]) {
+div:has(> button[key^="theme_"]),
+div[style*="height: 0"] button {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -184,6 +186,7 @@ div:has(> button[key^="theme_"]) {
     padding: 0 !important;
     overflow: hidden !important;
     position: absolute !important;
+    border: none !important;
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
