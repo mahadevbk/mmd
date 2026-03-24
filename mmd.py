@@ -111,41 +111,36 @@ inject_pwa_meta()
 # --- Custom CSS ---
 st.markdown("""
 <style>
-/* 1. Reset container padding for top-right alignment */
-.block-container {
-    padding-top: 0rem !important;
-}
-
-/* 2. THE FIX: Target the ANCHOR first to define the 25% boundary */
+/* 1. This targets the DIV wrapper you created in Python */
 #theme-selector-anchor {
     position: absolute !important;
     top: 10px !important;
     right: 10px !important;
-    width: 25% !important;
-    min-width: 150px !important; /* Ensures icons aren't squished on mobile */
+    /* This is the magic line: it stops the 'div' from stretching to 100% */
+    width: fit-content !important; 
+    max-width: 150px !important;
     z-index: 999999 !important;
-    display: block !important;
 }
 
-/* 3. Force the Expander inside the anchor to fill only that 25% space */
+/* 2. This targets the expander specifically inside that anchor */
 #theme-selector-anchor div[data-testid="stExpander"] {
     width: 100% !important;
-    background-color: #041136 !important; /* Your Tennis Dark Blue */
+    background-color: #041136 !important;
     border: 1px solid rgba(255, 245, 0, 0.5) !important;
     border-radius: 12px !important;
+    padding: 0 !important;
     margin: 0 !important;
 }
 
-/* 4. Ensure the header (the 🎨 bar) respects the container width */
+/* 3. This centers the emoji button */
 #theme-selector-anchor [data-testid="stExpanderSummary"] {
     width: 100% !important;
     display: flex !important;
     justify-content: center !important;
 }
 
-/* 5. Clean up: Hide default arrow and internal labels */
-#theme-selector-anchor [data-testid="stExpanderIcon"],
-#theme-selector-anchor [data-testid="stExpander"] svg {
+/* 4. Hide the arrow and radio labels */
+#theme-selector-anchor [data-testid="stExpanderIcon"] {
     display: none !important;
 }
 
@@ -155,16 +150,8 @@ st.markdown("""
 
 #theme-selector-anchor div[data-testid="stRadio"] > div[role="radiogroup"] {
     justify-content: space-evenly !important;
-    gap: 10px !important;
+    gap: 8px !important;
     padding: 5px !important;
-}
-
-/* 6. GLOBAL SAFETY: Ensure every OTHER expander in the app stays normal */
-div[data-testid="stExpander"] {
-    position: relative !important;
-    width: 100% !important;
-    top: auto !important;
-    right: auto !important;
 }
 [data-testid="stIconMaterial"] {
     display: none !important;
