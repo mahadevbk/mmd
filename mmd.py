@@ -304,32 +304,6 @@ if 'theme' not in st.session_state:
     st.session_state.theme = "Default"
 
 def apply_custom_theme(theme_choice):
-    # Render Floating Theme Selector
-    themes = ["Default", "Dark", "Light"]
-    # Radial gradients for metallic effect
-    gradients = {
-        "Default": "radial-gradient(circle at 30% 30%, #4facfe, #001e3c)",
-        "Dark": "radial-gradient(circle at 30% 30%, #555, #000)",
-        "Light": "radial-gradient(circle at 30% 30%, #fff, #aaa)"
-    }
-    glows = {
-        "Default": "0 0 10px #4facfe",
-        "Dark": "0 0 10px #555",
-        "Light": "0 0 10px #fff"
-    }
-
-    sphere_html = '<div style="position: fixed; top: 10px; right: 20px; z-index: 9999; display: flex; gap: 10px;">'
-    for t in themes:
-        active_style = f"box-shadow: {glows[t]}; border: 2px solid white;" if st.session_state.theme == t else "border: 1px solid #333;"
-        sphere_html += f'''
-        <a href="?theme={t}" style="
-            width: 18px; height: 18px; border-radius: 50%;
-            background: {gradients[t]}; {active_style}
-            display: inline-block; cursor: pointer; transition: transform 0.2s;
-        "></a>'''
-    sphere_html += '</div>'
-    st.markdown(sphere_html, unsafe_allow_html=True)
-
     # 1. Define CSS variables for each theme
     if theme_choice == "Light":
         root_vars = """
@@ -1657,49 +1631,37 @@ partner_stats_global = {}
 if not st.session_state.matches_df.empty:
     rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
-# --- Header with Theme Toggle ---
-header_col, theme_col = st.columns([4, 1])
-with header_col:
-    st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=700)
+# --- Header ---
+st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width=700)
 
-with theme_col:
-    # Header for theme selector
-    st.markdown("<p style='font-size:10px; margin-bottom:0; text-align:right;'>THEME</p>", unsafe_allow_html=True)
-    
-    # 3-sphere row
-    cols = st.columns(3)
-    themes = ["Default", "Dark", "Light"]
-    # Mapping theme names to color palettes for radial-gradients
-    sphere_styles = {
-        "Default": "radial-gradient(circle at 30% 30%, #4facfe, #004e92)",
-        "Dark": "radial-gradient(circle at 30% 30%, #444, #000)",
-        "Light": "radial-gradient(circle at 30% 30%, #fff, #ccc)"
-    }
-    
-    for i, theme in enumerate(themes):
-        with cols[i]:
-            is_active = st.session_state.theme == theme
-            glow = "0 0 10px 2px #FFD700" if is_active else "none"
-            
-            # Using button with a unique ID for styling via CSS
-            if st.button(" ", key=f"btn_theme_{theme}"):
-                st.session_state.theme = theme
-                st.rerun()
-            
-            st.markdown(f'''
-                <style>
-                    button[key="btn_theme_{theme}"] {{
-                        border-radius: 50% !important;
-                        width: 20px !important;
-                        height: 20px !important;
-                        padding: 0 !important;
-                        background: {sphere_styles[theme]} !important;
-                        box-shadow: {glow} !important;
-                        border: 2px solid #fff !important;
-                    }}
-                </style>
-            ''', unsafe_allow_html=True)
+# --- Floating Theme Spheres ---
+themes = ["Default", "Dark", "Light"]
+sphere_gradients = {
+    "Default": "radial-gradient(circle at 30% 30%, #4facfe, #001e3c)",
+    "Dark": "radial-gradient(circle at 30% 30%, #555, #000)",
+    "Light": "radial-gradient(circle at 30% 30%, #ffffff, #888)"
+}
+glows = {
+    "Default": "0 0 15px 5px rgba(79, 172, 254, 0.7)",
+    "Dark": "0 0 15px 5px rgba(255, 255, 255, 0.3)",
+    "Light": "0 0 15px 5px rgba(178, 74, 0, 0.6)"
+}
 
+for i, t in enumerate(themes):
+    if st.button(" ", key=f"theme_{t}"):
+        st.session_state.theme = t
+        st.rerun()
+    glow = glows[t] if st.session_state.theme == t else "none"
+    st.markdown(f"""
+        <style>
+            button[key="theme_{t}"] {{
+                position: fixed; top: 15px; right: {15 + (i * 30)}px; z-index: 1000;
+                background: {sphere_gradients[t]} !important;
+                box-shadow: {glow} !important;
+                width: 20px !important; height: 20px !important; border-radius: 50% !important; padding: 0 !important; border: 2px solid #fff !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
 get_birthday_banner(st.session_state.players_df)
 
