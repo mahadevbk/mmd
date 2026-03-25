@@ -452,7 +452,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #444444;
             --dynamic-accent: #B24A00;
             --card-bg: #ffffff;
-            --card-border-color: rgba(0, 0, 0, 0.15);
+            --card-border-color: rgba(0, 0, 0, 0.1);
             --divider-color: rgba(0, 0, 0, 0.1);
         }
         """
@@ -546,6 +546,7 @@ def apply_custom_theme(theme_choice):
     /* Target Streamlit's internal container borders globally */
     div[data-testid="stVerticalBlockBorderWrapper"],
     div[data-testid="stVerticalBlockBorderWrapper"] > div,
+    [data-testid="stVerticalBlock"] > div:has(div[data-testid="stVerticalBlockBorderWrapper"]),
     div.st-emotion-cache-12w0qpk,
     div.st-emotion-cache-ke6n6u {{
         border: 1px solid var(--card-border-color) !important;
@@ -2802,7 +2803,7 @@ with tabs[2]:
         has_stats = not p_stats.empty
         s = p_stats.iloc[0] if has_stats else {}
 
-        with st.container():
+        with st.container(border=True):
             c1, c2 = st.columns([1, 3])
 
            
