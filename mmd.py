@@ -535,7 +535,11 @@ def apply_custom_theme(theme_choice):
     .dynamic-subtext {{
         color: var(--dynamic-subtext) !important;
     }}
-
+    /* Target Streamlit's internal container borders globally */
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        border: 6px solid #E72107 !important;
+        border-radius: 12px !important;
+    }}
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
