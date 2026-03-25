@@ -507,6 +507,11 @@ def apply_custom_theme(theme_choice):
             border-radius: 8px !important;
             border: 1px solid #ddd !important;
         }
+
+        /* 4. Ensure Rankings tab player cards use the rust border in Light mode */
+        [data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlockBorderWrapper"] {
+            border-color: var(--card-border-color) !important;
+        }
         """
 
     # 2. Define CSS rules using the variables
