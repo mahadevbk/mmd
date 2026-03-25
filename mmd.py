@@ -3301,7 +3301,7 @@ with tabs[4]:
                             <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" style="width: 30px; height: 30px;">
                         </a>
                         <a href="{outlook_url}" target="_blank" title="Add to Outlook Calendar">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg" alt="Outlook" style="width: 30px; height: 30px;">
+                            <img src="https://img.icons8.com/color/48/000000/microsoft-outlook2019.png" alt="Outlook" style="width: 30px; height: 30px;">
                         </a>
                         <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank" title="Download ICS (Desktop)">
                             <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="ICS" style="width: 30px; height: 30px;">
