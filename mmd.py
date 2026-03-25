@@ -557,12 +557,7 @@ def apply_custom_theme(theme_choice):
     div.st-emotion-cache-ke6n6u {{
         border: 4px solid var(--card-border-color) !important;
     }}
-    /* This targets Streamlit's default container border */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 6px solid var(--card-border-color) !important;
-        border-radius: 12px;
-    }
-    
+     
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
         border: 2px solid var(--dynamic-accent);
