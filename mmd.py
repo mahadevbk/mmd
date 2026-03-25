@@ -507,6 +507,12 @@ def apply_custom_theme(theme_choice):
             border-radius: 8px !important;
             border: 1px solid #ddd !important;
         }
+
+        /* 4. Specific border for Rankings tab cards in Light Mode */
+        .rankings-tab-container [data-testid="stVerticalBlockBorderWrapper"],
+        .rankings-tab-container [data-testid="stVerticalBlockBorderWrapper"] > div {
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
         """
 
     # 2. Define CSS rules using the variables
@@ -1794,6 +1800,7 @@ tabs = st.tabs(tab_names)
 # --- Tab 1: Rankings ---
 # --- Tab 1: Rankings (Full Restoration with Elo Integration) ---
 with tabs[0]:
+    st.markdown('<div class="rankings-tab-container">', unsafe_allow_html=True)
     st.header(f"Rankings as of {datetime.now().strftime('%d %b %Y')}")
     
     # 1. Filter Selection
@@ -2036,6 +2043,7 @@ with tabs[0]:
                         </div>
                     """
                     st.markdown(stats_html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 
