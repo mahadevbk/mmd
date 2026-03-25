@@ -452,7 +452,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #444444;
             --dynamic-accent: #B24A00;
             --card-bg: #ffffff;
-            --card-border-color: rgba(178, 74, 0, 0.2);
+            --card-border-color: rgba(178, 74, 0, 0.5);
             --divider-color: rgba(0, 0, 0, 0.1);
         }
         """
@@ -509,7 +509,8 @@ def apply_custom_theme(theme_choice):
         }
 
         /* 4. Ensure Rankings tab player cards use the rust border in Light mode */
-        [data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlockBorderWrapper"] {
+        [data-testid="stVerticalBlockBorderWrapper"],
+        [data-testid="stVerticalBlockBorderWrapper"] > div {
             border-color: var(--card-border-color) !important;
         }
         """
