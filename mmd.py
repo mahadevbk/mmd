@@ -465,7 +465,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #bbbbbb;
             --dynamic-accent: #fff500;
             --card-bg: rgba(255,255,255,0.05);
-            --card-border-color: rgba(178, 74, 0, 0.6);
+            --card-border-color: rgba(255, 255, 255, 0.6);
             --divider-color: rgba(255, 255, 255, 0.1);
         }
         """
