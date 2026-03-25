@@ -592,11 +592,7 @@ def apply_custom_theme(theme_choice):
     html, body, [class*="st-"] {{
         font-family: 'Offside', sans-serif !important;
     }}
-    /* Target Streamlit's internal container borders globally */
-    div[data-testid="stVerticalBlockBorderWrapper"] {{
-        border: 6px solid #E72107 !important;
-        border-radius: 12px !important;
-    }}
+
     </style>
     """, unsafe_allow_html=True)
 
