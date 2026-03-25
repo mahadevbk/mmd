@@ -535,11 +535,7 @@ def apply_custom_theme(theme_choice):
     .dynamic-subtext {{
         color: var(--dynamic-subtext) !important;
     }}
-    /* Target Streamlit's internal container borders globally */
-    div[data-testid="stVerticalBlockBorderWrapper"] {{
-        border: 6px solid #E72107 !important;
-        border-radius: 12px !important;
-    }}
+
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
@@ -595,6 +591,11 @@ def apply_custom_theme(theme_choice):
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     html, body, [class*="st-"] {{
         font-family: 'Offside', sans-serif !important;
+    }}
+    /* Target Streamlit's internal container borders globally */
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        border: 6px solid #E72107 !important;
+        border-radius: 12px !important;
     }}
     </style>
     """, unsafe_allow_html=True)
