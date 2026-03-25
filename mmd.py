@@ -170,7 +170,7 @@ div[data-testid="stExpander"] {
 }
 .mobile-card {
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
-    border: 1px solid rgba(255, 245, 0, 0.2);
+    border: 5px solid rgba(255, 245, 0, 0.2);
     border-radius: 15px;
     padding: 15px;
     margin-bottom: 15px;
