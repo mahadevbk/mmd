@@ -511,7 +511,7 @@ def apply_custom_theme(theme_choice):
         /* 4. Ensure Rankings tab player cards use the rust border in Light mode */
         div[data-testid="stVerticalBlockBorderWrapper"],
         div[data-testid="stVerticalBlockBorderWrapper"] > div {
-            border: 1px solid var(--card-border-color) !important;
+            border: 3px solid var(--card-border-color) !important;
         }
         """
 
