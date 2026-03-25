@@ -168,14 +168,14 @@ div[data-testid="stExpander"] {
     opacity: 1;
     filter: drop-shadow(0 0 5px var(--dynamic-accent));
 }
-.mobile-card {
+.mobile-card {{
     background: linear-gradient(135deg, #071a3d 0%, #0c0014 100%);
-    border: 1px solid rgba(255, 245, 0, 0.2);
+    border: 1px solid var(--card-border-color);
     border-radius: 15px;
     padding: 15px;
     margin-bottom: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
+}}
 .rank-badge {
     background-color: var(--dynamic-accent) !important;
     color: #041136;
@@ -238,12 +238,12 @@ h3 { font-size: 16px !important; }
 .rankings-table-container {
     width: 100%; margin-top: 0px !important; padding: 5px;
 }
-.ranking-row {
-    display: block; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.2);
+.ranking-row {{
+    display: block; padding: 15px; margin-bottom: 15px; border: 1px solid var(--card-border-color);
     border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    background: var(--card-bg);
     overflow: visible; transition: transform 0.2s;
-}
+}}
 .ranking-row:hover { transform: translateY(-2px); border-color: rgba(255, 245, 0, 0.5); }
 .rank-profile-player-group { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--divider-color); padding-bottom: 10px; }
 .rank-col { font-size: 2em; font-weight: bold; color: var(--dynamic-accent) !important; margin-right: 15px; }
@@ -532,12 +532,13 @@ def apply_custom_theme(theme_choice):
 
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
-        background-color: var(--card-bg);
+        background-color: var(--card-bg) !important;
         border: 1px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
         transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }}
     .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
         transform: translateY(-2px);
@@ -547,9 +548,10 @@ def apply_custom_theme(theme_choice):
     div[data-testid="stVerticalBlockBorderWrapper"],
     div[data-testid="stVerticalBlockBorderWrapper"] > div,
     [data-testid="stVerticalBlock"] > div:has(div[data-testid="stVerticalBlockBorderWrapper"]),
-    div.st-emotion-cache-12w0qpk,
-    div.st-emotion-cache-ke6n6u {{
+    [data-testid="stVerticalBlock"] > div:has(.player-card-container) {{
         border: 1px solid var(--card-border-color) !important;
+        border-radius: 12px !important;
+        background-color: var(--card-bg) !important;
     }}
     
     /* --- Component-Specific Styles --- */
@@ -1932,6 +1934,7 @@ with tabs[0]:
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
             with st.container(border=True):
+                st.markdown('<div class="player-card-container"></div>', unsafe_allow_html=True)
                 profile_pic = row['Profile'] if row['Profile'] else 'https://via.placeholder.com/100'
                 r_uid = f"rank_{idx}_{row['Player'].replace(' ', '')}"
                 trend = row.get('Recent Trend', '')
@@ -2804,6 +2807,7 @@ with tabs[2]:
         s = p_stats.iloc[0] if has_stats else {}
 
         with st.container(border=True):
+            st.markdown('<div class="player-card-container"></div>', unsafe_allow_html=True)
             c1, c2 = st.columns([1, 3])
 
            
