@@ -465,7 +465,7 @@ def apply_custom_theme(theme_choice):
             --dynamic-subtext: #bbbbbb;
             --dynamic-accent: #fff500;
             --card-bg: rgba(255,255,255,0.05);
-            --card-border-color: rgba(255, 255, 255, 0.6);
+            --card-border-color: rgba(255, 255, 255, 0.2);
             --divider-color: rgba(255, 255, 255, 0.1);
         }
         """
@@ -511,7 +511,7 @@ def apply_custom_theme(theme_choice):
         /* 4. Ensure Rankings tab player cards use the rust border in Light mode */
         div[data-testid="stVerticalBlockBorderWrapper"],
         div[data-testid="stVerticalBlockBorderWrapper"] > div {
-            border: 3px solid var(--card-border-color) !important;
+            border: 1px solid var(--card-border-color) !important;
         }
         """
 
@@ -539,7 +539,7 @@ def apply_custom_theme(theme_choice):
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
-        border: 2px solid var(--card-border-color) !important;
+        border: 1px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
@@ -557,7 +557,7 @@ def apply_custom_theme(theme_choice):
     div.st-emotion-cache-ke6n6u {{
         border: 1px solid var(--card-border-color) !important;
     }}
-     
+    
     /* --- Component-Specific Styles --- */
     .profile-image, .img-lightbox img {{
         border: 2px solid var(--dynamic-accent);
@@ -592,7 +592,6 @@ def apply_custom_theme(theme_choice):
     html, body, [class*="st-"] {{
         font-family: 'Offside', sans-serif !important;
     }}
-
     </style>
     """, unsafe_allow_html=True)
 
@@ -1320,6 +1319,33 @@ def suggest_singles_odds(players, singles_rank_df):
 # ==============================================================================
 # END: NEW COMPLEX ODDS CALCULATION FUNCTIONS
 # ==============================================================================
+
+
+def generate_calendar_web_links(row, plain_suggestion=""):
+    try:
+        summary = urllib.parse.quote(f"Tennis: {row['match_type']} at {row['court_name']}")
+        dt_str = f"{row['date']} {row['time']}"
+        dt_start = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+        dt_end = dt_start + timedelta(hours=1.5)
+        
+        # Format for Google (YYYYMMDDTHHMMSSZ) - assuming UTC for simplicity or letting Google handle timezone if not 'Z'
+        # Open-Meteo uses local time, let's assume local time (no 'Z')
+        fmt = "%Y%m%dT%H%M%S"
+        g_dates = f"{dt_start.strftime(fmt)}/{dt_end.strftime(fmt)}"
+        
+        description = urllib.parse.quote(f"MMD Tennis Match\n{plain_suggestion}")
+        location = urllib.parse.quote(row['court_name'])
+        
+        google_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={summary}&dates={g_dates}&details={description}&location={location}"
+        
+        # Outlook format
+        o_start = dt_start.isoformat()
+        o_end = dt_end.isoformat()
+        outlook_url = f"https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject={summary}&startdt={o_start}&enddt={o_end}&body={description}&location={location}"
+        
+        return google_url, outlook_url
+    except Exception:
+        return "#", "#"
 
 
 def generate_ics_for_booking(row, plain_suggestion=""):
@@ -3237,6 +3263,9 @@ with tabs[4]:
                     calendar_link = "#"
                     st.warning(f"Calendar add failed for booking {row['booking_id']}: {ics_error}")
                 
+                # Generate Web Calendar Links
+                google_url, outlook_url = generate_calendar_web_links(row, plain_suggestion)
+                
                 weekday = pd.to_datetime(row['date']).strftime('%a')
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
                 full_date = f"{weekday}, {date_part}, {time_ampm}"
@@ -3264,12 +3293,18 @@ with tabs[4]:
                     <div><strong>Players:</strong> {players_str}</div>
                     <div><strong>Standby Player:</strong> {standby_str}</div>
                     {pairing_suggestion}
-                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
                         <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
                         </a>
-                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank">
-                            <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Add to Calendar" style="width: 30px; height: 30px;">
+                        <a href="{google_url}" target="_blank" title="Add to Google Calendar">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" style="width: 30px; height: 30px;">
+                        </a>
+                        <a href="{outlook_url}" target="_blank" title="Add to Outlook Calendar">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg" alt="Outlook" style="width: 30px; height: 30px;">
+                        </a>
+                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank" title="Download ICS (Desktop)">
+                            <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="ICS" style="width: 30px; height: 30px;">
                         </a>
                     </div>
                 """
