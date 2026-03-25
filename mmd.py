@@ -539,7 +539,7 @@ def apply_custom_theme(theme_choice):
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
         background-color: var(--card-bg);
-        border: 1px solid var(--card-border-color) !important;
+        border: 2px solid var(--card-border-color) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
