@@ -555,7 +555,7 @@ def apply_custom_theme(theme_choice):
     [data-testid="stVerticalBlock"] > div:has(div[data-testid="stVerticalBlockBorderWrapper"]),
     div.st-emotion-cache-12w0qpk,
     div.st-emotion-cache-ke6n6u {{
-        border: 4px solid var(--card-border-color) !important;
+        border: 1px solid var(--card-border-color) !important;
     }}
      
     /* --- Component-Specific Styles --- */
