@@ -505,7 +505,7 @@ def apply_custom_theme(theme_choice):
         div[data-testid='stSegmentedControl'] {
             background-color: #f0f2f6 !important;
             border-radius: 8px !important;
-            border: 5px solid #ddd !important;
+            border: 1px solid #ddd !important;
         }
 
         /* 4. Ensure Rankings tab player cards use the rust border in Light mode */
