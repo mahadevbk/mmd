@@ -3427,12 +3427,16 @@ with tabs[4]:
                     return "Unknown Time"
 
                 for _, row in bookings_df.iterrows():
-                    date_str = pd.to_datetime(row['date'], errors="coerce").strftime('%A, %d %b') if row['date'] else "Unknown Date"
+                    dt = pd.to_datetime(row['date'], errors="coerce")
+                    day = dt.strftime('%A') if pd.notnull(dt) else "Unknown Day"
+                    date_dd_mm = dt.strftime('%d-%m') if pd.notnull(dt) else "Unknown Date"
                     time_ampm = format_time_safe(row['time'])
+                    
                     players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
                     players_str = ", ".join(players) if players else "No players"
                     standby_str = row.get('standby_player', "None")
-                    desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
+                    
+                    desc = f"{day}, {date_dd_mm}, {time_ampm} | {players_str} | Standby: {standby_str} | Court: {row['court_name']}"
                     booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
 
                 selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
