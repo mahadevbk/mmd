@@ -3266,22 +3266,21 @@ with tabs[4]:
                 # Generate Web Calendar Links
                 google_url, outlook_url = generate_calendar_web_links(row, plain_suggestion)
                 
-                weekday = pd.to_datetime(row['date']).strftime('%a')
-                date_part = pd.to_datetime(row['date']).strftime('%d %b')
-                full_date = f"{weekday}, {date_part}, {time_ampm}"
-                court_name = row['court_name']
-                players_list = ", ".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
-                standby_text = f" | STD. BY: *{row['standby_player']}*" if row['standby_player'] else ""
-                
-                # Weather logic
+                weekday = pd.to_datetime(row['date']).strftime('%A')
                 lat, lon = get_court_coords(row['court_name'])
-                weather_info = get_weather(lat, lon, str(row['date']), str(row['time']))
-                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_info}</span></div>"
-                weather_share = f" | Weather: *{weather_info}*" if weather_info != "Weather N/A" else ""
-
-                share_text = f"*Game Booking:* Date: *{full_date}* | Court: *{court_name}*{weather_share} | Players: {players_list}{standby_text} | {plain_suggestion} | Court location: {court_url}"
-                encoded_text = urllib.parse.quote(share_text)
-                whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+                weather_text = get_weather(lat, lon, str(row['date']), str(row['time']))
+                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_text}</span></div>"
+                
+                players_list = ", ".join([p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p])
+                whatsapp_share_text = (
+                    f"*Game booking*\n"
+                    f"Date: *{weekday}, {row['date']} | {time_ampm} | Court: {row['court_name']}*\n"
+                    f"Players: *{players_list}*\n"
+                    f"Court location: {KNOWN_COURT_URLS.get(row['court_name'], '')}\n"
+                    f"Weather: {weather_text}\n"
+                    f"Pairing Odds: {plain_suggestion}"
+                )
+                whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(whatsapp_share_text)}"
                 
                 booking_text = f"""
                 <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
@@ -3294,7 +3293,7 @@ with tabs[4]:
                     <div><strong>Standby Player:</strong> {standby_str}</div>
                     {pairing_suggestion}
                     <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
-                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                        <a href="{whatsapp_url}" class="whatsapp-share" target="_blank">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
                         </a>
                         <a href="{google_url}" target="_blank" title="Add to Google Calendar">
