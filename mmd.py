@@ -3254,7 +3254,7 @@ with tabs[4]:
                     plain_suggestion = f"Error calculating odds: {str(e)}"
                 
                 # Generate ICS for calendar
-                ics_content, ics_error = generate_ics_for_booking(row, plain_suggestion)
+                ics_content, ics_error = generate_ics_for_booking(row, "")
                 calendar_link = ""
                 if ics_content:
                     encoded_ics = urllib.parse.quote(ics_content)
@@ -3264,7 +3264,7 @@ with tabs[4]:
                     st.warning(f"Calendar add failed for booking {row['booking_id']}: {ics_error}")
                 
                 # Generate Web Calendar Links
-                google_url, outlook_url = generate_calendar_web_links(row, plain_suggestion)
+                google_url, outlook_url = generate_calendar_web_links(row, "")
                 
                 weekday = pd.to_datetime(row['date']).strftime('%A')
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
@@ -3278,8 +3278,7 @@ with tabs[4]:
                     f"Date: *{weekday}, {date_part} | {time_ampm} | Court: {row['court_name']}*\n"
                     f"Players: *{players_list}*\n"
                     f"Court location: {KNOWN_COURT_URLS.get(row['court_name'], '')}\n"
-                    f"Weather: *{weather_text}*\n"
-                    f"Pairing Odds: {plain_suggestion}"
+                    f"Weather: *{weather_text}*"
                 )
                 whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(whatsapp_share_text)}"
                 
