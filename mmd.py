@@ -1582,8 +1582,8 @@ def cleanup_old_bookings(df):
         else:
              df['dt_combo'] = df['dt_combo'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
              
-        # Cleanup bookings older than 1 day
-        expired_ids = df[df['dt_combo'] < pd.Timestamp.now(tz='Asia/Dubai') - timedelta(days=1)]['booking_id'].tolist()
+        # Cleanup past bookings (those where the scheduled time has already passed)
+        expired_ids = df[df['dt_combo'] < pd.Timestamp.now(tz='Asia/Dubai')]['booking_id'].tolist()
         
         if expired_ids:
             try:
