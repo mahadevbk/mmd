@@ -3145,245 +3145,269 @@ with tabs[4]:
         if upcoming_bookings.empty:
             st.info("No upcoming bookings found.")
         else:
-            try:
-                doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
-                singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
-                doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
-                singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
-            except Exception as e:
-                doubles_rank_df = pd.DataFrame()
-                singles_rank_df = pd.DataFrame()
+            # Player Filter Implementation
+            booking_players_list = sorted(list(set(
+                upcoming_bookings['player1'].astype(str).tolist() + 
+                upcoming_bookings['player2'].astype(str).tolist() + 
+                upcoming_bookings['player3'].astype(str).tolist() + 
+                upcoming_bookings['player4'].astype(str).tolist() + 
+                upcoming_bookings['standby_player'].astype(str).tolist()
+            )))
+            booking_players_list = [p for p in booking_players_list if p and p.strip() not in ["", "None", "nan", "NaN"]]
             
-            for _, row in upcoming_bookings.iterrows():
-                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-                players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
-                standby_str = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
-                date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
-                time_value = str(row['time']).strip()
+            filter_player = st.selectbox("🔍 Filter by Player participation", ["Show All"] + booking_players_list, key="upcoming_bookings_player_filter")
             
-                time_ampm = ""
-                if time_value and time_value not in ["NaT", "nan", "None"]:
-                    try:
-                        dt_obj = datetime.strptime(time_value, "%H:%M:%S")
-                        time_ampm = dt_obj.strftime("%I:%M %p").lstrip('0')
-                    except ValueError:
+            if filter_player != "Show All":
+                upcoming_bookings = upcoming_bookings[
+                    (upcoming_bookings['player1'] == filter_player) |
+                    (upcoming_bookings['player2'] == filter_player) |
+                    (upcoming_bookings['player3'] == filter_player) |
+                    (upcoming_bookings['player4'] == filter_player) |
+                    (upcoming_bookings['standby_player'] == filter_player)
+                ]
+            
+            if upcoming_bookings.empty:
+                st.info(f"No upcoming bookings found for {filter_player}.")
+            else:
+                try:
+                    doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
+                    singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
+                    doubles_rank_df, _ = calculate_rankings(doubles_matches_df, st.session_state.players_df)
+                    singles_rank_df, _ = calculate_rankings(singles_matches_df, st.session_state.players_df)
+                except Exception as e:
+                    doubles_rank_df = pd.DataFrame()
+                    singles_rank_df = pd.DataFrame()
+                
+                for _, row in upcoming_bookings.iterrows():
+                    players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                    players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
+                    standby_str = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
+                    date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+                    time_value = str(row['time']).strip()
+                
+                    time_ampm = ""
+                    if time_value and time_value not in ["NaT", "nan", "None"]:
                         try:
-                            dt_obj = datetime.strptime(time_value, "%H:%M")
+                            dt_obj = datetime.strptime(time_value, "%H:%M:%S")
                             time_ampm = dt_obj.strftime("%I:%M %p").lstrip('0')
                         except ValueError:
-                            time_ampm = "Invalid Time"
+                            try:
+                                dt_obj = datetime.strptime(time_value, "%H:%M")
+                                time_ampm = dt_obj.strftime("%I:%M %p").lstrip('0')
+                            except ValueError:
+                                time_ampm = "Invalid Time"
+                    
+                    court_url = court_url_mapping.get(row['court_name'], "#")
+                    court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:var(--dynamic-accent); text-decoration:none;'>{row['court_name']}</a>"
                 
-                court_url = court_url_mapping.get(row['court_name'], "#")
-                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:var(--dynamic-accent); text-decoration:none;'>{row['court_name']}</a>"
-            
-                pairing_suggestion = ""
-                plain_suggestion = ""
-                try:
-                    if row['match_type'] == "Doubles" and len(players) == 4:
-                        rank_df = doubles_rank_df
-                        unranked = [p for p in players if p not in rank_df["Player"].values]
-                        if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
-                            message = f"Players {styled_unranked} are unranked, therefore no pairing odds available."
-                            pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> {message}</div>"
-                            plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no pairing odds available."
-                        else:
-                            all_pairings = []
-                            player_list = list(players)
-                            seen_pairings = set()
-                            for team1 in combinations(player_list, 2):
-                                team1_set = frozenset(team1)
-                                team2 = tuple(p for p in player_list if p not in team1)
-                                team2_set = frozenset(team2)
-                                pairing_key = frozenset([team1_set, team2_set])
-                                if pairing_key in seen_pairings:
-                                    continue
-                                seen_pairings.add(pairing_key)
-                                team1_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team1)
-                                team2_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team2)
-                                diff = abs(team1_score - team2_score)
-                                odds_team1 = (team1_score / (team1_score + team2_score)) * 100 if team1_score + team2_score > 0 else 50
-                                odds_team2 = 100 - odds_team1
-                                team1_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team1])
-                                team2_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team2])
-                                pairing_str = f"{team1_str} vs {team2_str}"
-                                plain_pairing_str = f"{', '.join(team1)} vs {', '.join(team2)}"
-                                all_pairings.append({
-                                    'pairing': pairing_str,
-                                    'plain_pairing': plain_pairing_str,
-                                    'team1_odds': odds_team1,
-                                    'team2_odds': odds_team2,
-                                    'diff': diff
-                                })
-                            all_pairings.sort(key=lambda x: x['diff'])
-                            pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Combos and Odds:</strong></div>"
-                            plain_suggestion = "*Pairing Combos and Odds:* | "
-                            for idx, pairing in enumerate(all_pairings[:3], 1):
-                                pairing_suggestion += (
-                                    f"<div>Option {idx}: {pairing['pairing']} "
-                                    f"(<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
-                                    f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
-                                )
-                                plain_suggestion += (
-                                    f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
-                                )
-                            plain_suggestion = plain_suggestion.rstrip(" | ")
-                    elif row['match_type'] == "Doubles" and len(players) < 4:
-                        pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
-                        plain_suggestion = "Not enough players for pairing odds"
-                    elif row['match_type'] == "Singles" and len(players) == 2:
-                        rank_df = singles_rank_df
-                        unranked = [p for p in players if p not in rank_df["Player"].values]
-                        if unranked:
-                            styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
-                            message = f"Players {styled_unranked} are unranked, therefore no odds available."
-                            pairing_suggestion = f"<div><strong class='dynamic-text'>Odds:</strong> {message}</div>"
-                            plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no odds available."
-                        else:
-                            p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
-                            if p1_odds is not None:
-                                p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[0]}</span>"
-                                p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[1]}</span>"
-                                pairing_suggestion = (
-                                    f"<div><strong class='dynamic-text'>Odds:</strong> "
-                                    f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
-                                )
-                                plain_suggestion = f"Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)"
-                except Exception as e:
-                    pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> Error calculating: {e}</div>"
-                    plain_suggestion = f"Error calculating odds: {str(e)}"
-                
-                # Generate ICS for calendar
-                ics_content, ics_error = generate_ics_for_booking(row, "")
-                calendar_link = ""
-                if ics_content:
-                    encoded_ics = urllib.parse.quote(ics_content)
-                    calendar_link = f'data:text/calendar;charset=utf8,{encoded_ics}'
-                else:
-                    calendar_link = "#"
-                    st.warning(f"Calendar add failed for booking {row['booking_id']}: {ics_error}")
-                
-                # Generate Web Calendar Links
-                google_url, outlook_url = generate_calendar_web_links(row, "")
-                
-                weekday = pd.to_datetime(row['date']).strftime('%A')
-                date_part = pd.to_datetime(row['date']).strftime('%d %b')
-                lat, lon = get_court_coords(row['court_name'])
-                weather_text = get_weather(lat, lon, str(row['date']), str(row['time']))
-                weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_text}</span></div>"
-                
-                players_list = ", ".join([p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p])
-                whatsapp_share_text = (
-                    f"*Game booking*\n"
-                    f"Date: *{weekday}, {date_part} | {time_ampm} | Court: {row['court_name']}*\n"
-                    f"Players: *{players_list}*\n"
-                    f"Court location: {KNOWN_COURT_URLS.get(row['court_name'], '')}\n"
-                    f"Weather: *{weather_text}*"
-                )
-                whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(whatsapp_share_text)}"
-                
-                booking_text = f"""
-                <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                    <div><strong>Date:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{date_str}</span></div>
-                    <div><strong>Court:</strong> {court_name_html}</div>
-                    <div><strong>Time:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{time_ampm}</span></div>
-                    {weather_row}
-                    <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['match_type']}</span></div>
-                    <div><strong>Players:</strong> {players_str}</div>
-                    <div><strong>Standby Player:</strong> {standby_str}</div>
-                    {pairing_suggestion}
-                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
-                        <a href="{whatsapp_url}" class="whatsapp-share" target="_blank">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
-                        </a>
-                        <a href="{google_url}" target="_blank" title="Add to Google Calendar">
-                            <img src="https://img.icons8.com/color/48/google-calendar--v2.png" alt="Google Calendar" style="width: 30px; height: 30px;">
-                        </a>
-                        <a href="{outlook_url}" target="_blank" title="Add to Outlook Calendar">
-                            <img src="https://img.icons8.com/color/48/microsoft-outlook-2019.png" alt="Outlook" style="width: 30px; height: 30px;">
-                        </a>
-                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank" title="Download ICS (Desktop)">
-                            <img src="https://img.icons8.com/color/48/calendar--v1.png" alt="ICS" style="width: 30px; height: 30px;">
-                        </a>
-                    </div>
-                """
-                
-                visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
-                screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
-                if screenshot_url:
-                    visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
-                visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
-                booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
-                players_df = st.session_state.players_df
-                image_urls = []
-                placeholder_initials = []
-                for player_name in booking_players:
-                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
-                        player_data = players_df[players_df["name"] == player_name]
-                        if not player_data.empty:
-                            img_url = player_data.iloc[0].get("profile_image_url")
-                            if img_url and isinstance(img_url, str) and img_url.strip():
-                                image_urls.append((player_name, img_url))
+                    pairing_suggestion = ""
+                    plain_suggestion = ""
+                    try:
+                        if row['match_type'] == "Doubles" and len(players) == 4:
+                            rank_df = doubles_rank_df
+                            unranked = [p for p in players if p not in rank_df["Player"].values]
+                            if unranked:
+                                styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                                message = f"Players {styled_unranked} are unranked, therefore no pairing odds available."
+                                pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> {message}</div>"
+                                plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no pairing odds available."
                             else:
-                                placeholder_initials.append((player_name, player_name[0].upper()))
-                for player_name, img_url in image_urls:
-                    visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
-                for player_name, initial in placeholder_initials:
-                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;">{initial}</div>'
-                visuals_html += '</div></div>'
-                booking_text += visuals_html + '</div>'
-                
-                try:
-                    st.markdown(booking_text, unsafe_allow_html=True)
-                except Exception as e:
-                    st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
-                    st.markdown(f"""
-                    **Court:** {court_name_html}  
-                    **Date:** {date_str}  
-                    **Time:** {time_ampm}  
-                    **Match Type:** {row['match_type']}  
-                    **Players:** {', '.join(players) if players else 'No players'}  
-                    **Standby Player:** {row.get('standby_player', 'None')}  
-                    {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:var(--dynamic-accent);\'>', '').replace('</span>', '')}
-                    """, unsafe_allow_html=True)
-                    st.markdown(f"""
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px;">
-                        </a>
-                        <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank">
-                            <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Add to Calendar" style="width:30px; height:30px;">
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
+                                all_pairings = []
+                                player_list = list(players)
+                                seen_pairings = set()
+                                for team1 in combinations(player_list, 2):
+                                    team1_set = frozenset(team1)
+                                    team2 = tuple(p for p in player_list if p not in team1)
+                                    team2_set = frozenset(team2)
+                                    pairing_key = frozenset([team1_set, team2_set])
+                                    if pairing_key in seen_pairings:
+                                        continue
+                                    seen_pairings.add(pairing_key)
+                                    team1_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team1)
+                                    team2_score = sum(_calculate_performance_score(rank_df[rank_df['Player'] == p].iloc[0], rank_df) for p in team2)
+                                    diff = abs(team1_score - team2_score)
+                                    odds_team1 = (team1_score / (team1_score + team2_score)) * 100 if team1_score + team2_score > 0 else 50
+                                    odds_team2 = 100 - odds_team1
+                                    team1_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team1])
+                                    team2_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in team2])
+                                    pairing_str = f"{team1_str} vs {team2_str}"
+                                    plain_pairing_str = f"{', '.join(team1)} vs {', '.join(team2)}"
+                                    all_pairings.append({
+                                        'pairing': pairing_str,
+                                        'plain_pairing': plain_pairing_str,
+                                        'team1_odds': odds_team1,
+                                        'team2_odds': odds_team2,
+                                        'diff': diff
+                                    })
+                                all_pairings.sort(key=lambda x: x['diff'])
+                                pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Combos and Odds:</strong></div>"
+                                plain_suggestion = "*Pairing Combos and Odds:* | "
+                                for idx, pairing in enumerate(all_pairings[:3], 1):
+                                    pairing_suggestion += (
+                                        f"<div>Option {idx}: {pairing['pairing']} "
+                                        f"(<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team1_odds']:.1f}%</span> vs "
+                                        f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{pairing['team2_odds']:.1f}%</span>)</div>"
+                                    )
+                                    plain_suggestion += (
+                                        f"Option {idx}: {pairing['plain_pairing']} ({pairing['team1_odds']:.1f}% vs {pairing['team2_odds']:.1f}%) | "
+                                    )
+                                plain_suggestion = plain_suggestion.rstrip(" | ")
+                        elif row['match_type'] == "Doubles" and len(players) < 4:
+                            pairing_suggestion = "<div><strong class='dynamic-text'>Pairing Odds:</strong> Not enough players for pairing odds</div>"
+                            plain_suggestion = "Not enough players for pairing odds"
+                        elif row['match_type'] == "Singles" and len(players) == 2:
+                            rank_df = singles_rank_df
+                            unranked = [p for p in players if p not in rank_df["Player"].values]
+                            if unranked:
+                                styled_unranked = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in unranked])
+                                message = f"Players {styled_unranked} are unranked, therefore no odds available."
+                                pairing_suggestion = f"<div><strong class='dynamic-text'>Odds:</strong> {message}</div>"
+                                plain_suggestion = f"Players {', '.join(unranked)} are unranked, therefore no odds available."
+                            else:
+                                p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
+                                if p1_odds is not None:
+                                    p1_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[0]}</span>"
+                                    p2_styled = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{players[1]}</span>"
+                                    pairing_suggestion = (
+                                        f"<div><strong class='dynamic-text'>Odds:</strong> "
+                                        f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+                                    )
+                                    plain_suggestion = f"Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)"
+                    except Exception as e:
+                        pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> Error calculating: {e}</div>"
+                        plain_suggestion = f"Error calculating odds: {str(e)}"
+                    
+                    # Generate ICS for calendar
+                    ics_content, ics_error = generate_ics_for_booking(row, "")
+                    calendar_link = ""
+                    if ics_content:
+                        encoded_ics = urllib.parse.quote(ics_content)
+                        calendar_link = f'data:text/calendar;charset=utf8,{encoded_ics}'
+                    else:
+                        calendar_link = "#"
+                        st.warning(f"Calendar add failed for booking {row['booking_id']}: {ics_error}")
+                    
+                    # Generate Web Calendar Links
+                    google_url, outlook_url = generate_calendar_web_links(row, "")
+                    
+                    weekday = pd.to_datetime(row['date']).strftime('%A')
+                    date_part = pd.to_datetime(row['date']).strftime('%d %b')
+                    lat, lon = get_court_coords(row['court_name'])
+                    weather_text = get_weather(lat, lon, str(row['date']), str(row['time']))
+                    weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_text}</span></div>"
+                    
+                    players_list = ", ".join([p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p])
+                    whatsapp_share_text = (
+                        f"*Game booking*\n"
+                        f"Date: *{weekday}, {date_part} | {time_ampm} | Court: {row['court_name']}*\n"
+                        f"Players: *{players_list}*\n"
+                        f"Court location: {KNOWN_COURT_URLS.get(row['court_name'], '')}\n"
+                        f"Weather: *{weather_text}*"
+                    )
+                    whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(whatsapp_share_text)}"
+                    
+                    booking_text = f"""
+                    <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                        <div><strong>Date:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{date_str}</span></div>
+                        <div><strong>Court:</strong> {court_name_html}</div>
+                        <div><strong>Time:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{time_ampm}</span></div>
+                        {weather_row}
+                        <div><strong>Match Type:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['match_type']}</span></div>
+                        <div><strong>Players:</strong> {players_str}</div>
+                        <div><strong>Standby Player:</strong> {standby_str}</div>
+                        {pairing_suggestion}
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
+                            <a href="{whatsapp_url}" class="whatsapp-share" target="_blank">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
+                            </a>
+                            <a href="{google_url}" target="_blank" title="Add to Google Calendar">
+                                <img src="https://img.icons8.com/color/48/google-calendar--v2.png" alt="Google Calendar" style="width: 30px; height: 30px;">
+                            </a>
+                            <a href="{outlook_url}" target="_blank" title="Add to Outlook Calendar">
+                                <img src="https://img.icons8.com/color/48/microsoft-outlook-2019.png" alt="Outlook" style="width: 30px; height: 30px;">
+                            </a>
+                            <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank" title="Download ICS (Desktop)">
+                                <img src="https://img.icons8.com/color/48/calendar--v1.png" alt="ICS" style="width: 30px; height: 30px;">
+                            </a>
+                        </div>
+                    """
+                    
+                    visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
+                    screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
                     if screenshot_url:
+                        visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
+                    visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
+                    booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
+                    players_df = st.session_state.players_df
+                    image_urls = []
+                    placeholder_initials = []
+                    for player_name in booking_players:
+                        if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                            player_data = players_df[players_df["name"] == player_name]
+                            if not player_data.empty:
+                                img_url = player_data.iloc[0].get("profile_image_url")
+                                if img_url and isinstance(img_url, str) and img_url.strip():
+                                    image_urls.append((player_name, img_url))
+                                else:
+                                    placeholder_initials.append((player_name, player_name[0].upper()))
+                    for player_name, img_url in image_urls:
+                        visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                    for player_name, initial in placeholder_initials:
+                        visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;">{initial}</div>'
+                    visuals_html += '</div></div>'
+                    booking_text += visuals_html + '</div>'
+                    
+                    try:
+                        st.markdown(booking_text, unsafe_allow_html=True)
+                    except Exception as e:
+                        st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
                         st.markdown(f"""
-                        <a href="{screenshot_url}" target="_blank">
-                            <img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size">
-                        </a>
+                        **Court:** {court_name_html}  
+                        **Date:** {date_str}  
+                        **Time:** {time_ampm}  
+                        **Match Type:** {row['match_type']}  
+                        **Players:** {', '.join(players) if players else 'No players'}  
+                        **Standby Player:** {row.get('standby_player', 'None')}  
+                        {pairing_suggestion.replace('<div><strong style=\'class="dynamic-text";\'>', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style=\'font-weight:bold; color:var(--dynamic-accent);\'>', '').replace('</span>', '')}
                         """, unsafe_allow_html=True)
-                    if image_urls or placeholder_initials:
-                        cols = st.columns(len(image_urls) + len(placeholder_initials))
-                        col_idx = 0
-                        for player_name, img_url in image_urls:
-                            with cols[col_idx]:
-                                st.image(img_url, width=50, caption=player_name)
-                            col_idx += 1
-                        for player_name, initial in placeholder_initials:
-                            with cols[col_idx]:
-                                st.markdown(f"""
-                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;'>{initial}</div>
-                                <div style='text-align: center;'>{player_name}</div>
-                                """, unsafe_allow_html=True)
-                            col_idx += 1
-    
-    st.markdown("---")
-    
-   
-    
-    
-    
-    
+                        st.markdown(f"""
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px;">
+                            </a>
+                            <a href="{calendar_link}" class="calendar-share" download="tennis-booking-{row['booking_id']}.ics" target="_blank">
+                                <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Add to Calendar" style="width:30px; height:30px;">
+                            </a>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        if screenshot_url:
+                            st.markdown(f"""
+                            <a href="{screenshot_url}" target="_blank">
+                                <img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size">
+                            </a>
+                            """, unsafe_allow_html=True)
+                        if image_urls or placeholder_initials:
+                            cols = st.columns(len(image_urls) + len(placeholder_initials))
+                            col_idx = 0
+                            for player_name, img_url in image_urls:
+                                with cols[col_idx]:
+                                    st.image(img_url, width=50, caption=player_name)
+                                col_idx += 1
+                            for player_name, initial in placeholder_initials:
+                                with cols[col_idx]:
+                                    st.markdown(f"""
+                                    <div style='width: 50px; height: 50px; border-radius: 50%; background-color: var(--card-bg); border: 2px solid var(--dynamic-accent) !important; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dynamic-accent) !important; font-weight: bold;'>{initial}</div>
+                                    <div style='text-align: center;'>{player_name}</div>
+                                    """, unsafe_allow_html=True)
+                                col_idx += 1
+        
+        st.markdown("---")
+        
+       
+        
+        
+        
+        
     
     #------------new Calendar feature -------------------------------
 
