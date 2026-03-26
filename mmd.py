@@ -3267,6 +3267,7 @@ with tabs[4]:
                 google_url, outlook_url = generate_calendar_web_links(row, plain_suggestion)
                 
                 weekday = pd.to_datetime(row['date']).strftime('%A')
+                date_part = pd.to_datetime(row['date']).strftime('%d %b')
                 lat, lon = get_court_coords(row['court_name'])
                 weather_text = get_weather(lat, lon, str(row['date']), str(row['time']))
                 weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_text}</span></div>"
@@ -3274,13 +3275,13 @@ with tabs[4]:
                 players_list = ", ".join([p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p])
                 whatsapp_share_text = (
                     f"*Game booking*\n"
-                    f"Date: *{weekday}, {row['date']} | {time_ampm} | Court: {row['court_name']}*\n"
+                    f"Date: *{weekday}, {date_part} | {time_ampm} | Court: {row['court_name']}*\n"
                     f"Players: *{players_list}*\n"
                     f"Court location: {KNOWN_COURT_URLS.get(row['court_name'], '')}\n"
-                    f"Weather: {weather_text}\n"
+                    f"Weather: *{weather_text}*\n"
                     f"Pairing Odds: {plain_suggestion}"
                 )
-                whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(whatsapp_share_text)}"
+                whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(whatsapp_share_text)}"
                 
                 booking_text = f"""
                 <div class="booking-row" style='background-color: var(--card-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
