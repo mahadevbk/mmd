@@ -3154,6 +3154,58 @@ with tabs[4]:
                 upcoming_bookings['standby_player'].astype(str).tolist()
             )))
             booking_players_list = [p for p in booking_players_list if p and p.strip() not in ["", "None", "nan", "NaN"]]
+
+            # --- Post Today's Games to WhatsApp ---
+            today_dubai = pd.Timestamp.now(tz='Asia/Dubai').date()
+            # We filter bookings_df for all games on the current date
+            try:
+                today_games = bookings_df[pd.to_datetime(bookings_df['date']).dt.date == today_dubai].sort_values('time')
+            except Exception:
+                today_games = pd.DataFrame()
+            
+            if not today_games.empty:
+                collated_message = f"*MMD Today's Games ({today_dubai.strftime('%A, %d %b')})*\n\n"
+                for idx, t_row in enumerate(today_games.itertuples(), 1):
+                    # Re-calculate weekday and date part for the share
+                    t_weekday = pd.to_datetime(t_row.date).strftime('%A')
+                    t_date_part = pd.to_datetime(t_row.date).strftime('%d %b')
+                    
+                    # Formatting time for the share
+                    t_time_val = str(t_row.time).strip()
+                    t_time_ampm = ""
+                    if t_time_val and t_time_val not in ["NaT", "nan", "None"]:
+                        try:
+                            t_dt_obj = datetime.strptime(t_time_val, "%H:%M:%S")
+                            t_time_ampm = t_dt_obj.strftime("%I:%M %p").lstrip('0')
+                        except ValueError:
+                            try:
+                                t_dt_obj = datetime.strptime(t_time_val, "%H:%M")
+                                t_time_ampm = t_dt_obj.strftime("%I:%M %p").lstrip('0')
+                            except ValueError:
+                                t_time_ampm = "Invalid Time"
+                    
+                    # Get weather and players
+                    t_lat, t_lon = get_court_coords(t_row.court_name)
+                    t_weather = get_weather(t_lat, t_lon, str(t_row.date), str(t_row.time))
+                    t_players = ", ".join([p for p in [t_row.player1, t_row.player2, t_row.player3, t_row.player4] if p and str(p).strip()])
+                    
+                    collated_message += (
+                        f"*Game {idx}:*\n"
+                        f"Date: *{t_weekday}, {t_date_part} | {t_time_ampm} | Court: {t_row.court_name}*\n"
+                        f"Players: *{t_players}*\n"
+                        f"Court location: {KNOWN_COURT_URLS.get(t_row.court_name, '')}\n"
+                        f"Weather: *{t_weather}*\n\n"
+                    )
+                
+                t_whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(collated_message.strip())}"
+                st.markdown(f"""
+                <div style="margin-bottom: 25px;">
+                    <a href="{t_whatsapp_url}" target="_blank" class="whatsapp-share" style="padding: 12px 20px; font-size: 1em; display: inline-flex; justify-content: center; width: 100%; border-radius: 10px; color: #041136 !important; text-decoration: none; background-color: var(--dynamic-accent);">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 24px; height: 24px; margin-right: 12px; filter: brightness(0);">
+                        Post today's games to WhatsApp
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
             
             filter_player = st.selectbox("🔍 Filter by Player participation", ["Show All"] + booking_players_list, key="upcoming_bookings_player_filter")
             
