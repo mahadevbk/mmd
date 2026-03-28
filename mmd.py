@@ -1250,7 +1250,7 @@ def parse_whatsapp_booking(text):
             pass
 
     # 4. Player Names (Numbered List: 1. Name or 1) Name)
-    player_matches = re.findall(r'\d+[\.)\s]+([^\n\r]+)', text)
+    player_matches = re.findall(r'^\s*\d+[\.)\s]+(.*)$', text, re.MULTILINE)
     players = [p.strip() for p in player_matches if p.strip()][:4]
 
     return {
@@ -3135,8 +3135,10 @@ with tabs[4]:
                     st.session_state[f"new_booking_match_type_{suffix}"] = "Doubles"
                     for i, p in enumerate(parsed["players"]):
                         match = None
+                        p_norm = p.upper().strip()
                         for known in ALL_PLAYERS:
-                            if p.upper() in known.upper():
+                            k_norm = known.upper().strip()
+                            if p_norm == k_norm or p_norm in k_norm or k_norm in p_norm:
                                 match = known
                                 break
                         
@@ -3148,8 +3150,10 @@ with tabs[4]:
                     st.session_state[f"new_booking_match_type_{suffix}"] = "Singles"
                     for i, p in enumerate(parsed["players"]):
                         match = None
+                        p_norm = p.upper().strip()
                         for known in PERMANENT_PLAYERS:
-                            if p.upper() in known.upper():
+                            k_norm = known.upper().strip()
+                            if p_norm == k_norm or p_norm in k_norm or k_norm in p_norm:
                                 match = known
                                 break
                         if i == 0: st.session_state[f"new_booking_s1p1_{suffix}"] = match if match else ""
