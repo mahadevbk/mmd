@@ -3101,7 +3101,7 @@ with tabs[4]:
     # --- EXISTING BOOKING MANAGEMENT ---
     load_bookings()
 
-    with st.expander("📲 Quick Import from WhatsApp", expanded=not st.session_state.booking_expander_open, icon="➡️"):
+    with st.expander("📲 Incredibly smart booking for Lazy folks !", expanded=not st.session_state.booking_expander_open, icon="➡️"):
         wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...")
         if st.button("Extract"):
             if wa_text:
