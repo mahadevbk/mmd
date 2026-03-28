@@ -1177,14 +1177,74 @@ def calculate_rankings(matches_to_rank, players_df_input):
         
     return df, partner_stats
 
+def parse_whatsapp_booking(text):
+    """
+    Parses a WhatsApp message format to extract booking details.
+    Maps court abbreviations, extracts date, time and up to 4 player names.
+    """
+    # 1. Court Mapping
+    court_map = {
+        r"\bM4\b": "Mira 4",
+        r"\bMira 4\b": "Mira 4",
+        r"\bMO3A\b": "Mira Oasis 3 A"
+    }
+    court_name = ""
+    for pattern, full_name in court_map.items():
+        if re.search(pattern, text, re.IGNORECASE):
+            court_name = full_name
+            break
+            
+    # 2. Date Calculation (Upcoming Day of Month)
+    booking_date = datetime.now().date()
+    day_match = re.search(r'(\d+)(st|nd|rd|th)', text, re.IGNORECASE)
+    if day_match:
+        target_day = int(day_match.group(1))
+        today = datetime.now().date()
+        try:
+            # Try this month
+            candidate = today.replace(day=target_day)
+            if candidate < today:
+                # If day has passed, try next month
+                if today.month == 12:
+                    candidate = today.replace(year=today.year + 1, month=1, day=target_day)
+                else:
+                    candidate = today.replace(month=today.month + 1, day=target_day)
+            booking_date = candidate
+        except ValueError:
+            # Day out of range for current month, try next month
+            try:
+                if today.month == 12:
+                    booking_date = today.replace(year=today.year + 1, month=1, day=target_day)
+                else:
+                    booking_date = today.replace(month=today.month + 1, day=target_day)
+            except ValueError:
+                pass # Fallback to today
 
+    # 3. Time Parsing (e.g., "7-9 pm")
+    # Convert to 24-hour start time HH:MM:00
+    time_str = "19:00:00" # Default
+    time_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)?\s*-\s*\d+', text, re.IGNORECASE)
+    if time_match:
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2)) if time_match.group(2) else 0
+        meridiem = time_match.group(3).lower() if time_match.group(3) else "pm"
+        
+        if meridiem == "pm" and hour < 12:
+            hour += 12
+        elif meridiem == "am" and hour == 12:
+            hour = 0
+        time_str = f"{hour:02d}:{minute:02d}:00"
 
+    # 4. Player Names (Numbered List)
+    player_matches = re.findall(r'\d+[\.)\s]+([^\n\r]+)', text)
+    players = [p.strip() for p in player_matches][:4]
 
-
-
-
-
-
+    return {
+        "date": booking_date,
+        "time": time_str,
+        "court": court_name,
+        "players": players
+    }
 
 
 # ==============================================================================
@@ -3026,6 +3086,63 @@ with tabs[4]:
 
     # --- EXISTING BOOKING MANAGEMENT ---
     load_bookings()
+
+    with st.expander("📲 Quick Import from WhatsApp", expanded=False, icon="➡️"):
+        wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...")
+        if st.button("Extract"):
+            if wa_text:
+                parsed = parse_whatsapp_booking(wa_text)
+                suffix = st.session_state.form_key_suffix
+                
+                # Update Session State
+                st.session_state[f"new_booking_date_{suffix}"] = parsed["date"]
+                
+                # Time matching
+                try:
+                    hours_list = [datetime.strptime("6:00", "%H:%M").strftime("%I:%M %p").lstrip("0"),
+                                 datetime.strptime("6:30", "%H:%M").strftime("%I:%M %p").lstrip("0"),
+                                 datetime.strptime("7:30", "%H:%M").strftime("%I:%M %p").lstrip("0")]
+                    for h in range(7, 22):
+                        hours_list.append(datetime.strptime(f"{h:02d}:00", "%H:%M").strftime("%I:%M %p").lstrip("0"))
+                    
+                    time_obj = datetime.strptime(parsed["time"], "%H:%M:%S")
+                    formatted_time = time_obj.strftime("%I:%M %p").lstrip("0")
+                    if formatted_time in hours_list:
+                        st.session_state[f"new_booking_time_{suffix}"] = formatted_time
+                except:
+                    pass
+                
+                # Court
+                if parsed["court"] in COURT_NAMES:
+                    st.session_state[f"court_{suffix}"] = parsed["court"]
+                
+                # Match Type and Players
+                if len(parsed["players"]) > 2:
+                    st.session_state[f"new_booking_match_type_{suffix}"] = "Doubles"
+                    for i, p in enumerate(parsed["players"]):
+                        match = None
+                        for known in ALL_PLAYERS:
+                            if p.upper() in known.upper():
+                                match = known
+                                break
+                        
+                        if i == 0: st.session_state[f"new_booking_t1p1_{suffix}"] = match if match else ""
+                        elif i == 1: st.session_state[f"new_booking_t1p2_{suffix}"] = match if match else ""
+                        elif i == 2: st.session_state[f"new_booking_t2p1_{suffix}"] = match if match else ""
+                        elif i == 3: st.session_state[f"new_booking_t2p2_{suffix}"] = match if match else ""
+                else:
+                    st.session_state[f"new_booking_match_type_{suffix}"] = "Singles"
+                    for i, p in enumerate(parsed["players"]):
+                        match = None
+                        for known in PERMANENT_PLAYERS:
+                            if p.upper() in known.upper():
+                                match = known
+                                break
+                        if i == 0: st.session_state[f"new_booking_s1p1_{suffix}"] = match if match else ""
+                        elif i == 1: st.session_state[f"new_booking_s1p2_{suffix}"] = match if match else ""
+
+                st.success("WhatsApp details extracted! Form fields updated below.")
+                st.rerun()
 
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
         st.subheader("Add New Booking")
