@@ -1184,21 +1184,32 @@ def parse_whatsapp_booking(text):
     Parses a WhatsApp message format to extract booking details.
     Maps court abbreviations, extracts date, time and up to 4 player names.
     """
+    # Clean non-printable characters (WhatsApp often adds them)
+    text = "".join(ch for ch in text if ch.isprintable() or ch.isspace())
+
     # 1. Court Mapping
     court_map = {
         r"\bM4\b": "Mira 4",
-        r"\bMira 4\b": "Mira 4",
         r"\bMO3A\b": "Mira Oasis 3 A"
     }
     court_name = ""
+    # Check explicit abbreviations first
     for pattern, full_name in court_map.items():
         if re.search(pattern, text, re.IGNORECASE):
             court_name = full_name
             break
             
+    # If not found, look for names in COURT_NAMES
+    if not court_name:
+        sorted_courts = sorted(COURT_NAMES, key=len, reverse=True)
+        for name in sorted_courts:
+            if name.lower() in text.lower():
+                court_name = name
+                break
+
     # 2. Date Calculation (Upcoming Day of Month)
     booking_date = datetime.now().date()
-    # Support "30th" or "30"
+    # Support "(28th)", "28", etc.
     day_match = re.search(r'(\d+)(?:st|nd|rd|th)?', text, re.IGNORECASE)
     if day_match:
         target_day = int(day_match.group(1))
@@ -1223,31 +1234,37 @@ def parse_whatsapp_booking(text):
             except ValueError:
                 pass # Fallback to today
 
-    # 3. Time Parsing (e.g., "7-9 pm")
-    # Convert to 24-hour start time HH:MM:00
+    # 3. Time Parsing (e.g., "7-9 pm", "7 to 9 pm")
     time_str = "19:00:00" # Default
-    # Look for start time: digits optionally with :minutes and am/pm suffix
-    time_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)?(?:\s*-\s*\d+)?', text, re.IGNORECASE)
-    if time_match:
+    # Handle formats like "7-9 pm", "7 to 9 pm", "7pm - 9pm"
+    range_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)?\s*(?:-|to|at)\s*(\d+)(?::(\d+))?\s*(am|pm)?', text, re.IGNORECASE)
+    if range_match:
         try:
-            hour = int(time_match.group(1))
-            minute = int(time_match.group(2)) if time_match.group(2) else 0
-            # If am/pm not specified in capture, check if it follows later (e.g., "7-9 pm")
-            meridiem = time_match.group(3).lower() if time_match.group(3) else "pm"
-            if not time_match.group(3):
-                # Check for "pm" after the range "7-9 pm"
-                if re.search(r'-\s*\d+\s*pm', text, re.IGNORECASE):
-                    meridiem = "pm"
-                elif re.search(r'-\s*\d+\s*am', text, re.IGNORECASE):
-                    meridiem = "am"
+            h = int(range_match.group(1))
+            m = int(range_match.group(2) or 0)
+            # Meridiem logic: check group 3, then group 6
+            meridiem = (range_match.group(3) or range_match.group(6) or "pm").lower()
             
-            if meridiem == "pm" and hour < 12:
-                hour += 12
-            elif meridiem == "am" and hour == 12:
-                hour = 0
-            time_str = f"{hour:02d}:{minute:02d}:00"
-        except (ValueError, TypeError):
+            if meridiem == "pm" and h < 12:
+                h += 12
+            elif meridiem == "am" and h == 12:
+                h = 0
+            time_str = f"{h:02d}:{m:02d}:00"
+        except:
             pass
+    else:
+        # Fallback to single time detection
+        single_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)', text, re.IGNORECASE)
+        if single_match:
+            try:
+                h = int(single_match.group(1))
+                m = int(single_match.group(2) or 0)
+                meridiem = single_match.group(3).lower()
+                if meridiem == "pm" and h < 12: h += 12
+                elif meridiem == "am" and h == 12: h = 0
+                time_str = f"{h:02d}:{m:02d}:00"
+            except:
+                pass
 
     # 4. Player Names (Numbered List: 1. Name or 1) Name)
     player_matches = re.findall(r'^\s*\d+[\.)\s]+(.*)$', text, re.MULTILINE)
@@ -3101,7 +3118,7 @@ with tabs[4]:
     # --- EXISTING BOOKING MANAGEMENT ---
     load_bookings()
 
-    with st.expander("📲 Incredibly smart booking for Lazy folks !", expanded=not st.session_state.booking_expander_open, icon="➡️"):
+    with st.expander("Incredibly smart booking for Lazy folks !", expanded=not st.session_state.booking_expander_open, icon="➡️"):
         wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...")
         if st.button("Extract"):
             if wa_text:
