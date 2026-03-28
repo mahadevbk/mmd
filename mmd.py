@@ -606,6 +606,8 @@ if 'bookings_df' not in st.session_state:
     st.session_state.bookings_df = pd.DataFrame(columns=["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"])
 if 'form_key_suffix' not in st.session_state:
     st.session_state.form_key_suffix = 0
+if 'booking_expander_open' not in st.session_state:
+    st.session_state.booking_expander_open = False
 if 'last_match_submit_time' not in st.session_state:
     st.session_state.last_match_submit_time = 0
 
@@ -1196,7 +1198,8 @@ def parse_whatsapp_booking(text):
             
     # 2. Date Calculation (Upcoming Day of Month)
     booking_date = datetime.now().date()
-    day_match = re.search(r'(\d+)(st|nd|rd|th)', text, re.IGNORECASE)
+    # Support "30th" or "30"
+    day_match = re.search(r'(\d+)(?:st|nd|rd|th)?', text, re.IGNORECASE)
     if day_match:
         target_day = int(day_match.group(1))
         today = datetime.now().date()
@@ -1223,21 +1226,32 @@ def parse_whatsapp_booking(text):
     # 3. Time Parsing (e.g., "7-9 pm")
     # Convert to 24-hour start time HH:MM:00
     time_str = "19:00:00" # Default
-    time_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)?\s*-\s*\d+', text, re.IGNORECASE)
+    # Look for start time: digits optionally with :minutes and am/pm suffix
+    time_match = re.search(r'(\d+)(?::(\d+))?\s*(am|pm)?(?:\s*-\s*\d+)?', text, re.IGNORECASE)
     if time_match:
-        hour = int(time_match.group(1))
-        minute = int(time_match.group(2)) if time_match.group(2) else 0
-        meridiem = time_match.group(3).lower() if time_match.group(3) else "pm"
-        
-        if meridiem == "pm" and hour < 12:
-            hour += 12
-        elif meridiem == "am" and hour == 12:
-            hour = 0
-        time_str = f"{hour:02d}:{minute:02d}:00"
+        try:
+            hour = int(time_match.group(1))
+            minute = int(time_match.group(2)) if time_match.group(2) else 0
+            # If am/pm not specified in capture, check if it follows later (e.g., "7-9 pm")
+            meridiem = time_match.group(3).lower() if time_match.group(3) else "pm"
+            if not time_match.group(3):
+                # Check for "pm" after the range "7-9 pm"
+                if re.search(r'-\s*\d+\s*pm', text, re.IGNORECASE):
+                    meridiem = "pm"
+                elif re.search(r'-\s*\d+\s*am', text, re.IGNORECASE):
+                    meridiem = "am"
+            
+            if meridiem == "pm" and hour < 12:
+                hour += 12
+            elif meridiem == "am" and hour == 12:
+                hour = 0
+            time_str = f"{hour:02d}:{minute:02d}:00"
+        except (ValueError, TypeError):
+            pass
 
-    # 4. Player Names (Numbered List)
+    # 4. Player Names (Numbered List: 1. Name or 1) Name)
     player_matches = re.findall(r'\d+[\.)\s]+([^\n\r]+)', text)
-    players = [p.strip() for p in player_matches][:4]
+    players = [p.strip() for p in player_matches if p.strip()][:4]
 
     return {
         "date": booking_date,
@@ -3087,7 +3101,7 @@ with tabs[4]:
     # --- EXISTING BOOKING MANAGEMENT ---
     load_bookings()
 
-    with st.expander("📲 Quick Import from WhatsApp", expanded=False, icon="➡️"):
+    with st.expander("📲 Quick Import from WhatsApp", expanded=not st.session_state.booking_expander_open, icon="➡️"):
         wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...")
         if st.button("Extract"):
             if wa_text:
@@ -3141,10 +3155,10 @@ with tabs[4]:
                         if i == 0: st.session_state[f"new_booking_s1p1_{suffix}"] = match if match else ""
                         elif i == 1: st.session_state[f"new_booking_s1p2_{suffix}"] = match if match else ""
 
-                st.success("WhatsApp details extracted! Form fields updated below.")
+                st.session_state.booking_expander_open = True
                 st.rerun()
 
-    with st.expander("Add New Booking", expanded=False, icon="➡️"):
+    with st.expander("Add New Booking", expanded=st.session_state.booking_expander_open, icon="➡️"):
         st.subheader("Add New Booking")
         suffix = st.session_state.form_key_suffix
         match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{suffix}")
@@ -3224,6 +3238,7 @@ with tabs[4]:
                             load_bookings()
                             st.success("Booking added successfully.")
                             st.session_state.form_key_suffix += 1
+                            st.session_state.booking_expander_open = False
                             st.rerun()
                         except Exception as e:
                             st.error(f"Failed to save booking: {str(e)}")
