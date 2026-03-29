@@ -14,7 +14,7 @@ import zipfile
 import random
 import os
 from datetime import datetime, timedelta
-from collections import defaultdict
+from collections import defaultdict, Counter
 from itertools import combinations
 from dateutil import parser
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
@@ -3058,6 +3058,41 @@ with tabs[3]:
 
 # --- Tab 5: Bookings ---
 with tabs[4]:
+    # --- BOOKING SUMMARY ---
+    load_bookings()
+    if not st.session_state.bookings_df.empty:
+        # Ensure date is datetime
+        temp_df = st.session_state.bookings_df.copy()
+        temp_df['date_dt'] = pd.to_datetime(temp_df['date']).dt.date
+        
+        today = datetime.now().date()
+        next_week = today + timedelta(days=7)
+        
+        mask = (temp_df['date_dt'] >= today) & (temp_df['date_dt'] < next_week)
+        upcoming_7 = temp_df[mask]
+        
+        if not upcoming_7.empty:
+            num_games = len(upcoming_7)
+            # Collect all players (columns player1, player2, player3, player4)
+            all_p = []
+            for col in ['player1', 'player2', 'player3', 'player4']:
+                all_p.extend(upcoming_7[col].dropna().tolist())
+            
+            # Clean and count
+            all_p = [p for p in all_p if p and str(p).strip() != "" and str(p).upper() != "VISITOR"]
+            counts = Counter(all_p)
+            
+            # Format players list
+            player_list = []
+            for name, count in sorted(counts.items()):
+                if count > 1:
+                    player_list.append(f"{name}({count})")
+                else:
+                    player_list.append(name)
+            
+            summary_text = f"📅 **Next 7 Days:** {num_games} games planned with: {', '.join(player_list)}"
+            st.info(summary_text)
+
     # --- MATCH UP EXPANDER ---
     with st.expander("Match up", expanded=False, icon="➡️"):
         match_type = st.radio("Select Match Type", ["Doubles", "Singles"], horizontal=True)
@@ -3118,7 +3153,6 @@ with tabs[4]:
                     st.warning("Please select both players.")
 
     # --- EXISTING BOOKING MANAGEMENT ---
-    load_bookings()
 
     # Use a more robust way to handle expander expansion
     if "smart_booking_expanded" not in st.session_state:
