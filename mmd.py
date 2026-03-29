@@ -606,8 +606,10 @@ if 'bookings_df' not in st.session_state:
     st.session_state.bookings_df = pd.DataFrame(columns=["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"])
 if 'form_key_suffix' not in st.session_state:
     st.session_state.form_key_suffix = 0
-if 'booking_expander_open' not in st.session_state:
-    st.session_state.booking_expander_open = False
+if 'smart_booking_expanded' not in st.session_state:
+    st.session_state.smart_booking_expanded = True
+if 'add_booking_expanded' not in st.session_state:
+    st.session_state.add_booking_expanded = False
 if 'last_match_submit_time' not in st.session_state:
     st.session_state.last_match_submit_time = 0
 
@@ -3118,14 +3120,23 @@ with tabs[4]:
     # --- EXISTING BOOKING MANAGEMENT ---
     load_bookings()
 
-    with st.expander("Incredibly smart booking for Lazy folks !", expanded=not st.session_state.booking_expander_open, icon="➡️"):
-        wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...")
-        if st.button("Extract"):
+    # Use a more robust way to handle expander expansion
+    if "smart_booking_expanded" not in st.session_state:
+        st.session_state.smart_booking_expanded = True
+    if "add_booking_expanded" not in st.session_state:
+        st.session_state.add_booking_expanded = False
+
+    with st.expander("Incredibly smart booking for Lazy folks !", expanded=st.session_state.smart_booking_expanded, icon="➡️"):
+        wa_text = st.text_area("Paste WhatsApp message here", placeholder="Monday 30th Mira 4, 7-9 pm...", key=f"wa_extract_text_{st.session_state.form_key_suffix}")
+        if st.button("Extract", key=f"btn_extract_{st.session_state.form_key_suffix}"):
             if wa_text:
                 parsed = parse_whatsapp_booking(wa_text)
+                
+                # Increment suffix to ensure we get a fresh form with the new values
+                st.session_state.form_key_suffix += 1
                 suffix = st.session_state.form_key_suffix
                 
-                # Update Session State
+                # Update Session State with parsed values for the NEW suffix
                 st.session_state[f"new_booking_date_{suffix}"] = parsed["date"]
                 
                 # Time matching
@@ -3176,10 +3187,14 @@ with tabs[4]:
                         if i == 0: st.session_state[f"new_booking_s1p1_{suffix}"] = match if match else ""
                         elif i == 1: st.session_state[f"new_booking_s1p2_{suffix}"] = match if match else ""
 
-                st.session_state.booking_expander_open = True
+                # Switch expander states
+                st.session_state.smart_booking_expanded = False
+                st.session_state.add_booking_expanded = True
                 st.rerun()
+            else:
+                st.warning("Please paste some text first.")
 
-    with st.expander("Add New Booking", expanded=st.session_state.booking_expander_open, icon="➡️"):
+    with st.expander("Add New Booking", expanded=st.session_state.add_booking_expanded, icon="➡️"):
         st.subheader("Add New Booking")
         suffix = st.session_state.form_key_suffix
         match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{suffix}")
@@ -3259,7 +3274,8 @@ with tabs[4]:
                             load_bookings()
                             st.success("Booking added successfully.")
                             st.session_state.form_key_suffix += 1
-                            st.session_state.booking_expander_open = False
+                            st.session_state.smart_booking_expanded = True
+                            st.session_state.add_booking_expanded = False
                             st.rerun()
                         except Exception as e:
                             st.error(f"Failed to save booking: {str(e)}")
