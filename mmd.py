@@ -1916,7 +1916,7 @@ if not st.session_state.matches_df.empty:
     rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
 # --- Main Layout ---
-st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ12026.png", width="stretch")
+st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ22026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "AI Data"]
