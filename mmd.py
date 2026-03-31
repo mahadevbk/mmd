@@ -1898,8 +1898,8 @@ load_players()
 load_matches()
 load_bookings()
 
-ALL_PLAYERS = sorted(st.session_state.players_df["name"].dropna().unique().tolist())
-PERMANENT_PLAYERS = [p for p in ALL_PLAYERS if p != "VISITOR"]
+PERMANENT_PLAYERS = sorted([p for p in st.session_state.players_df["name"].dropna().unique().tolist() if p.upper() != "VISITOR"])
+ALL_PLAYERS = sorted(PERMANENT_PLAYERS + ["VISITOR"])
 
 # --- Global Data Pre-calculation ---
 # Calculate rankings once so they are available for all tabs
@@ -2252,7 +2252,7 @@ with tabs[1]:
 
     # --- Match Forms ---
     if not st.session_state.players_df.empty:
-        names = sorted([n for n in st.session_state.players_df['name'] if n.upper() != 'VISITOR'])
+        names = PERMANENT_PLAYERS
         
         # A. POST MATCH FORM
                 
@@ -3909,7 +3909,7 @@ with tabs[4]:
     
     # Add/Update Availability Form (simplified: one day at a time)
     with st.expander("Add/Update Your Availability", expanded=False, icon="📅"):
-        selected_player = st.selectbox("Select Player", [""] + ALL_PLAYERS, key="avail_player")
+        selected_player = st.selectbox("Select Player", [""] + PERMANENT_PLAYERS, key="avail_player")
         selected_day_label = st.selectbox("Select Day", [""] + day_options, key="avail_day")
         if selected_player and selected_day_label:
             day_date = next_10_days[day_options.index(selected_day_label)]
