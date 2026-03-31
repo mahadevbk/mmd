@@ -4110,8 +4110,8 @@ with tabs[5]:
                         
                         entries = []
                         for i, (idx, row) in enumerate(top_3.iterrows()):
-                            # Generate a unique string ID since the table doesn't auto-increment
-                            entry_id = f"{current_season_label.replace(' ', '_')}_{i+1}_{row['Player'][:5]}"
+                            # Generate a unique numeric ID (bigint) since the table doesn't auto-increment
+                            entry_id = int(time.time() * 1000) + i
                             entry = {
                                 "id": entry_id,
                                 "Season": current_season_label,
