@@ -1022,6 +1022,11 @@ def calculate_rankings(matches_to_rank, players_df_input):
 
     re_digits = re.compile(r'\d+')
 
+    # Initialize stats for all players to ensure they show up in rankings even with 0 matches
+    all_player_names = [str(n).upper().strip() for n in players_df_input['name'].dropna()] if not players_df_input.empty else []
+    for p in all_player_names:
+        _ = stats[p] 
+
     if not matches_to_rank.empty:
         matches_to_rank = matches_to_rank.sort_values('date')
 
@@ -1136,7 +1141,6 @@ def calculate_rankings(matches_to_rank, players_df_input):
     rank_data = []
     for p, s in stats.items():
         m = s['matches']
-        if m == 0: continue
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
         consistency = np.std(s['gd_list']) if s['gd_list'] else 0
         pb = perf_breakdown[p]
@@ -2710,7 +2714,6 @@ with tabs[1]:
                         fetch_data.clear()
                         st.success("Season reset successful! All points are now 0. Elo ratings have been carried over.")
                         st.balloons()
-                        time.sleep(2)
                         st.rerun()
     
 
