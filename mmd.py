@@ -1946,13 +1946,18 @@ with tabs[0]:
     if ranking_view == "Doubles":
         m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Doubles"]
         display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
+        display_rank_df = display_rank_df[display_rank_df['Matches'] > 0]
     elif ranking_view == "Singles":
         m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
         display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
+        display_rank_df = display_rank_df[display_rank_df['Matches'] > 0]
     elif ranking_view == "Elo Rankings":
-        # Sort primarily by Elo for this view
+        # Sort primarily by Elo for this view and show ALL players
         display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
         display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
+    elif ranking_view == "Combined" or ranking_view == "Table View":
+        # Point-based views only show active participants
+        display_rank_df = display_rank_df[display_rank_df['Matches'] > 0]
 
     # Define dynamic labels
     use_elo = (ranking_view == "Elo Rankings")
@@ -2931,7 +2936,7 @@ with tabs[2]:
         disp = disp.sort_values("name")
 
     for idx, row in disp.iterrows():
-        p_name = row['name']
+        p_name = str(row['name']).upper().strip()
         p_uid_profile = f"profile_{idx}_{p_name.replace(' ', '')}"
         p_stats = rank_df[rank_df['Player'] == p_name] if not rank_df.empty else pd.DataFrame()
         has_stats = not p_stats.empty
