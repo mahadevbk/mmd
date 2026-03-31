@@ -1166,9 +1166,11 @@ def calculate_rankings(matches_to_rank, players_df_input):
         rank_data.append({
             "Player": p, "Points": scores[p], "Elo": round(p_elo),
             "UTR": f"{round(calculated_utr, 2)} (P)" if m < 3 else round(calculated_utr, 2),
-            "Last Change": last_elo_changes.get(p, 0), "Win %": round((s['wins']/m)*100, 1),
+            "Last Change": last_elo_changes.get(p, 0), 
+            "Win %": round((s['wins']/m)*100, 1) if m > 0 else 0.0,
             "Recent Trend": trend_html, "Matches": m, "Wins": s['wins'], "Losses": s['losses'],
-            "Games Won": s['games_won'], "Game Diff Avg": round(s['gd_sum']/m, 2),
+            "Games Won": s['games_won'], 
+            "Game Diff Avg": round(s['gd_sum']/m, 2) if m > 0 else 0.0,
             "Clutch Factor": round(clutch_pct, 1), "Consistency Index": round(consistency, 2),
             "Singles Perf": round((pb['singles_w']/pb['singles_m']*100) if pb['singles_m']>0 else 0, 1),
             "Doubles Perf": round((pb['doubles_w']/pb['doubles_m']*100) if pb['doubles_m']>0 else 0, 1),
