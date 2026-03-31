@@ -1161,7 +1161,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
         except: pass
         
         p_elo = elo_ratings[p]
-        calculated_utr = (min(1.0, m / 10.0) * max(1.0, (p_elo - 600) / 140)) + ((1 - min(1.0, m / 10.0)) * 1.0)
+        calculated_utr = max(1.0, (p_elo - 600) / 140)
         
         rank_data.append({
             "Player": p, "Points": scores[p], "Elo": round(p_elo),
