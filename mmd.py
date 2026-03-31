@@ -1179,7 +1179,14 @@ def calculate_rankings(matches_to_rank, players_df_input):
         df["Elo Rank"] = df["Elo"].rank(ascending=False, method="min").astype(int)
         df.at[0, 'Badges'] = df.at[0, 'Badges'] + ["👑 Court Dominator"]
         
-    return df, partner_stats
+    # Convert partner_stats to standard dict to avoid pickling issues with st.cache_data
+    partner_stats_dict = {
+        player: {
+            partner: dict(stats) for partner, stats in partners.items()
+        } for player, partners in partner_stats.items()
+    }
+        
+    return df, partner_stats_dict
 
 def parse_whatsapp_booking(text):
     """
@@ -4103,7 +4110,10 @@ with tabs[5]:
                         
                         entries = []
                         for i, (idx, row) in enumerate(top_3.iterrows()):
+                            # Generate a unique string ID since the table doesn't auto-increment
+                            entry_id = f"{current_season_label.replace(' ', '_')}_{i+1}_{row['Player'][:5]}"
                             entry = {
+                                "id": entry_id,
                                 "Season": current_season_label,
                                 "Player": row['Player'],
                                 "Rank": i + 1,
