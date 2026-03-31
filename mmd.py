@@ -1914,10 +1914,7 @@ ALL_PLAYERS = sorted(PERMANENT_PLAYERS + ["VISITOR"])
 
 # --- Global Data Pre-calculation ---
 # Calculate rankings once so they are available for all tabs
-rank_df = pd.DataFrame()
-partner_stats_global = {}
-if not st.session_state.matches_df.empty:
-    rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
+rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, st.session_state.players_df)
 
 # --- Main Layout ---
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ22026.png", width="stretch")
@@ -1942,19 +1939,18 @@ with tabs[0]:
     )
     
     # 2. Determine which Dataframe to use
-    display_rank_df = rank_df.copy() if not rank_df.empty else pd.DataFrame()
+    display_rank_df = rank_df.copy()
 
-    if not st.session_state.matches_df.empty:
-        if ranking_view == "Doubles":
-            m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Doubles"]
-            display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
-        elif ranking_view == "Singles":
-            m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
-            display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
-        elif ranking_view == "Elo Rankings":
-            # Sort primarily by Elo for this view
-            display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
-            display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
+    if ranking_view == "Doubles":
+        m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Doubles"]
+        display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
+    elif ranking_view == "Singles":
+        m_sub = st.session_state.matches_df[st.session_state.matches_df.match_type == "Singles"]
+        display_rank_df, _ = calculate_rankings(m_sub, st.session_state.players_df)
+    elif ranking_view == "Elo Rankings":
+        # Sort primarily by Elo for this view
+        display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
+        display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
 
     # Define dynamic labels
     use_elo = (ranking_view == "Elo Rankings")
