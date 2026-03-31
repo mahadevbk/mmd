@@ -4136,7 +4136,6 @@ with tabs[5]:
                         
                         supabase.table(HOF_TABLE).insert(entries).execute()
                         st.success(f"Successfully archived {current_season_label} Top 3 to Hall of Fame!")
-                        time.sleep(1)
                         st.rerun()
                     else:
                         st.warning("No ranking data available to archive.")
