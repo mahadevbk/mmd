@@ -1998,7 +1998,7 @@ with tabs[0]:
     # 1. Filter Selection
     ranking_view = st.radio(
         "View", 
-        ["Combined", "Doubles", "Singles", "Elo Rankings", "Synopsis"], 
+        ["Combined", "Doubles", "Singles", "Elo Rankings", "League Overview"], 
         horizontal=True, 
         key="rank_view_radio"
     )
@@ -2018,7 +2018,7 @@ with tabs[0]:
         # Sort primarily by Elo for this view and show ALL players
         display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
         display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
-    elif ranking_view == "Combined" or ranking_view == "Synopsis":
+    elif ranking_view == "Combined" or ranking_view == "League Overview":
         # Point-based views only show active participants
         display_rank_df = display_rank_df[display_rank_df['Matches'] > 0]
 
@@ -2043,8 +2043,8 @@ with tabs[0]:
     
 
 
-    # 4. Synopsis View (Classic Table + Podiums) - Fixed Column Order & Width
-    elif ranking_view == "Synopsis":
+    # 4. League Overview View (Classic Table + Podiums) - Fixed Column Order & Width
+    elif ranking_view == "League Overview":
         # --- TOP 3 PODIUMS ---
         col_p1, col_p2 = st.columns(2)
         with col_p1:
