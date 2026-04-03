@@ -1757,6 +1757,7 @@ def cleanup_old_bookings(df):
         if expired_ids:
             try:
                 supabase.table(BOOKINGS_TABLE).delete().in_("booking_id", expired_ids).execute()
+                fetch_data.clear() # Clear cache to ensure fresh reload
                 df = df[~df['booking_id'].isin(expired_ids)]
             except Exception as e:
                 st.error(f"Error cleaning up expired bookings: {e}")
@@ -1765,6 +1766,56 @@ def cleanup_old_bookings(df):
         pass # Fail silently on data errors to prevent app crash
         
     return df
+
+def delete_booking_from_db(booking_id):
+    try:
+        supabase.table(BOOKINGS_TABLE).delete().eq("booking_id", booking_id).execute()
+        fetch_data.clear()
+    except Exception as e:
+        raise e
+
+def check_booking_conflict(new_booking, bookings_df):
+    """
+    Checks for court or player conflicts at the same time.
+    Returns a conflict message if found, else None.
+    """
+    if bookings_df.empty:
+        return None
+        
+    date = new_booking['date']
+    time = new_booking['time']
+    court = new_booking['court_name']
+    booking_id = new_booking.get('booking_id')
+    
+    # Define players to check (exclude visitors and empty slots)
+    new_players = {new_booking.get(f'player{i}') for i in range(1, 5)}
+    new_players.add(new_booking.get('standby_player'))
+    new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
+    
+    # Filter for same date and time, excluding the current booking if editing
+    conflict_df = bookings_df[
+        (bookings_df['date'] == date) & 
+        (bookings_df['time'] == time)
+    ]
+    if booking_id:
+        conflict_df = conflict_df[conflict_df['booking_id'] != booking_id]
+        
+    for _, row in conflict_df.iterrows():
+        # Check Court Conflict
+        if row['court_name'] == court:
+            return f"🚨 **Court Conflict:** {court} is already booked for this time."
+            
+        # Check Player Conflict
+        row_players = {row.get(f'player{i}') for i in range(1, 5)}
+        row_players.add(row.get('standby_player'))
+        row_players = {p for p in row_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
+        
+        intersect = new_players.intersection(row_players)
+        if intersect:
+            players_str = ", ".join(intersect)
+            return f"🚨 **Player Conflict:** {players_str} already has a booking at this time ({row['court_name']})."
+            
+    return None
 
 def load_bookings():
     df = fetch_data(BOOKINGS_TABLE)
@@ -3340,6 +3391,13 @@ with tabs[4]:
                             "standby_player": standby if standby else None,
                             "screenshot_url": screenshot_url
                         }
+                        
+                        # Check for conflicts
+                        conflict_msg = check_booking_conflict(new_booking, st.session_state.bookings_df)
+                        if conflict_msg:
+                            st.error(conflict_msg)
+                            st.stop()
+                            
                         st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
                         try:
                             expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
@@ -3727,10 +3785,23 @@ with tabs[4]:
             st.session_state.edit_booking_key = 0
         unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
 
-        if bookings_df.empty:
+        # --- Filter for upcoming bookings only ---
+        edit_bookings_df = st.session_state.bookings_df.copy()
+        if not edit_bookings_df.empty:
+            edit_bookings_df['dt_combo'] = pd.to_datetime(
+                edit_bookings_df['date'].astype(str) + ' ' + edit_bookings_df['time'].astype(str), 
+                errors='coerce'
+            )
+            now_dubai = pd.Timestamp.now(tz='Asia/Dubai').tz_localize(None) # Match local time
+            edit_bookings_df = edit_bookings_df[
+                (edit_bookings_df['dt_combo'].isna()) | 
+                (edit_bookings_df['dt_combo'] >= now_dubai)
+            ].sort_values('dt_combo')
+
+        if edit_bookings_df.empty:
             st.info("No bookings available to manage.")
         else:
-            duplicate_ids = bookings_df[bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
+            duplicate_ids = edit_bookings_df[edit_bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
             if len(duplicate_ids) > 0:
                 st.warning(f"Found duplicate booking_id values: {duplicate_ids.tolist()}. Please remove duplicates in Supabase before editing.")
             else:
@@ -3747,7 +3818,7 @@ with tabs[4]:
                             continue
                     return "Unknown Time"
 
-                for _, row in bookings_df.iterrows():
+                for _, row in edit_bookings_df.iterrows():
                     dt = pd.to_datetime(row['date'], errors="coerce")
                     day = dt.strftime('%A') if pd.notnull(dt) else "Unknown Day"
                     date_dd_mm = dt.strftime('%d-%m') if pd.notnull(dt) else "Unknown Date"
@@ -3763,8 +3834,8 @@ with tabs[4]:
                 selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
                 if selected_booking:
                     booking_id = selected_booking.split(" | Booking ID: ")[-1]
-                    booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
-                    booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
+                    booking_row = edit_bookings_df[edit_bookings_df["booking_id"] == booking_id].iloc[0]
+                    booking_idx = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] == booking_id].index[0]
 
                     with st.expander("Edit Booking Details", expanded=True, icon="➡️"):
                         date_edit = st.date_input(
@@ -3855,6 +3926,13 @@ with tabs[4]:
                                             "standby_player": standby_edit if standby_edit else None,
                                             "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
                                         }
+
+                                        # Check for conflicts
+                                        conflict_msg = check_booking_conflict(updated_booking, st.session_state.bookings_df)
+                                        if conflict_msg:
+                                            st.error(conflict_msg)
+                                            st.stop()
+
                                         try:
                                             st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
                                             expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name',
