@@ -548,21 +548,21 @@ def apply_custom_theme(theme_choice):
 
     /* --- Card Base Styles --- */
     .mobile-card, .ranking-row, .court-card, .booking-row {{
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
         transition: all 0.3s ease;
     }}
     .mobile-card:hover, .ranking-row:hover, .court-card:hover, .booking-row:hover {{
         transform: translateY(-2px);
-        border-color: rgba(255, 245, 0, 0.3) !important;
-        background: rgba(255, 255, 255, 0.06) !important;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+        border-color: rgba(255, 245, 0, 0.4) !important;
+        background: rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
     }}
 
     /* Target Streamlit's internal container borders globally */
@@ -571,12 +571,12 @@ def apply_custom_theme(theme_choice):
     [data-testid="stVerticalBlock"] > div:has(div[data-testid="stVerticalBlockBorderWrapper"]),
     div.st-emotion-cache-12w0qpk,
     div.st-emotion-cache-ke6n6u {{
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
     }}
     
     /* --- Component-Specific Styles --- */
