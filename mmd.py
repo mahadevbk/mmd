@@ -3553,6 +3553,38 @@ with tabs[4]:
                 # Group bookings by date for cleaner display
                 upcoming_bookings['date_dt'] = pd.to_datetime(upcoming_bookings['date']).dt.date
                 grouped = upcoming_bookings.groupby('date_dt')
+
+                # Inject glassmorphism style for these expanders
+                st.markdown("""
+                    <style>
+                    [data-testid="stExpander"] {
+                        background: rgba(255, 255, 255, 0.04) !important;
+                        backdrop-filter: blur(12px) !important;
+                        -webkit-backdrop-filter: blur(12px) !important;
+                        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                        border-radius: 12px !important;
+                        margin-bottom: 12px !important;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+                    }
+                    [data-testid="stExpander"]:hover {
+                        border-color: rgba(255, 245, 0, 0.3) !important;
+                        background: rgba(255, 255, 255, 0.06) !important;
+                    }
+                    [data-testid="stExpander"] summary {
+                        color: var(--dynamic-accent) !important;
+                        font-weight: 600 !important;
+                    }
+                    [data-testid="stExpander"] summary:hover {
+                        color: var(--dynamic-accent) !important;
+                        opacity: 0.9;
+                    }
+                    [data-testid="stExpanderContent"] {
+                        background: transparent !important;
+                        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
                 
                 for date_val, group in grouped:
                     day_name = date_val.strftime('%a')
@@ -3584,7 +3616,7 @@ with tabs[4]:
                         # Build Expander Title
                         expander_title = f"{day_name}, {day_num}{suffix}, {', '.join(players)} | {row['court_name']} | {time_ampm}"
                         
-                        with st.expander(expander_title, expanded=False):
+                        with st.expander(expander_title, expanded=False, icon="🎾"):
                             court_url = court_url_mapping.get(row['court_name'], "#")
                             court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:var(--dynamic-accent); text-decoration:none;'>{row['court_name']}</a>"
                         
