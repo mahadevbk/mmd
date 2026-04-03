@@ -3434,19 +3434,32 @@ with tabs[4]:
         if 'players' in bookings_df.columns:
             bookings_df = bookings_df.drop(columns=['players'])
         
-        # Create datetime column with explicit timezone handling
-        bookings_df['datetime'] = pd.to_datetime(
-            bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
-            errors='coerce',
-            format='%Y-%m-%d %H:%M:%S'
-        ).dt.tz_localize('Asia/Dubai')
+        # Create datetime column with robust parsing
+        def parse_dt_robust(row):
+            try:
+                d_str = str(row['date']).split(' ')[0]
+                t_str = str(row['time']).strip()
+                # Try multiple formats for time
+                for fmt in ["%H:%M:%S", "%H:%M"]:
+                    try:
+                        return pd.to_datetime(f"{d_str} {t_str}", format=f"%Y-%m-%d {fmt}")
+                    except:
+                        continue
+                return pd.to_datetime(f"{d_str} {t_str}") # Fallback
+            except:
+                return pd.NaT
+
+        bookings_df['datetime_native'] = bookings_df.apply(parse_dt_robust, axis=1)
+        bookings_df['datetime'] = bookings_df['datetime_native'].dt.tz_localize('Asia/Dubai', ambiguous='infer')
         
-        # Debug: Display datetime values
-        # st.write("Debug - Bookings datetime:", bookings_df[['booking_id', 'date', 'time', 'datetime']])
-        
+        # Align with summary logic: Show all bookings from today onwards for the next 7 days
+        today_dubai = pd.Timestamp.now(tz='Asia/Dubai').normalize()
+        end_window = today_dubai + pd.Timedelta(days=7)
+
         upcoming_bookings = bookings_df[
             (bookings_df['datetime'].notna()) & 
-            (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
+            (bookings_df['datetime'] >= today_dubai) &
+            (bookings_df['datetime'] < end_window)
         ].sort_values('datetime')
         
         if upcoming_bookings.empty:
