@@ -994,6 +994,69 @@ def create_radar_chart(player_data, theme="Default"):
     )
     return fig
 
+def render_podium(df, use_elo=False, title=None):
+    if len(df) < 3:
+        return
+    
+    metric_col = "Elo" if use_elo else "Points"
+    metric_label = "ELO" if use_elo else "pts"
+    
+    if title:
+        st.markdown(f"<h3 style='text-align: center; color: var(--dynamic-accent) !important;'>{title}</h3>", unsafe_allow_html=True)
+
+    top3 = df.head(3).to_dict('records')
+    
+    # Define the order: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
+    podium_order = [
+        {"p": top3[1], "margin": "40px"}, # Rank 2
+        {"p": top3[0], "margin": "0px"},  # Rank 1
+        {"p": top3[2], "margin": "40px"}  # Rank 3
+    ]
+    
+    podium_html_content = ""
+    for p_idx, item in enumerate(podium_order):
+        player = item["p"]
+        
+        # Logic for score and change indicator
+        ch_val = player.get('Last Change', 0)
+        ch_color = "#00ff88" if ch_val >= 0 else "#ff4b4b"
+        ch_txt = f"{'+' if ch_val > 0 else ''}{int(ch_val)}"
+        ch_indicator = f"<span style='color: {ch_color}; font-size: 10px;'>({ch_txt})</span>" if use_elo else ""
+        
+        utr_str = f" ({player.get('UTR', 1.0)})" if use_elo else ""
+        score_str = f"{int(player[metric_col])}{utr_str}" if use_elo else f"{player[metric_col]:g}"
+        photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
+        
+        # Use a combination of p_idx and player name to ensure some uniqueness in IDs
+        safe_player_name = player['Player'].replace(' ', '').replace("'", "")
+        p_uid = f"podium_{metric_col}_{p_idx}_{safe_player_name}"
+
+        podium_html_content += f"""
+        <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
+            <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
+                <div style="display: flex; justify-content: center; margin-bottom: 5px;">
+                    <a href="#{p_uid}">
+                        <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
+                    </a>
+                </div>
+                <div id="{p_uid}" class="img-lightbox">
+                    <a href="#" class="img-lightbox-close">&times;</a>
+                    <img src="{photo}">
+                </div>
+                <div style="margin: 5px 0; color: var(--dynamic-accent) !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
+                <div class="dynamic-text" style="font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
+                <div style="color: var(--dynamic-subtext); font-size: 0.7em;">{player['Win %']}% Win</div>
+            </div>
+        </div>
+        """
+    
+    st.markdown(f"""
+        <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">
+            {podium_html_content}
+        </div>
+    """, unsafe_allow_html=True)
+
 def calculate_elo_change(rating_a, rating_b, actual_score, k_factor=32):
     """
     actual_score: 1 if A wins, 0 if B wins
@@ -1935,7 +1998,7 @@ with tabs[0]:
     # 1. Filter Selection
     ranking_view = st.radio(
         "View", 
-        ["Combined", "Doubles", "Singles", "Elo Rankings", "Table View"], 
+        ["Combined", "Doubles", "Singles", "Elo Rankings", "Synopsis"], 
         horizontal=True, 
         key="rank_view_radio"
     )
@@ -1955,7 +2018,7 @@ with tabs[0]:
         # Sort primarily by Elo for this view and show ALL players
         display_rank_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True)
         display_rank_df["Rank"] = [f"⭐ {i+1}" for i in range(len(display_rank_df))]
-    elif ranking_view == "Combined" or ranking_view == "Table View":
+    elif ranking_view == "Combined" or ranking_view == "Synopsis":
         # Point-based views only show active participants
         display_rank_df = display_rank_df[display_rank_df['Matches'] > 0]
 
@@ -1980,8 +2043,24 @@ with tabs[0]:
     
 
 
-    # 4. Table View (Classic) - Fixed Column Order & Width
-    elif ranking_view == "Table View":
+    # 4. Synopsis View (Classic Table + Podiums) - Fixed Column Order & Width
+    elif ranking_view == "Synopsis":
+        # --- TOP 3 PODIUMS ---
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            # Combined Points Top 3
+            pts_df = rank_df[rank_df['Matches'] > 0].head(3)
+            render_podium(pts_df, use_elo=False, title="Top 3 Combined Points")
+        
+        with col_p2:
+            # Elo Rankings Top 3
+            elo_df = rank_df.sort_values(by=["Elo", "Win %"], ascending=[False, False]).reset_index(drop=True).head(3)
+            # Fix Rank emojis for Elo podium
+            elo_df["Rank"] = [f"⭐ {i+1}" for i in range(len(elo_df))]
+            render_podium(elo_df, use_elo=True, title="Top 3 Elo Rankings")
+
+        st.markdown("---")
+
         # Create a clean version of the DF for the table to avoid showing raw HTML strings
         table_df = display_rank_df.copy()
         
@@ -2013,61 +2092,11 @@ with tabs[0]:
             }
         )
 
+
     # 5. Mobile Card View (Podium + Cards)
     else:
-
         # --- A. RESTORED & FIXED: Podium for Top 3 ---
-        if len(display_rank_df) >= 3:
-            top3 = display_rank_df.head(3).to_dict('records')
-            
-            # Define the order: Rank 2 (Left), Rank 1 (Center), Rank 3 (Right)
-            podium_order = [
-                {"p": top3[1], "margin": "40px"}, # Rank 2
-                {"p": top3[0], "margin": "0px"},  # Rank 1
-                {"p": top3[2], "margin": "40px"}  # Rank 3
-            ]
-            
-            podium_html_content = ""
-            for p_idx, item in enumerate(podium_order):
-                player = item["p"]
-                
-                # Logic for score and change indicator
-                ch_val = player.get('Last Change', 0)
-                ch_color = "#00ff88" if ch_val >= 0 else "#ff4b4b"
-                ch_txt = f"{'+' if ch_val > 0 else ''}{int(ch_val)}"
-                ch_indicator = f"<span style='color: {ch_color}; font-size: 10px;'>({ch_txt})</span>" if use_elo else ""
-                
-                utr_str = f" ({player.get('UTR', 1.0)})" if use_elo else ""
-                score_str = f"{int(player[metric_col])}{utr_str}" if use_elo else f"{player[metric_col]:g}"
-                photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
-                p_uid = f"podium_{p_idx}_{player['Player'].replace(' ', '')}"
-
-                podium_html_content += f"""
-                <div style="flex: 1; margin-top: {item['margin']}; min-width: 0; display: flex; flex-direction: column;">
-                    <div style="flex-grow: 1; text-align: center; padding: 10px 2px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                        <div style="font-size: 1.2em; margin-bottom: 5px; color: var(--dynamic-accent); font-weight: bold;">{player['Rank']}</div>
-                        <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                            <a href="#{p_uid}">
-                                <img src="{photo}" class="clickable-img" style="width: clamp(50px, 20vw, 90px); height: clamp(50px, 20vw, 90px); border-radius: 15px; object-fit: contain; border: 2px solid var(--dynamic-accent) !important; box-shadow: 0 0 15px rgba(255,245,0,0.6);">
-                            </a>
-                        </div>
-                        <div id="{p_uid}" class="img-lightbox">
-                            <a href="#" class="img-lightbox-close">&times;</a>
-                            <img src="{photo}">
-                        </div>
-                        <div style="margin: 5px 0; color: var(--dynamic-accent) !important; font-size: 0.9em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px;">{player['Player']}</div>
-                        <div class="dynamic-text" style="font-weight: bold; font-size: 0.8em;">{score_str} {metric_label} {ch_indicator}</div>
-                        <div style="color: var(--dynamic-subtext); font-size: 0.7em;">{player['Win %']}% Win</div>
-                    </div>
-                </div>
-                """
-            
-            # Wrap everything in a single flex container
-            st.markdown(f"""
-                <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 8px; margin-bottom: 25px; width: 100%;">
-                    {podium_html_content}
-                </div>
-            """, unsafe_allow_html=True)
+        render_podium(display_rank_df, use_elo=use_elo)
 
         # --- B. Detailed Player Cards ---
         for idx, row in display_rank_df.iterrows():
