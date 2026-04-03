@@ -1246,7 +1246,9 @@ def calculate_rankings(matches_to_rank, players_df_input):
         
     df = pd.DataFrame(rank_data)
     if not df.empty:
-        df = df.sort_values(["Points", "Win %", "Elo", "Game Diff Avg", "Player"], ascending=[False, False, False, False, True]).reset_index(drop=True)
+        # Tie-breaker priority: Points > Win % > Games Won > GDA
+        df = df.sort_values(["Points", "Win %", "Games Won", "Game Diff Avg", "Player"], 
+                            ascending=[False, False, False, False, True]).reset_index(drop=True)
         df["Rank"] = [f"🏆 {i+1}" for i in df.index]
         df["Points Rank"] = df["Points"].rank(ascending=False, method="min").astype(int)
         df["Elo Rank"] = df["Elo"].rank(ascending=False, method="min").astype(int)
