@@ -2245,6 +2245,10 @@ with tabs[0]:
                                 </div>
                             </div>
                             <div style="margin-bottom: 12px;">
+                                <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">GAMES WON</div>
+                                <div style="font-size: 18px; font-weight: bold; color: var(--dynamic-text);">{row.get('Games Won', 0)}</div>
+                            </div>
+                            <div style="margin-bottom: 12px;">
                                 <div style="font-size: 10px; color: var(--dynamic-subtext); letter-spacing: 1px;">AVG GDA</div>
                                 <div style="font-size: 18px; font-weight: bold; color: var(--dynamic-text);">{row.get('Game Diff Avg', 0)}</div>
                             </div>
