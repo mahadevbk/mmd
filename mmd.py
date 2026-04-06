@@ -1802,10 +1802,10 @@ def delete_booking_from_db(booking_id):
         raise e
 
 def check_booking_conflict(new_booking, bookings_df):
-    \"\"\"
+    """
     Checks for court or player conflicts at the same time.
     Returns a conflict message if found, else None.
-    \"\"\"
+    """
     if bookings_df.empty:
         return None
         
@@ -1817,7 +1817,7 @@ def check_booking_conflict(new_booking, bookings_df):
     # Define players to check (exclude visitors and empty slots)
     new_players = {new_booking.get(f'player{i}') for i in range(1, 5)}
     new_players.add(new_booking.get('standby_player'))
-    new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != \"VISITOR\"}
+    new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
     
     # Filter for same date and time, excluding the current booking if editing
     # We use pd.to_datetime to normalize formats before comparison
@@ -1851,11 +1851,11 @@ def check_booking_conflict(new_booking, bookings_df):
         # Check Player Conflict
         row_players = {row.get(f'player{i}') for i in range(1, 5)}
         row_players.add(row.get('standby_player'))
-        row_players = {p for p in row_players if p and str(p).strip() != "" and str(p).upper() != \"VISITOR\"}
+        row_players = {p for p in row_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
         
         intersect = new_players.intersection(row_players)
         if intersect:
-            players_str = \", \".join(intersect)
+            players_str = ", ".join(intersect)
             return f"🚨 **Player Conflict:** {players_str} already has a booking on {row['date']} at {row['time']} ({row['court_name']})."
             
     return None
