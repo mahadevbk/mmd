@@ -1802,10 +1802,10 @@ def delete_booking_from_db(booking_id):
         raise e
 
 def check_booking_conflict(new_booking, bookings_df):
-    """
+    \"\"\"
     Checks for court or player conflicts at the same time.
     Returns a conflict message if found, else None.
-    """
+    \"\"\"
     if bookings_df.empty:
         return None
         
@@ -1817,31 +1817,46 @@ def check_booking_conflict(new_booking, bookings_df):
     # Define players to check (exclude visitors and empty slots)
     new_players = {new_booking.get(f'player{i}') for i in range(1, 5)}
     new_players.add(new_booking.get('standby_player'))
-    new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
+    new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != \"VISITOR\"}
     
     # Filter for same date and time, excluding the current booking if editing
-    # We use astype(str) and str() to ensure consistent string-based comparison
-    conflict_df = bookings_df[
-        (bookings_df['date'].astype(str) == str(date)) & 
-        (bookings_df['time'].astype(str) == str(time))
-    ]
-    if booking_id:
-        conflict_df = conflict_df[conflict_df['booking_id'] != booking_id]
+    # We use pd.to_datetime to normalize formats before comparison
+    try:
+        # Normalize everything to YYYY-MM-DD and HH:MM
+        target_date = pd.to_datetime(date).strftime('%Y-%m-%d')
+        target_time = pd.to_datetime(time).strftime('%H:%M')
+        
+        df_dates = pd.to_datetime(bookings_df['date']).dt.strftime('%Y-%m-%d')
+        df_times = pd.to_datetime(bookings_df['time']).dt.strftime('%H:%M')
+        
+        conflict_mask = (df_dates == target_date) & (df_times == target_time)
+        if booking_id:
+            conflict_mask &= (bookings_df['booking_id'].astype(str) != str(booking_id))
+            
+        conflict_df = bookings_df[conflict_mask]
+    except:
+        # Fallback to simple string comparison if datetime conversion fails
+        conflict_df = bookings_df[
+            (bookings_df['date'].astype(str) == str(date)) & 
+            (bookings_df['time'].astype(str) == str(time))
+        ]
+        if booking_id:
+            conflict_df = conflict_df[conflict_df['booking_id'] != booking_id]
         
     for _, row in conflict_df.iterrows():
         # Check Court Conflict
         if row['court_name'] == court:
-            return f"🚨 **Court Conflict:** {court} is already booked for this time."
+            return f"🚨 **Court Conflict:** {court} is already booked on {row['date']} at {row['time']}."
             
         # Check Player Conflict
         row_players = {row.get(f'player{i}') for i in range(1, 5)}
         row_players.add(row.get('standby_player'))
-        row_players = {p for p in row_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
+        row_players = {p for p in row_players if p and str(p).strip() != "" and str(p).upper() != \"VISITOR\"}
         
         intersect = new_players.intersection(row_players)
         if intersect:
-            players_str = ", ".join(intersect)
-            return f"🚨 **Player Conflict:** {players_str} already has a booking at this time ({row['court_name']})."
+            players_str = \", \".join(intersect)
+            return f"🚨 **Player Conflict:** {players_str} already has a booking on {row['date']} at {row['time']} ({row['court_name']})."
             
     return None
 
