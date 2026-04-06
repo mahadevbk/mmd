@@ -1820,9 +1820,10 @@ def check_booking_conflict(new_booking, bookings_df):
     new_players = {p for p in new_players if p and str(p).strip() != "" and str(p).upper() != "VISITOR"}
     
     # Filter for same date and time, excluding the current booking if editing
+    # We use astype(str) and str() to ensure consistent string-based comparison
     conflict_df = bookings_df[
-        (bookings_df['date'] == date) & 
-        (bookings_df['time'] == time)
+        (bookings_df['date'].astype(str) == str(date)) & 
+        (bookings_df['time'].astype(str) == str(time))
     ]
     if booking_id:
         conflict_df = conflict_df[conflict_df['booking_id'] != booking_id]
