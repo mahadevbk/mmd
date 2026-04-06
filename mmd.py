@@ -3497,14 +3497,11 @@ with tabs[4]:
         
         # Align with summary logic: Show all bookings from today onwards for the next 7 days
         today_dubai = pd.Timestamp.now(tz='Asia/Dubai').normalize()
-        end_window = today_dubai + pd.Timedelta(days=7)
 
         upcoming_bookings = bookings_df[
-            (bookings_df['datetime'].notna()) & 
-            (bookings_df['datetime'] >= today_dubai) &
-            (bookings_df['datetime'] < end_window)
-        ].sort_values('datetime')
-        
+            (bookings_df['datetime'].notna()) &
+            (bookings_df['datetime'] >= today_dubai)
+        ].sort_values('datetime')        
         if upcoming_bookings.empty:
             st.info("No upcoming bookings found.")
         else:
