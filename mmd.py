@@ -2712,6 +2712,11 @@ with tabs[1]:
                 
                 e_winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if match_data['winner'] == "Team 1" else 1, horizontal=True)
                 
+                # NEW: Replace Selfie Image
+                if match_data['match_image_url']:
+                    st.image(match_data['match_image_url'], caption="Current Match Image", width=200)
+                e_img = st.file_uploader("Replace Match Image (Optional)", type=["jpg", "jpeg", "png"], key=f"e_img_{match_id}")
+
                 # Bottom Action Buttons
                 st.markdown("---")
                 col_save, col_delete = st.columns(2)
@@ -2746,27 +2751,33 @@ with tabs[1]:
                                 valid_edit = False
 
                         if valid_edit:
-                            updated_match = {
-                                "match_id": match_id,
-                                "date": e_date.strftime('%Y-%m-%d'),
-                                "match_type": e_type,
-                                "team1_player1": et1p1,
-                                "team1_player2": et1p2,
-                                "team2_player1": et2p1,
-                                "team2_player2": et2p2,
-                                "set1": es1,
-                                "set2": es2,
-                                "set3": es3,
-                                "winner": e_winner,
-                                "match_image_url": match_data['match_image_url']
-                            }
-                            delete_match_from_db(match_id) # Remove old
-                            # Add updated and save
-                            st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([updated_match])], ignore_index=True)
-                            save_matches(st.session_state.matches_df)
-                            st.success("Match updated!")
-                            time.sleep(1)
-                            st.rerun()
+                            with st.spinner("Updating Match..."):
+                                current_img_url = match_data['match_image_url']
+                                if e_img:
+                                    # Use the match_id for the filename to replace the existing one
+                                    current_img_url = upload_image_to_github(e_img, match_id, "match")
+                                
+                                updated_match = {
+                                    "match_id": match_id,
+                                    "date": e_date.strftime('%Y-%m-%d'),
+                                    "match_type": e_type,
+                                    "team1_player1": et1p1,
+                                    "team1_player2": et1p2,
+                                    "team2_player1": et2p1,
+                                    "team2_player2": et2p2,
+                                    "set1": es1,
+                                    "set2": es2,
+                                    "set3": es3,
+                                    "winner": e_winner,
+                                    "match_image_url": current_img_url
+                                }
+                                delete_match_from_db(match_id) # Remove old
+                                # Add updated and save
+                                st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([updated_match])], ignore_index=True)
+                                save_matches(st.session_state.matches_df)
+                                st.success("Match updated!")
+                                time.sleep(1)
+                                st.rerun()
                         
             # Delete logic outside the main edit form to avoid nested form issues
             st.markdown("##### 🗑️ Danger Zone")
