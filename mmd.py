@@ -955,17 +955,17 @@ def create_radar_chart(player_data, theme="Default"):
     
     # Theme settings
     if theme == "Dark":
-        accent = '#BB86FC'
+        accent = '#FF7518' # Bright Orange
         template = 'plotly_dark'
-        fill_color = 'rgba(187, 134, 252, 0.3)'
+        fill_color = 'rgba(255, 117, 24, 0.4)' # Semi-transparent orange
     elif theme == "Light":
         accent = '#B24A00'
         template = 'plotly_white'
         fill_color = 'rgba(178, 74, 0, 0.3)'
-    else:
-        accent = 'var(--dynamic-accent)'
+    else: # Default
+        accent = '#FF8C00' # Dark Orange
         template = 'plotly_dark'
-        fill_color = 'rgba(255, 245, 0, 0.3)'
+        fill_color = 'rgba(255, 140, 0, 0.4)'
 
     # Normalize stats for visual balance (0-100 scale)
     # Consistency: Lower is better, so we invert it (0 index = 100 score)
