@@ -1048,7 +1048,7 @@ def render_podium(df, use_elo=False, title=None):
         ch_txt = f"{'+' if ch_val > 0 else ''}{int(ch_val)}"
         ch_indicator = f"<span style='color: {ch_color}; font-size: 10px;'>({ch_txt})</span>" if use_elo else ""
         
-        utr_str = f" ({player.get('UTR', 1.0)})" if use_elo else ""
+        utr_str = f" ({player.get('UTR', '1.00')})" if use_elo else ""
         score_str = f"{int(player[metric_col])}{utr_str}" if use_elo else f"{player[metric_col]:g}"
         photo = player["Profile"] if player["Profile"] else "https://via.placeholder.com/100?text=Player"
         
@@ -1253,7 +1253,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
         
         rank_data.append({
             "Player": p, "Points": scores[p], "Elo": round(p_elo),
-            "UTR": f"{round(calculated_utr, 2)} (P)" if m < 3 else round(calculated_utr, 2),
+            "UTR": f"{calculated_utr:.2f} (P)" if m < 3 else f"{calculated_utr:.2f}",
             "Last Change": last_elo_changes.get(p, 0), 
             "Win %": round((s['wins']/m)*100, 1) if m > 0 else 0.0,
             "Recent Trend": trend_html, "Matches": m, "Wins": s['wins'], "Losses": s['losses'],
@@ -2182,7 +2182,7 @@ with tabs[0]:
                 "Recent Trend": st.column_config.Column("Trend", width="small"),
                 "Points": st.column_config.NumberColumn("PTS", format="%.1f"),
                 "Elo": st.column_config.NumberColumn("ELO", format="%d"),
-                "UTR": st.column_config.NumberColumn("UTR", format="%.2f"),
+                "UTR": st.column_config.Column("UTR", width="small"),
             }
         )
 
@@ -2206,10 +2206,9 @@ with tabs[0]:
                 change_color = "#00ff88" if change_val >= 0 else "#ff4b4b"
                 change_text = f"{'+' if change_val > 0 else ''}{int(change_val)}"
                 change_indicator = f"<span style='color: {change_color}; font-size: 11px; margin-left: 5px; font-weight: bold;'>({change_text})</span>" if use_elo else ""
-                
-                utr_val = f" ({row.get('UTR', 1.0)})" if use_elo else ""
-                score_display = f"{int(row[metric_col])}{utr_val}" if use_elo else f"{row[metric_col]:g}"
 
+                utr_val = f" ({row.get('UTR', '1.00')})" if use_elo else ""
+                score_display = f"{int(row[metric_col])}{utr_val}" if use_elo else f"{row[metric_col]:g}"
                 st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center;">
@@ -3744,6 +3743,9 @@ with tabs[4]:
                                                 f"{p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
                                             )
                                             plain_suggestion = f"Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)"
+                                elif row['match_type'] == "Singles" and len(players) < 2:
+                                    pairing_suggestion = "<div><strong class='dynamic-text'>Odds:</strong> Need two players for odds</div>"
+                                    plain_suggestion = "Need two players for odds"
                             except Exception as e:
                                 pairing_suggestion = f"<div><strong class='dynamic-text'>Pairing Odds:</strong> Error calculating: {e}</div>"
                                 plain_suggestion = f"Error calculating odds: {str(e)}"
