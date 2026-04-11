@@ -4595,9 +4595,6 @@ Greetings! I am the **MMD Strategy Bot**. I've crunched the numbers and analyzed
         else:
             st.warning("Please select a player first.")
 
-        else:
-            st.warning("Please select a player first.")
-
 
 # --- Tab 9: AI Data & Analytics ---
 with tabs[8]:
