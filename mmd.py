@@ -2079,7 +2079,7 @@ rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, 
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ22026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "AI Data"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "MMD Bot", "AI Data"]
 tabs = st.tabs(tab_names)
 
 
@@ -4449,8 +4449,158 @@ with tabs[6]:
 
 
 
-# --- Tab 8: AI Data & Analytics ---
+
+# --- Tab 8: MMD Bot ---
 with tabs[7]:
+    st.markdown("""
+        <div class="mobile-card">
+            <h2 style='text-align: center; color: var(--dynamic-accent) !important;'>MMD Strategy Bot</h2>
+            <p style='text-align: center; opacity: 0.8;'>Elite tactical intelligence for your next match.</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Top: A st.selectbox to "Select a Player to Analyze"
+    all_players_list = sorted(rank_df['Player'].unique().tolist())
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        selected_player = st.selectbox("Select a Player to Analyze", all_players_list, key="bot_player_select", label_visibility="collapsed")
+    with col2:
+        generate_btn = st.button("Generate Intelligence Report", key="generate_bot_report", use_container_width=True)
+
+    # Middle: A "Chat Box" container
+    if generate_btn:
+        if selected_player:
+            # Data Extraction Logic
+            p_stats_row = rank_df[rank_df['Player'] == selected_player]
+            
+            if p_stats_row.empty:
+                st.chat_message("assistant").error(f"No Data Available for **{selected_player}**.")
+            else:
+                p_stats = p_stats_row.iloc[0]
+                matches_count = p_stats['Matches']
+                
+                if matches_count == 0:
+                    with st.chat_message("assistant"):
+                        st.markdown(f"Greetings! I am **MMD Strategy Bot**. Currently, I have **No Data Available** for **{selected_player}**. Get them on the court to start building their tactical profile!")
+                else:
+                    # Current Stats
+                    rank = p_stats['Rank']
+                    elo = p_stats['Elo']
+                    utr = p_stats['UTR']
+                    wins, losses = p_stats['Wins'], p_stats['Losses']
+                    gda = p_stats['Game Diff Avg']
+                    win_pct = p_stats['Win %']
+                    
+                    # Bookings: Filter bookings_df for future matches
+                    now = datetime.now()
+                    b_df = st.session_state.bookings_df.copy()
+                    player_bookings = pd.DataFrame()
+                    if not b_df.empty:
+                        b_df['date_dt'] = pd.to_datetime(b_df['date'], errors='coerce')
+                        player_bookings = b_df[
+                            (b_df['date_dt'] >= pd.Timestamp(now.date())) & 
+                            (
+                                (b_df['player1'] == selected_player) | 
+                                (b_df['player2'] == selected_player) | 
+                                (b_df['player3'] == selected_player) | 
+                                (b_df['player4'] == selected_player)
+                            )
+                        ].sort_values('date_dt')
+                    
+                    # Seasonal Frequency: Current active season (Quarter)
+                    m_df = st.session_state.matches_df.copy()
+                    m_df['date_dt'] = pd.to_datetime(m_df['date'], errors='coerce')
+                    current_year = now.year
+                    current_quarter = (now.month - 1) // 3 + 1
+                    
+                    # Filter for player matches in the current quarter of the current year
+                    p_quarter_matches = m_df[
+                        (m_df['date_dt'].dt.year == current_year) & 
+                        (m_df['date_dt'].dt.quarter == current_quarter) &
+                        (
+                            (m_df['team1_player1'] == selected_player) | 
+                            (m_df['team1_player2'] == selected_player) | 
+                            (m_df['team2_player1'] == selected_player) | 
+                            (m_df['team2_player2'] == selected_player)
+                        )
+                    ]
+                    q_count = len(p_quarter_matches)
+                    
+                    # Head-to-Head / Partners
+                    # Preferred Partner
+                    best_partner = "N/A"
+                    if selected_player in partner_stats_global:
+                        p_partners = partner_stats_global[selected_player]
+                        if p_partners:
+                            best_partner = max(p_partners, key=lambda x: p_partners[x]['matches'])
+                    
+                    # Frequent Opponent
+                    opp_counter = Counter()
+                    for row in m_df.itertuples():
+                        t1 = [p for p in [row.team1_player1, row.team1_player2] if p and str(p).upper() != "VISITOR"]
+                        t2 = [p for p in [row.team2_player1, row.team2_player2] if p and str(p).upper() != "VISITOR"]
+                        if selected_player in t1:
+                            opp_counter.update(t2)
+                        elif selected_player in t2:
+                            opp_counter.update(t1)
+                    top_opp = opp_counter.most_common(1)[0][0] if opp_counter else "N/A"
+                    
+                    # Trend: Convert HTML dots into text
+                    trend_html = p_stats['Recent Trend']
+                    dots = re.findall(r'dot-([wl])', trend_html)
+                    if dots:
+                        last = dots[-1]
+                        streak = 0
+                        for d in reversed(dots):
+                            if d == last: streak += 1
+                            else: break
+                        trend_text = f"{streak} Match {'Win' if last == 'w' else 'Loss'} Streak"
+                    else:
+                        trend_text = "No recent matches"
+                    
+                    # AI Tone Interface (No Emojis)
+                    with st.chat_message("assistant"):
+                        report = f"""
+### MMD Strategy Bot: Intelligence Report for **{selected_player}**
+
+Greetings! I am the **MMD Strategy Bot**. I've crunched the numbers and analyzed the court data for **{selected_player}**. Here is the tactical breakdown:
+
+**Current Stats Profile**
+*   **League Rank:** <span class='rank-badge'>{rank}</span>
+*   **Elo Rating:** **{elo}**
+*   **Estimated UTR:** **{utr}**
+*   **Match Record:** **{wins}W - {losses}L** ({win_pct}%)
+*   **Game Diff Avg (GDA):** <span class='dynamic-accent'>{gda}</span>
+
+**Performance Momentum**
+*   **Recent Trend:** **{trend_text}**
+
+**Active Season Activity (Q{current_quarter} {current_year})**
+*   **Frequency:** **{q_count}** matches played since the start of the active season.
+
+**Tactical Network**
+*   **Most Reliable Partner:** **{best_partner}**
+*   **Frequent Rival:** **{top_opp}**
+
+**Future Missions**
+"""
+                        if not player_bookings.empty:
+                            for _, b in player_bookings.head(3).iterrows():
+                                report += f"*   **{pd.to_datetime(b['date']).strftime('%d %b')}** at **{b['court_name']}** ({b['time']})\n"
+                        else:
+                            report += "*   No future matches currently detected in the system. Time to schedule some."
+                            
+                        st.markdown(report, unsafe_allow_html=True)
+        else:
+            st.warning("Please select a player first.")
+
+        else:
+            st.warning("Please select a player first.")
+
+
+# --- Tab 9: AI Data & Analytics ---
+with tabs[8]:
     st.header("🧠 AI Data & Visual Analytics")
     st.markdown("Dive deep into the league's stats with these automated visual insights!")
     
