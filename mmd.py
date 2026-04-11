@@ -4561,11 +4561,18 @@ with tabs[7]:
                     
                     # AI Tone Interface (No Emojis)
                     with st.chat_message("assistant"):
-                        report = f"""
-### MMD Strategy Bot: Intelligence Report for **{selected_player}**
-
-Greetings! I am the **MMD Strategy Bot**. I've crunched the numbers and analyzed the court data for **{selected_player}**. Here is the tactical breakdown:
-
+                        # Start with Greetings
+                        report = f"Greetings! I am the **MMD Strategy Bot**. I've crunched the numbers and analyzed the court data for **{selected_player}**. Here is the tactical breakdown:\n\n"
+                        
+                        # Future Missions first
+                        report += "**Future Missions**\n"
+                        if not player_bookings.empty:
+                            for _, b in player_bookings.head(3).iterrows():
+                                report += f"*   **{pd.to_datetime(b['date']).strftime('%d %b')}** at **{b['court_name']}** ({b['time']})\n"
+                        else:
+                            report += "*   No future matches currently detected in the system. Time to schedule some.\n"
+                        
+                        report += f"""
 **Current Stats Profile**
 *   **League Rank:** <span class='rank-badge'>{rank}</span>
 *   **Elo Rating:** **{elo}**
@@ -4582,15 +4589,7 @@ Greetings! I am the **MMD Strategy Bot**. I've crunched the numbers and analyzed
 **Tactical Network**
 *   **Most Reliable Partner:** **{best_partner}**
 *   **Frequent Rival:** **{top_opp}**
-
-**Future Missions**
 """
-                        if not player_bookings.empty:
-                            for _, b in player_bookings.head(3).iterrows():
-                                report += f"*   **{pd.to_datetime(b['date']).strftime('%d %b')}** at **{b['court_name']}** ({b['time']})\n"
-                        else:
-                            report += "*   No future matches currently detected in the system. Time to schedule some."
-                            
                         st.markdown(report, unsafe_allow_html=True)
         else:
             st.warning("Please select a player first.")
