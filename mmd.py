@@ -2079,7 +2079,7 @@ rank_df, partner_stats_global = calculate_rankings(st.session_state.matches_df, 
 st.image("https://raw.githubusercontent.com/mahadevbk/mmd/main/mmdheaderQ22026.png", width="stretch")
 get_birthday_banner(st.session_state.players_df)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "MMD Bot", "AI Data"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings", "Hall of Fame", "Mini Tourney", "MMD AI"]
 tabs = st.tabs(tab_names)
 
 
@@ -4450,8 +4450,9 @@ with tabs[6]:
 
 
 
-# --- Tab 8: MMD Bot ---
+# --- Tab 8: MMD AI ---
 with tabs[7]:
+    # --- MMD Strategy Bot Section ---
     st.markdown("""
         <div class="mobile-card">
             <h2 style='text-align: center; color: var(--dynamic-accent) !important;'>MMD Strategy Bot</h2>
@@ -4594,9 +4595,9 @@ with tabs[7]:
         else:
             st.warning("Please select a player first.")
 
+    st.divider()
 
-# --- Tab 9: AI Data & Analytics ---
-with tabs[8]:
+    # --- AI Data & Analytics Section ---
     st.header("🧠 AI Data & Visual Analytics")
     st.markdown("Dive deep into the league's stats with these automated visual insights!")
     
