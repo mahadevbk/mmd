@@ -663,9 +663,10 @@ def load_players():
 
 def save_players(players_df):
     try:
+        import numpy as np
         df_save = players_df.copy()
         df_save['name'] = df_save['name'].str.upper().str.strip()
-        df_save = df_save.where(pd.notna(df_save), None)
+        df_save = df_save.replace({np.nan: None, pd.NA: None})
         df_save = df_save.drop_duplicates(subset=['name'], keep='last')
         supabase.table(PLAYERS_TABLE).upsert(df_save.to_dict("records")).execute()
         fetch_data.clear() # Clear cache on write
@@ -692,8 +693,11 @@ def load_matches():
 
 def save_matches(matches_df):
     try:
+        import numpy as np
         df_save = matches_df.copy()
-        df_save = df_save.where(pd.notna(df_save), None)
+        # Ensure NaN values are None before string conversion
+        df_save = df_save.replace({np.nan: None, pd.NA: None})
+        
         # Vectorized string format
         df_save['date'] = pd.to_datetime(df_save['date'], errors='coerce', format='mixed').dt.strftime('%Y-%m-%d %H:%M:%S')
         df_save.loc[df_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -702,6 +706,8 @@ def save_matches(matches_df):
         df_save = df_save.drop_duplicates(subset=['match_id'], keep='last')
         
         if not df_save.empty:
+            # Re-convert to None in case any NaN were introduced by manipulations
+            df_save = df_save.replace({np.nan: None, pd.NA: None})
             supabase.table(MATCHES_TABLE).upsert(df_save.to_dict("records")).execute()
             fetch_data.clear()
             st.success("Match saved successfully.")
@@ -1882,7 +1888,9 @@ def load_bookings():
 
 def save_bookings(df):
     try:
-        df_save = df.copy().where(pd.notna(df), None)
+        import numpy as np
+        # Ensure all types of nulls are converted to None for JSON compliance
+        df_save = df.replace({np.nan: None, pd.NA: None})
         supabase.table(BOOKINGS_TABLE).upsert(df_save.to_dict("records")).execute()
         fetch_data.clear()
     except Exception as e:
@@ -4112,12 +4120,13 @@ with tabs[4]:
     
     def save_availability(availability_df):
         try:
+            import numpy as np
             if len(availability_df) == 0:
                 return  # Skip upsert if no data
             # Select only expected columns
             availability_df_to_save = availability_df[expected_columns].copy()
             # Replace NaN with None for JSON compliance
-            availability_df_to_save = availability_df_to_save.where(pd.notna(availability_df_to_save), None)
+            availability_df_to_save = availability_df_to_save.replace({np.nan: None, pd.NA: None})
             # Ensure id is int
             if 'id' in availability_df_to_save.columns:
                 availability_df_to_save['id'] = pd.to_numeric(availability_df_to_save['id'], errors='coerce').fillna(0).astype(int)
