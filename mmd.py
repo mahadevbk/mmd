@@ -3541,8 +3541,8 @@ with tabs[4]:
                 collated_message = f"*MMD Today's Games ({today_dubai.strftime('%A, %d %b')})*\n\n"
                 for idx, t_row in enumerate(today_games.itertuples(), 1):
                     # Re-calculate weekday and date part for the share
-                    t_weekday = pd.to_datetime(t_row.date).strftime('%A')
-                    t_date_part = pd.to_datetime(t_row.date).strftime('%d %b')
+                    t_weekday = pd.to_datetime(t_row.date, format='mixed').strftime('%A')
+                    t_date_part = pd.to_datetime(t_row.date, format='mixed').strftime('%d %b')
                     
                     # Formatting time for the share
                     t_time_val = str(t_row.time).strip()
