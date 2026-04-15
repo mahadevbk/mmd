@@ -26,7 +26,6 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from supabase import create_client, Client
 import textwrap
 import json
-import streamlit.components.v1 as components
 
 # Optional imports
 try:
@@ -101,7 +100,7 @@ def inject_pwa_meta():
       }
     </script>
     """
-    components.html(pwa_html, height=0, width=0)
+    st.iframe(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
 
@@ -1770,7 +1769,7 @@ def cleanup_old_bookings(df):
         try:
              df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), format='%Y-%m-%d %H:%M', errors='coerce')
         except:
-             df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), errors='coerce')
+             df['dt_combo'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str), format='mixed', errors='coerce')
 
         # Safe timezone handling
         if isinstance(df['dt_combo'].dtype, pd.DatetimeTZDtype):
@@ -1823,12 +1822,11 @@ def check_booking_conflict(new_booking, bookings_df):
     # We use pd.to_datetime to normalize formats before comparison
     try:
         # Normalize everything to YYYY-MM-DD and HH:MM
-        target_date = pd.to_datetime(date).strftime('%Y-%m-%d')
-        target_time = pd.to_datetime(time).strftime('%H:%M')
-        
-        df_dates = pd.to_datetime(bookings_df['date']).dt.strftime('%Y-%m-%d')
-        df_times = pd.to_datetime(bookings_df['time']).dt.strftime('%H:%M')
-        
+        target_date = pd.to_datetime(date, format='mixed').strftime('%Y-%m-%d')
+        target_time = pd.to_datetime(time, format='mixed').strftime('%H:%M')
+
+        df_dates = pd.to_datetime(bookings_df['date'], format='mixed').dt.strftime('%Y-%m-%d')
+        df_times = pd.to_datetime(bookings_df['time'], format='mixed').dt.strftime('%H:%M')
         conflict_mask = (df_dates == target_date) & (df_times == target_time)
         if booking_id:
             conflict_mask &= (bookings_df['booking_id'].astype(str) != str(booking_id))
@@ -1871,7 +1869,7 @@ def load_bookings():
         df = cleanup_old_bookings(df)
         
         # Format for display
-        df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+        df['date'] = pd.to_datetime(df['date'], format='mixed').dt.strftime('%Y-%m-%d')
         df = df.fillna("")
         
     st.session_state.bookings_df = df[cols]
