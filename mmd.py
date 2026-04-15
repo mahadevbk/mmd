@@ -100,7 +100,13 @@ def inject_pwa_meta():
       }
     </script>
     """
-    st.iframe(pwa_html, height=0, width=0)
+    try:
+        # Use st.html if available (Streamlit 1.34+)
+        st.html(pwa_html)
+    except Exception:
+        # Fallback to older components.html if st.html is not available or fails
+        import streamlit.components.v1 as components
+        components.html(pwa_html, height=0, width=0)
 
 inject_pwa_meta()
 
@@ -679,7 +685,7 @@ def load_matches():
     
     if not df.empty:
         # Vectorized date conversion
-        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce').dt.tz_localize(None)
+        df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce', format='mixed').dt.tz_localize(None)
         df['date'] = df['date'].fillna(pd.Timestamp('1970-01-01'))
         
     st.session_state.matches_df = df
@@ -689,7 +695,7 @@ def save_matches(matches_df):
         df_save = matches_df.copy()
         df_save = df_save.where(pd.notna(df_save), None)
         # Vectorized string format
-        df_save['date'] = pd.to_datetime(df_save['date'], errors='coerce').dt.strftime('%Y-%m-%d %H:%M:%S')
+        df_save['date'] = pd.to_datetime(df_save['date'], errors='coerce', format='mixed').dt.strftime('%Y-%m-%d %H:%M:%S')
         df_save.loc[df_save['date'].isna(), 'date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         df_save = df_save[df_save["match_id"].notnull() & (df_save["match_id"] != "")]
@@ -923,7 +929,7 @@ def generate_match_id(matches_df, match_datetime):
     # Filter using vectorized operations if dataframe is populated
     if not matches_df.empty:
         # Ensure date column is datetime
-        dates = pd.to_datetime(matches_df['date'], errors='coerce')
+        dates = pd.to_datetime(matches_df['date'], errors='coerce', format='mixed')
         mask = (dates.dt.year == year) & ((dates.dt.month-1)//3 + 1 == (month-1)//3 + 1)
         serial = mask.sum() + 1
     else:
@@ -1244,7 +1250,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
         if m >= 50: badges.append("🎖️ Veteran")
         if m >= 100: badges.append("💯 Century Club")
         try:
-            if s.get('last_match_date') and (datetime.now() - pd.to_datetime(s['last_match_date'])).days <= 7: badges.append("🌱 Participation")
+            if s.get('last_match_date') and (datetime.now() - pd.to_datetime(s['last_match_date'], format='mixed')).days <= 7: badges.append("🌱 Participation")
         except: pass
         
         p_elo = elo_ratings[p]
@@ -1613,7 +1619,7 @@ def get_player_trend(player, matches, max_matches=5):
     
     # Ensure dates
     if not pd.api.types.is_datetime64_any_dtype(matches['date']):
-         matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
+         matches['date'] = pd.to_datetime(matches['date'], errors='coerce', format='mixed')
          
     pm = matches[mask].sort_values(by='date', ascending=False).head(max_matches)
     trend = []
@@ -1651,7 +1657,7 @@ def plot_player_performance(player_name, matches_df, theme="Default"):
 
     if df.empty: return None
 
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], format='mixed')
     df = df.sort_values('date')
 
     history = []
@@ -2460,7 +2466,7 @@ with tabs[1]:
                 if len(current_players_set) >= 2:
                     # Filter matches for the same date
                     date_matches = st.session_state.matches_df[
-                        pd.to_datetime(st.session_state.matches_df['date']).dt.date == m_date
+                        pd.to_datetime(st.session_state.matches_df['date'], format='mixed').dt.date == m_date
                     ]
                     for _, row in date_matches.iterrows():
                         row_players = set(filter(None, [row.team1_player1, row.team1_player2, row.team2_player1, row.team2_player2]))
@@ -2579,7 +2585,7 @@ with tabs[1]:
         filter_names = sorted(st.session_state.players_df['name'].unique())
         selected_player = st.selectbox("Filter by Player", ["All Players"] + filter_names)
 
-        m_hist['date'] = pd.to_datetime(m_hist['date'])
+        m_hist['date'] = pd.to_datetime(m_hist['date'], format='mixed')
         m_hist = m_hist.sort_values('date', ascending=False)
 
         # 2. APPLY FILTER LOGIC
@@ -2663,7 +2669,7 @@ with tabs[1]:
     with st.expander("✏️ Edit Match Result", expanded=False, icon="➡️"):
         if not st.session_state.matches_df.empty:
             m_df = st.session_state.matches_df.copy()
-            m_df['date'] = pd.to_datetime(m_df['date'])
+            m_df['date'] = pd.to_datetime(m_df['date'], format='mixed')
             m_df = m_df.sort_values('date', ascending=False)
             
             # Create a display label for the dropdown
@@ -3211,7 +3217,7 @@ with tabs[4]:
     if not st.session_state.bookings_df.empty:
         # Ensure date is datetime
         temp_df = st.session_state.bookings_df.copy()
-        temp_df['date_dt'] = pd.to_datetime(temp_df['date']).dt.date
+        temp_df['date_dt'] = pd.to_datetime(temp_df['date'], format='mixed').dt.date
         
         today = datetime.now().date()
         next_week = today + timedelta(days=7)
@@ -3496,7 +3502,7 @@ with tabs[4]:
                         return pd.to_datetime(f"{d_str} {t_str}", format=f"%Y-%m-%d {fmt}")
                     except:
                         continue
-                return pd.to_datetime(f"{d_str} {t_str}") # Fallback
+                return pd.to_datetime(f"{d_str} {t_str}", format='mixed') # Fallback
             except:
                 return pd.NaT
 
@@ -3527,7 +3533,7 @@ with tabs[4]:
             today_dubai = pd.Timestamp.now(tz='Asia/Dubai').date()
             # We filter bookings_df for all games on the current date
             try:
-                today_games = bookings_df[pd.to_datetime(bookings_df['date']).dt.date == today_dubai].sort_values('time')
+                today_games = bookings_df[pd.to_datetime(bookings_df['date'], format='mixed').dt.date == today_dubai].sort_values('time')
             except Exception:
                 today_games = pd.DataFrame()
             
@@ -3599,7 +3605,7 @@ with tabs[4]:
                     singles_rank_df = pd.DataFrame()
                 
                 # Group bookings by date for cleaner display
-                upcoming_bookings['date_dt'] = pd.to_datetime(upcoming_bookings['date']).dt.date
+                upcoming_bookings['date_dt'] = pd.to_datetime(upcoming_bookings['date'], format='mixed').dt.date
                 grouped = upcoming_bookings.groupby('date_dt')
 
                 # Inject glassmorphism style for these expanders
@@ -3646,7 +3652,7 @@ with tabs[4]:
                         players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
                         players_str = ", ".join([f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{p}</span>" for p in players]) if players else "No players specified"
                         standby_str = f"<span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
-                        date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+                        date_str = pd.to_datetime(row['date'], format='mixed').strftime('%A, %d %b')
                         time_value = str(row['time']).strip()
                     
                         time_ampm = ""
@@ -3761,8 +3767,8 @@ with tabs[4]:
                             # Generate Web Calendar Links
                             google_url, outlook_url = generate_calendar_web_links(row, "")
                             
-                            weekday = pd.to_datetime(row['date']).strftime('%A')
-                            date_part = pd.to_datetime(row['date']).strftime('%d %b')
+                            weekday = pd.to_datetime(row['date'], format='mixed').strftime('%A')
+                            date_part = pd.to_datetime(row['date'], format='mixed').strftime('%d %b')
                             lat, lon = get_court_coords(row['court_name'])
                             weather_text = get_weather(lat, lon, str(row['date']), str(row['time']))
                             weather_row = f"<div><strong>Weather:</strong> <span class='dynamic-text' style='color: var(--dynamic-accent) !important; font-weight:bold;'>{weather_text}</span></div>"
@@ -3925,7 +3931,7 @@ with tabs[4]:
                     return "Unknown Time"
 
                 for _, row in edit_bookings_df.iterrows():
-                    dt = pd.to_datetime(row['date'], errors="coerce")
+                    dt = pd.to_datetime(row['date'], errors="coerce", format='mixed')
                     day = dt.strftime('%A') if pd.notnull(dt) else "Unknown Day"
                     date_dd_mm = dt.strftime('%d-%m') if pd.notnull(dt) else "Unknown Date"
                     time_ampm = format_time_safe(row['time'])
@@ -3946,7 +3952,7 @@ with tabs[4]:
                     with st.expander("Edit Booking Details", expanded=True, icon="➡️"):
                         date_edit = st.date_input(
                             "Booking Date *",
-                            value=pd.to_datetime(booking_row["date"], errors="coerce").date(),
+                            value=pd.to_datetime(booking_row["date"], errors="coerce", format='mixed').date(),
                             key=f"edit_booking_date_{booking_id}"
                         )
 
@@ -4496,7 +4502,7 @@ with tabs[7]:
                     b_df = st.session_state.bookings_df.copy()
                     player_bookings = pd.DataFrame()
                     if not b_df.empty:
-                        b_df['date_dt'] = pd.to_datetime(b_df['date'], errors='coerce')
+                        b_df['date_dt'] = pd.to_datetime(b_df['date'], errors='coerce', format='mixed')
                         player_bookings = b_df[
                             (b_df['date_dt'] >= pd.Timestamp(now.date())) & 
                             (
@@ -4509,7 +4515,7 @@ with tabs[7]:
                     
                     # Seasonal Frequency: Current active season (Quarter)
                     m_df = st.session_state.matches_df.copy()
-                    m_df['date_dt'] = pd.to_datetime(m_df['date'], errors='coerce')
+                    m_df['date_dt'] = pd.to_datetime(m_df['date'], errors='coerce', format='mixed')
                     current_year = now.year
                     current_quarter = (now.month - 1) // 3 + 1
                     
@@ -4567,7 +4573,7 @@ with tabs[7]:
                         report += "**Future Missions**\n"
                         if not player_bookings.empty:
                             for _, b in player_bookings.head(3).iterrows():
-                                report += f"*   **{pd.to_datetime(b['date']).strftime('%d %b')}** at **{b['court_name']}** ({b['time']})\n"
+                                report += f"*   **{pd.to_datetime(b['date'], format='mixed').strftime('%d %b')}** at **{b['court_name']}** ({b['time']})\n"
                         else:
                             report += "*   No future matches currently detected in the system. Time to schedule some.\n"
                         
@@ -4657,7 +4663,7 @@ with tabs[7]:
         # 5. Line Chart: League Activity Over Time
         st.subheader("📅 Match Activity Timeline")
         matches_time = st.session_state.matches_df.copy()
-        matches_time['date'] = pd.to_datetime(matches_time['date']).dt.date
+        matches_time['date'] = pd.to_datetime(matches_time['date'], format='mixed').dt.date
         activity_df = matches_time.groupby('date').size().reset_index(name='Matches Played')
         
         fig4 = px.line(
