@@ -3475,7 +3475,9 @@ with tabs[4]:
                                 bookings_to_save[col] = bookings_to_save[col].replace("", None)
                             save_bookings(bookings_to_save)
                             load_bookings()
-                            st.success("Booking added successfully.")
+                            st.toast("✅ Booking added successfully!")
+                            import time
+                            time.sleep(1) # Give time to show toast
                             st.session_state.form_key_suffix += 1
                             st.session_state.smart_booking_expanded = True
                             st.session_state.add_booking_expanded = False
@@ -4063,7 +4065,9 @@ with tabs[4]:
                                             bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
                                             save_bookings(bookings_to_save)
                                             load_bookings()
-                                            st.success("Booking updated successfully.")
+                                            st.toast("✅ Booking updated successfully!")
+                                            import time
+                                            time.sleep(1) # Give time to show toast
                                             st.session_state.edit_booking_key += 1
                                             st.rerun()
                                         except Exception as e:
