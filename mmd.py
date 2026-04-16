@@ -201,6 +201,7 @@ div[data-testid="stExpander"] {
 }
 .dot-w { background-color: #00ff88; box-shadow: 0 0 5px #00ff88; }
 .dot-l { background-color: #ff4b4b; }
+.dot-t { background-color: #ff9900; box-shadow: 0 0 5px #ff9900; }
 .stApp {
   background: linear-gradient(to bottom, #041136, #21000a);
   background-attachment: scroll;
@@ -949,7 +950,7 @@ def generate_match_id(matches_df, match_datetime):
 
 # Helper functions for defaultdict to allow pickling
 def get_player_stats_template():
-    return {'wins': 0, 'losses': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
+    return {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'games_won': 0, 'gd_sum': 0, 
             'clutch_wins': 0, 'clutch_matches': 0, 'gd_list': [],
             'giant_kills': 0, 'comebacks': 0, 'daily_matches': defaultdict(int), 'sets_won': 0,
             'tb_wins': 0, 'last_match_date': None}
@@ -1214,6 +1215,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
                     current_streaks[p] = min(0, current_streaks[p]) - 1
                 else:
                     scores[p] += 1.5
+                    stats[p]['ties'] += 1
                     current_streaks[p] = 0
 
         if winner_code == "Team 1":
@@ -1243,7 +1245,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
         clutch_pct = (s['clutch_wins'] / s['clutch_matches'] * 100) if s['clutch_matches'] > 0 else 0
         consistency = np.std(s['gd_list']) if s['gd_list'] else 0
         pb = perf_breakdown[p]
-        trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else "dot-l"}"></span>' for gd in s['gd_list'][-5:]])
+        trend_html = "".join([f'<span class="trend-dot {"dot-w" if gd > 0 else ("dot-l" if gd < 0 else "dot-t")}"></span>' for gd in s['gd_list'][-5:]])
         badges = []
         if clutch_pct > 70 and s['clutch_matches'] >= 3: badges.append("🎯 Clutch")
         if consistency < 2.5 and m >= 5: badges.append("📉 Steady")
@@ -1267,7 +1269,7 @@ def calculate_rankings(matches_to_rank, players_df_input):
             "UTR": f"{calculated_utr:.2f} (P)" if m < 3 else f"{calculated_utr:.2f}",
             "Last Change": last_elo_changes.get(p, 0), 
             "Win %": round((s['wins']/m)*100, 1) if m > 0 else 0.0,
-            "Recent Trend": trend_html, "Matches": m, "Wins": s['wins'], "Losses": s['losses'],
+            "Recent Trend": trend_html, "Matches": m, "Wins": s['wins'], "Losses": s['losses'], "Ties": s['ties'],
             "Games Won": s['games_won'], 
             "Game Diff Avg": round(s['gd_sum']/m, 2) if m > 0 else 0.0,
             "Clutch Factor": round(clutch_pct, 1), "Consistency Index": round(consistency, 2),
@@ -2176,6 +2178,8 @@ with tabs[0]:
                 '<span class="trend-dot dot-w"></span>', '🟢', regex=False
             ).str.replace(
                 '<span class="trend-dot dot-l"></span>', '🔴', regex=False
+            ).str.replace(
+                '<span class="trend-dot dot-t"></span>', '🟠', regex=False
             ).str.replace('<[^>]*>', '', regex=True) # Remove any leftover tags
 
         # Reorder columns: Rank, Profile, Player, the rest...
@@ -2288,8 +2292,8 @@ with tabs[0]:
                                     <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Matches']}</div>
                                 </div>
                                 <div>
-                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">W/L</div>
-                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Wins']}/{row['Losses']}</div>
+                                    <div style="font-size: 9px; color: var(--dynamic-subtext);">W/T/L</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: var(--dynamic-text);">{row['Wins']}/{row['Ties']}/{row['Losses']}</div>
                                 </div>
                             </div>
                             <div style="margin-bottom: 12px;">
@@ -3149,7 +3153,7 @@ with tabs[2]:
                             <div><div class="metric-label">Doubles Perf</div><div class="metric-value" style="color: #00ff00;">{s.get('Doubles Perf', 0)}%</div></div>
                             <div><div class="metric-label">Singles Perf</div><div class="metric-value" style="color: #00bfff;">{s.get('Singles Perf', 0)}%</div></div>
                             <div><div class="metric-label">Win %</div><div class="metric-value">{s.get('Win %', 0)}%</div></div>
-                            <div><div class="metric-label">Record</div><div class="metric-value">{s.get('Wins', 0)}W-{s.get('Losses', 0)}L</div></div>
+                            <div><div class="metric-label">Record</div><div class="metric-value">{s.get('Wins', 0)}W-{s.get('Ties', 0)}T-{s.get('Losses', 0)}L</div></div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
