@@ -2321,13 +2321,7 @@ with tabs[0]:
 
 
 
-
-
-
-
-
-
-# --- Tab 2: Matches ---# --- Tab 2: Matches ---
+# --- Tab 2: Matches ---
 with tabs[1]:
     st.header("Matches")
     
@@ -2660,19 +2654,18 @@ with tabs[1]:
                 m_uid = f"match_{row.match_id}"
                 img_html = f'<div class="match-img-wrapper"><a href="#{m_uid}"><img src="{row.match_image_url}" class="match-img-content clickable-img"></a></div><div id="{m_uid}" class="img-lightbox"><a href="#" class="img-lightbox-close">&times;</a><img src="{row.match_image_url}"></div>' if row.match_image_url else ""
                 
-                card_html = f"""
-<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); margin-bottom: 25px; overflow: hidden;">
-    {img_html}
-    <div style="padding: 15px;">
-        <div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
-        <div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
-        <div class="match-score-container">
-            <div style="font-size: 1.2em; font-weight: bold; color: var(--dynamic-accent);">{" | ".join(display_scores)}</div>
-            <div class="gda-label">Game Diff Avg: +{match_gda}</div>
-        </div>
-    </div>
+                # Unindented multi-line HTML string prevents Streamlit from treating lines as code blocks
+                card_html = f"""<div style="background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border-color); margin-bottom: 25px; overflow: hidden;">
+{img_html}
+<div style="padding: 15px;">
+<div style="font-size: 0.85em; color: var(--dynamic-subtext); margin-bottom: 8px;">{row.date.strftime('%d %b %Y')} | {display_type}</div>
+<div style="font-size: 1.1em; text-align: center; margin: 10px 0;">{headline}</div>
+<div class="match-score-container">
+<div style="font-size: 1.2em; font-weight: bold; color: var(--dynamic-accent);">{" | ".join(display_scores)}</div>
+<div class="gda-label">Game Diff Avg: +{match_gda}</div>
 </div>
-"""
+</div>
+</div>"""
                 st.markdown(card_html, unsafe_allow_html=True)
     else:
         st.info("No matches recorded.")
@@ -2871,6 +2864,12 @@ with tabs[1]:
                         st.success("Season reset successful! All points are now 0. Elo ratings have been carried over.")
                         st.balloons()
                         st.rerun()
+
+
+
+
+
+
     
 
 
